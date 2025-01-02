@@ -2,6 +2,8 @@ package service
 
 import (
 	"errors"
+	log "github.com/go-admin-team/go-admin-core/logger"
+	"strconv"
 
 	"github.com/go-admin-team/go-admin-core/sdk/service"
 	"gorm.io/gorm"
@@ -61,32 +63,103 @@ func (e *BusStrategyBaseInfo) Get(d *dto.BusStrategyBaseInfoGetReq, p *actions.D
 func (e *BusStrategyBaseInfo) Insert(c *dto.BusStrategyBaseInfoInsertReq) error {
 	var err error
 	var data models.BusStrategyBaseInfo
+	var configs = make([]models.BusStrategyConfigDict, 0, len(c.Configurations))
+	// 启动事务
+	tx := e.Orm.Begin()
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	// 1. 生成主表数据，并插入主表
+	c.Status = strconv.Itoa(1) // 新注册策略默认为“已注册”
 	c.Generate(&data)
-	err = e.Orm.Create(&data).Error
-	if err != nil {
-		e.Log.Errorf("BusStrategyBaseInfoService Insert error:%s \r\n", err)
+	if err := tx.Create(&data).Error; err != nil {
+		tx.Rollback() // 插入主表失败，回滚事务
+		e.Log.Errorf("Error while inserting BusStrategyBaseInfo: %v", err)
 		return err
 	}
-	return nil
+
+	// 2. 保存配置表数据，每个配置项需要关联主表的 ID
+	for _, configReq := range c.Configurations {
+		var config models.BusStrategyConfigDict
+		configReq.Generate(&config)
+
+		// 为每个配置设置关联主表的ID
+		config.StrategyId = strconv.Itoa(data.Id) // 关联主表ID
+
+		// 将配置数据插入配置表
+		if err := tx.Create(&config).Error; err != nil {
+			tx.Rollback() // 插入配置失败，回滚事务
+			e.Log.Errorf("Error while inserting config: %v", err)
+			return err
+		}
+		configs = append(configs, config)
+	}
+	// 3. 提交事务
+	err = tx.Commit().Error
+	return err
 }
 
 // Update 修改BusStrategyBaseInfo对象
 func (e *BusStrategyBaseInfo) Update(c *dto.BusStrategyBaseInfoUpdateReq, p *actions.DataPermission) error {
 	var err error
 	var data = models.BusStrategyBaseInfo{}
-	e.Orm.Scopes(
-		actions.Permission(data.TableName(), p),
-	).First(&data, c.GetId())
-	c.Generate(&data)
+	var configs = make([]models.BusStrategyConfigDict, 0, len(c.Configurations))
 
-	db := e.Orm.Save(&data)
-	if err = db.Error; err != nil {
-		e.Log.Errorf("BusStrategyBaseInfoService Save error:%s \r\n", err)
+	// 启动事务
+	tx := e.Orm.Begin()
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	// 查询当前记录
+	err = tx.First(&data, c.Id).Error
+	if err != nil {
+		tx.Rollback()
+		e.Log.Errorf("Error finding BusStrategyBaseInfo: %v", err)
 		return err
 	}
-	if db.RowsAffected == 0 {
-		return errors.New("无权更新该数据")
+
+	// 更新主表字段
+	c.Generate(&data)
+	if err := tx.Save(&data).Error; err != nil {
+		tx.Rollback()
+		e.Log.Errorf("Error updating BusStrategyBaseInfo: %v", err)
+		return err
 	}
+
+	// 2. 删除旧的配置数据
+	log.Infof("strategy_id: %d", data.Id)
+	if err := tx.Where("strategy_id = ?", data.Id).Delete(&models.BusStrategyConfigDict{}).Error; err != nil {
+		tx.Rollback()
+		e.Log.Errorf("Error deleting old configurations: %v", err)
+		return err
+	}
+
+	// 3. 插入新的配置数据
+	for _, configReq := range c.Configurations {
+		var config models.BusStrategyConfigDict
+		configReq.Generate(&config)
+
+		// 关联主表 ID
+		config.StrategyId = strconv.Itoa(data.Id)
+
+		// 插入配置数据
+		if err := tx.Create(&config).Error; err != nil {
+			tx.Rollback()
+			e.Log.Errorf("Error inserting new config: %v", err)
+			return err
+		}
+		configs = append(configs, config)
+	}
+
+	// 4. 提交事务
+	err = tx.Commit().Error
+	if err != nil {
+		e.Log.Errorf("Transaction commit failed: %v", err)
+		return err
+	}
+
 	return nil
 }
 

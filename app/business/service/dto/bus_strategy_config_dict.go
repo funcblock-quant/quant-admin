@@ -36,7 +36,7 @@ type BusStrategyConfigDictInsertReq struct {
 	ParamName    string `json:"paramName" comment:"参数名称"`
 	ParamType    string `json:"paramType" comment:"参数类型"`
 	DefaultValue string `json:"defaultValue" comment:"参数的默认值"`
-	Required     string `json:"required" comment:"是否为必填参数"`
+	Required     bool   `json:"required" comment:"是否为必填参数"`
 	Description  string `json:"description" comment:"参数用途描述"`
 	common.ControlBy
 }
@@ -48,7 +48,6 @@ func (s *BusStrategyConfigDictInsertReq) Generate(model *models.BusStrategyConfi
 	model.StrategyId = s.StrategyId
 	model.ParamKey = s.ParamKey
 	model.ParamName = s.ParamName
-	model.ParamType = s.ParamType
 	model.DefaultValue = s.DefaultValue
 	model.Required = s.Required
 	model.Description = s.Description
@@ -65,7 +64,7 @@ type BusStrategyConfigDictUpdateReq struct {
 	ParamName    string `json:"paramName" comment:"参数名称"`
 	ParamType    string `json:"paramType" comment:"参数类型"`
 	DefaultValue string `json:"defaultValue" comment:"参数的默认值"`
-	Required     string `json:"required" comment:"是否为必填参数"`
+	Required     bool   `json:"required" comment:"是否为必填参数"`
 	Description  string `json:"description" comment:"参数用途描述"`
 	common.ControlBy
 }
@@ -77,7 +76,6 @@ func (s *BusStrategyConfigDictUpdateReq) Generate(model *models.BusStrategyConfi
 	model.StrategyId = s.StrategyId
 	model.ParamKey = s.ParamKey
 	model.ParamName = s.ParamName
-	model.ParamType = s.ParamType
 	model.DefaultValue = s.DefaultValue
 	model.Required = s.Required
 	model.Description = s.Description
