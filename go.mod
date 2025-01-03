@@ -12,8 +12,10 @@ require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-admin-team/go-admin-core v1.5.2-0.20231103105356-84418ed9252c
 	github.com/go-admin-team/go-admin-core/sdk v1.5.2-0.20231103105356-84418ed9252c
+	github.com/go-lark/lark v1.15.0
 	github.com/google/uuid v1.4.0
 	github.com/huaweicloud/huaweicloud-sdk-go-obs v3.23.9+incompatible
+	github.com/joho/godotenv v1.3.0
 	github.com/mssola/user_agent v0.6.0
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/pkg/errors v0.9.1
@@ -24,6 +26,7 @@ require (
 	github.com/spf13/cobra v1.7.0
 	github.com/swaggo/files v1.0.1
 	github.com/swaggo/gin-swagger v1.6.0
+	github.com/swaggo/swag v1.16.2
 	github.com/unrolled/secure v1.13.0
 	golang.org/x/crypto v0.23.0
 	gorm.io/driver/mysql v1.5.2
@@ -129,7 +132,6 @@ require (
 	github.com/shopspring/decimal v1.2.0 // indirect
 	github.com/spf13/cast v1.5.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/swaggo/swag v1.16.2 // indirect
 	github.com/tidwall/gjson v1.14.4 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect

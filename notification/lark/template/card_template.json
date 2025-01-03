@@ -1,0 +1,37 @@
+{
+  "config": {
+    "wide_screen_mode": true
+  },
+  "elements": [
+    {
+      "tag": "markdown",
+      "content": "${card_body}"
+    },
+    {
+      "tag": "action",
+      "actions": [
+        {
+          "tag": "button",
+          "text": {
+            "tag": "plain_text",
+            "content": "查看详情"
+          },
+          "type": "primary",
+          "multi_url": {
+            "url": "${admin_panel_url}",
+            "pc_url": "",
+            "android_url": "",
+            "ios_url": ""
+          }
+        }
+      ]
+    }
+  ],
+  "header": {
+    "template": "blue",
+    "title": {
+      "content": "${card_title}",
+      "tag": "plain_text"
+    }
+  }
+}

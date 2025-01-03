@@ -1,6 +1,8 @@
 package main
 
 import (
+	"github.com/joho/godotenv"
+	"log"
 	"quanta-admin/cmd"
 )
 
@@ -17,5 +19,9 @@ import (
 // @in header
 // @name Authorization
 func main() {
+	// 加载 .env 文件
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found or could not load it")
+	}
 	cmd.Execute()
 }

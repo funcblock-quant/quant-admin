@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"fmt"
+	"quanta-admin/notification/lark"
 	"time"
 )
 
@@ -27,6 +28,7 @@ func (t ExamplesOne) Exec(arg interface{}) error {
 
 	case string:
 		if arg.(string) != "" {
+			//testLarkNotification()
 			fmt.Println("string", arg.(string))
 			fmt.Println(str, arg.(string))
 		} else {
@@ -37,4 +39,10 @@ func (t ExamplesOne) Exec(arg interface{}) error {
 	}
 
 	return nil
+}
+
+func testLarkNotification() {
+	fmt.Println("测试lark通知")
+	notification := lark.NewLarkTextNotification(new(string), "测试")
+	notification.SendNotification()
 }

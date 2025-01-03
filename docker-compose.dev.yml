@@ -14,7 +14,9 @@ services:
     networks:
       - myweb
     environment:
+#      - LARK_WEBHOOK=https://open.larksuite.com/open-apis/bot/v2/hook/d3eec5d3-d60f-46c2-84c5-93a2e4d8a4f3
       - LARK_WEBHOOK=${LARK_WEBHOOK}
+
 networks:
   myweb:
     driver: bridge
