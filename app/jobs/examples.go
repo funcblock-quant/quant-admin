@@ -11,7 +11,8 @@ import (
 // 字典 key 可以配置到 自动任务 调用目标 中；
 func InitJob() {
 	jobList = map[string]JobExec{
-		"ExamplesOne": ExamplesOne{},
+		"ExamplesOne":                 ExamplesOne{},
+		"MonitorArbitrageOpportunity": MonitorArbitrageOpportunity{}, //监控套利机会定时任务
 		// ...
 	}
 }
@@ -45,4 +46,15 @@ func testLarkNotification() {
 	fmt.Println("测试lark通知")
 	notification := lark.NewLarkTextNotification(new(string), "测试")
 	notification.SendNotification()
+}
+
+// MonitorArbitrageOpportunity
+type MonitorArbitrageOpportunity struct {
+}
+
+func (t MonitorArbitrageOpportunity) Exec(arg interface{}) error {
+	str := time.Now().Format(timeFormat) + " [INFO] JobCore MonitorArbitrageOpportunity exec success"
+
+	fmt.Println(str)
+	return nil
 }
