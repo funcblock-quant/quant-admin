@@ -24,4 +24,5 @@ func registerBusExchangeAccountInfoRouter(v1 *gin.RouterGroup, authMiddleware *j
 		r.PUT("/:id", actions.PermissionAction(), api.Update)
 		r.DELETE("", api.Delete)
 	}
+	r = v1.GET("/queryAccountByGroupId/:groupId", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.GetAccountListByGroupId)
 }

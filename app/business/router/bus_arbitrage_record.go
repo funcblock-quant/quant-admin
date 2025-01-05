@@ -24,4 +24,5 @@ func registerArbitrageRecordRouter(v1 *gin.RouterGroup, authMiddleware *jwt.GinJ
 		//r.PUT("/:id", actions.PermissionAction(), api.Update)
 		//r.DELETE("", api.Delete)
 	}
+
 }

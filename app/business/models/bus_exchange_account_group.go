@@ -7,8 +7,8 @@ import (
 type BusExchangeAccountGroup struct {
 	models.Model
 
-	GroupName string `json:"groupName" gorm:"type:varchar(255);comment:交易所账户组"`
-	IsDeleted string `json:"isDeleted" gorm:"type:tinyint;comment:删除标识位"`
+	GroupName   string `json:"groupName" gorm:"type:varchar(255);comment:交易所账户组"`
+	Description string `json:"description" gorm:"type:varchar(255);comment:交易所账户组描述"`
 	models.ModelTime
 	models.ControlBy
 }

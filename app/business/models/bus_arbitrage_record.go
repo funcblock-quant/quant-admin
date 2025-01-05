@@ -13,6 +13,7 @@ type BusArbitrageRecord struct {
 	StrategyInstanceId string `json:"strategyInstanceId" gorm:"type:bigint;comment:套利单所属策略id"`
 	StrategyName       string `json:"strategyName" gorm:"type:varchar(255);comment:策略名称"`
 	Type               string `json:"type" gorm:"type:tinyint;comment:套利类型, 0-模拟盘观测, 1-实盘套利"`
+	Symbol             string `json:"symbol" gorm:"type:varchar(255);comment:交易对"`
 	ContractType       string `json:"contractType" gorm:"type:tinyint;comment:合约类型"`
 	RealizedPnl        string `json:"realizedPnl" gorm:"type:decimal(32,0);comment:已实现盈亏"`
 	UnrealizedPnl      string `json:"unrealizedPnl" gorm:"type:decimal(32,0);comment:未实现盈亏"`

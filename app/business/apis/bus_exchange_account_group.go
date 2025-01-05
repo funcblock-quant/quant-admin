@@ -113,7 +113,6 @@ func (e BusExchangeAccountGroup) Insert(c *gin.Context) {
 	}
 	// 设置创建人
 	req.SetCreateBy(user.GetUserId(c))
-
 	err = s.Insert(&req)
 	if err != nil {
 		e.Error(500, err, fmt.Sprintf("创建账号组设置失败，\r\n失败信息 %s", err.Error()))
@@ -189,4 +188,29 @@ func (e BusExchangeAccountGroup) Delete(c *gin.Context) {
 		return
 	}
 	e.OK(req.GetId(), "删除成功")
+}
+
+func (e BusExchangeAccountGroup) GetAccountGroupListByAccountId(c *gin.Context) {
+	s := service.BusExchangeAccountGroup{}
+	req := dto.BusAccountGroupListGetReq{}
+	err := e.MakeContext(c).
+		MakeOrm().
+		Bind(&req).
+		MakeService(&s.Service).
+		Errors
+	if err != nil {
+		e.Logger.Error(err)
+		e.Error(500, err, err.Error())
+		return
+	}
+
+	p := actions.GetPermissionFromContext(c)
+
+	list := make([]models.BusExchangeAccountGroup, 0)
+	err = s.GetGroupListByAccountId(&req, p, &list)
+	if err != nil {
+		e.Error(500, err, fmt.Sprintf("获取账户绑定账户组失败，\r\n失败信息 %s", err.Error()))
+		return
+	}
+	e.OK(list, "删除成功")
 }

@@ -56,8 +56,7 @@
                     </el-col>
                 </el-row>
 
-                <el-table v-loading="loading" :data="{{.BusinessName}}List" @selection-change="handleSelectionChange">
-                    <el-table-column type="selection" width="55" align="center"/>
+                <el-table v-loading="loading" :data="{{.BusinessName}}List">
                     {{- range .Columns -}}
                         {{- $x := .IsList -}}
                         {{- if (eq $x "1") }}
@@ -102,7 +101,7 @@
                            size="mini"
                            type="text"
                            icon="el-icon-edit"
-                           @click="handleUpdate"
+                           @click="handleUpdate(scope.row)"
                          >修改
                          </el-button>
                          <el-popconfirm

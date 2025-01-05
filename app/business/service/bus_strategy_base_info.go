@@ -87,14 +87,15 @@ func (e *BusStrategyBaseInfo) Insert(c *dto.BusStrategyBaseInfoInsertReq) error 
 		// 为每个配置设置关联主表的ID
 		config.StrategyId = strconv.Itoa(data.Id) // 关联主表ID
 
-		// 将配置数据插入配置表
-		if err := tx.Create(&config).Error; err != nil {
-			tx.Rollback() // 插入配置失败，回滚事务
-			e.Log.Errorf("Error while inserting config: %v", err)
-			return err
-		}
 		configs = append(configs, config)
 	}
+	// 将配置数据插入配置表
+	if err := tx.CreateInBatches(&configs, len(configs)).Error; err != nil {
+		tx.Rollback() // 插入配置失败，回滚事务
+		e.Log.Errorf("Error while inserting config: %v", err)
+		return err
+	}
+
 	// 3. 提交事务
 	err = tx.Commit().Error
 	return err
