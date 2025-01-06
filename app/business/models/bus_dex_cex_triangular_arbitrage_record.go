@@ -1,7 +1,9 @@
 package models
 
 import (
+	"gorm.io/gorm"
 	"quanta-admin/common/models"
+	"quanta-admin/common/utils"
 )
 
 type BusDexCexTriangularArbitrageRecord struct {
@@ -48,4 +50,20 @@ func (e *BusDexCexTriangularArbitrageRecord) Generate() models.ActiveRecord {
 
 func (e *BusDexCexTriangularArbitrageRecord) GetId() interface{} {
 	return e.Id
+}
+
+func (e *BusDexCexTriangularArbitrageRecord) AfterFind(tx *gorm.DB) (err error) {
+	// 假设是金额字段，查询完后进行转换处理
+	e.TokenInAmount = utils.ConvertDecimal(e.TokenInAmount)
+	e.TokenOutAmount = utils.ConvertDecimal(e.TokenOutAmount)
+	e.TxGasAmount = utils.ConvertDecimal(e.TxGasAmount)
+	e.CexQuantityForQuoteToken = utils.ConvertDecimal(e.CexQuantityForQuoteToken)
+	e.CexPriceForQuoteToken = utils.ConvertDecimal(e.CexPriceForQuoteToken)
+	e.CexFeeAmountForQuoteToken = utils.ConvertDecimal(e.CexFeeAmountForQuoteToken)
+	e.CexVolumnForBaseToken = utils.ConvertDecimal(e.CexVolumnForBaseToken)
+	e.CexPriceForBaseToken = utils.ConvertDecimal(e.CexPriceForBaseToken)
+	e.CexFeeAmountForBaseToken = utils.ConvertDecimal(e.CexFeeAmountForBaseToken)
+	e.QuoteTokenProfit = utils.ConvertDecimal(e.QuoteTokenProfit)
+	e.BaseTokenProfit = utils.ConvertDecimal(e.BaseTokenProfit)
+	return
 }

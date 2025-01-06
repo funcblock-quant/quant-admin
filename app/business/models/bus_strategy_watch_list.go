@@ -7,9 +7,8 @@ import (
 type BusStrategyWatchList struct {
 	models.Model
 
-	StrategyInstanceId string `json:"strategyInstanceId" gorm:"type:bigint;comment:策略实例id"`
-	Symbol             string `json:"symbol" gorm:"type:varchar(64);comment:观察币种名称"`
-	IsDeleted          string `json:"isDeleted" gorm:"type:tinyint;comment:删除标识位"`
+	SymbolGroupId string `json:"symbolGroupId" gorm:"type:bigint;comment:币对组id"`
+	Symbol        string `json:"symbol" gorm:"type:varchar(64);comment:观察币种名称"`
 	models.ModelTime
 	models.ControlBy
 }

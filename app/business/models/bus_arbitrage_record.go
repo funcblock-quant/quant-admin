@@ -2,7 +2,9 @@ package models
 
 import (
 	"encoding/json"
+	"gorm.io/gorm"
 	"quanta-admin/common/models"
+	"quanta-admin/common/utils"
 	"time"
 )
 
@@ -61,4 +63,11 @@ func (b BusArbitrageRecord) MarshalJSON() ([]byte, error) {
 		EndTime:   formatTime(b.EndTime),
 		Alias:     (*Alias)(&b),
 	})
+}
+
+func (e *BusArbitrageRecord) AfterFind(tx *gorm.DB) (err error) {
+	e.ExpectPnl = utils.ConvertDecimal(e.ExpectPnl)
+	e.RealizedPnl = utils.ConvertDecimal(e.RealizedPnl)
+	e.UnrealizedPnl = utils.ConvertDecimal(e.UnrealizedPnl)
+	return
 }

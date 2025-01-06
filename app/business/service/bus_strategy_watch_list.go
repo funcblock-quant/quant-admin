@@ -17,7 +17,7 @@ type BusStrategyWatchList struct {
 }
 
 // GetPage 获取BusStrategyWatchList列表
-func (e *BusStrategyWatchList) GetPage(c *dto.BusStrategyWatchListGetPageReq, p *actions.DataPermission, list *[]models.BusStrategyWatchList, count *int64) error {
+func (e *BusStrategyWatchList) GetPage(c *dto.BusStrategyWatchListGetPageReq, p *actions.DataPermission, list *[]dto.BusStrategyWatchListGetPageResp, count *int64) error {
 	var err error
 	var data models.BusStrategyWatchList
 
@@ -27,6 +27,8 @@ func (e *BusStrategyWatchList) GetPage(c *dto.BusStrategyWatchListGetPageReq, p 
 			cDto.Paginate(c.GetPageSize(), c.GetPageIndex()),
 			actions.Permission(data.TableName(), p),
 		).
+		Joins("LEFT JOIN bus_strategy_symbol_group ON bus_strategy_symbol_group.id = bus_strategy_watch_list.symbol_group_id").
+		Select("bus_strategy_watch_list.*, bus_strategy_symbol_group.group_name").
 		Find(list).Limit(-1).Offset(-1).
 		Count(count).Error
 	if err != nil {
@@ -60,6 +62,14 @@ func (e *BusStrategyWatchList) Get(d *dto.BusStrategyWatchListGetReq, p *actions
 // Insert 创建BusStrategyWatchList对象
 func (e *BusStrategyWatchList) Insert(c *dto.BusStrategyWatchListInsertReq) error {
 	var err error
+	var existingData models.BusStrategyWatchList
+	err = e.Orm.Where("symbol_group_id = ? AND symbol = ?", c.SymbolGroupId, c.Symbol).First(&existingData).Error
+	if err == nil {
+		// 已存在同名记录
+		e.Log.Infof("Record already exists with SymbolGroupId: %d and Symbol: %s", c.SymbolGroupId, c.Symbol)
+		return nil // 返回 nil 表示操作成功，不再新增
+	}
+
 	var data models.BusStrategyWatchList
 	c.Generate(&data)
 	err = e.Orm.Create(&data).Error

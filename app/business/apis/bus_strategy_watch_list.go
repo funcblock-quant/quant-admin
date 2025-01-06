@@ -43,7 +43,7 @@ func (e BusStrategyWatchList) GetPage(c *gin.Context) {
 	}
 
 	p := actions.GetPermissionFromContext(c)
-	list := make([]models.BusStrategyWatchList, 0)
+	list := make([]dto.BusStrategyWatchListGetPageResp, 0)
 	var count int64
 
 	err = s.GetPage(&req, p, &list, &count)

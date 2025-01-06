@@ -1,7 +1,9 @@
 package models
 
 import (
+	"gorm.io/gorm"
 	"quanta-admin/common/models"
+	"quanta-admin/common/utils"
 )
 
 type BusSpotOrderRecord struct {
@@ -34,4 +36,10 @@ func (e *BusSpotOrderRecord) Generate() models.ActiveRecord {
 
 func (e *BusSpotOrderRecord) GetId() interface{} {
 	return e.Id
+}
+
+func (e *BusSpotOrderRecord) AfterFind(tx *gorm.DB) (err error) {
+	e.OriginQty = utils.ConvertDecimal(e.OriginQty)
+	e.Fees = utils.ConvertDecimal(e.Fees)
+	return
 }

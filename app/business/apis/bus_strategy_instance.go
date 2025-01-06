@@ -45,7 +45,7 @@ func (e BusStrategyInstance) GetPage(c *gin.Context) {
 	}
 
 	p := actions.GetPermissionFromContext(c)
-	list := make([]models.BusStrategyInstance, 0)
+	list := make([]dto.BusStrategyInstanceGetPageResp, 0)
 	var count int64
 
 	err = s.GetPage(&req, p, &list, &count)
@@ -191,4 +191,36 @@ func (e BusStrategyInstance) Delete(c *gin.Context) {
 		return
 	}
 	e.OK(req.GetId(), "删除成功")
+}
+
+// QueryInstanceDashboard 查询策略实例dashboard数据
+// @Accept application/json
+// @Product application/json
+// @Param data body dto.BusStrategyInstanceInsertReq true "data"
+// @Success 200 {object} response.Response	"{"code": 200, "message": "添加成功"}"
+// @Router /api/v1/strategy-instance [post]
+// @Security Bearer
+func (e BusStrategyInstance) QueryInstanceDashboard(c *gin.Context) {
+	req := dto.BusStrategyInstanceDashboardGetReq{}
+	s := service.BusStrategyInstance{}
+	err := e.MakeContext(c).
+		MakeOrm().
+		Bind(&req).
+		MakeService(&s.Service).
+		Errors
+	if err != nil {
+		e.Logger.Error(err)
+		e.Error(500, err, err.Error())
+		return
+	}
+	p := actions.GetPermissionFromContext(c)
+	resp := dto.BusStrategyInstanceDashboardGetResp{}
+	err = s.QueryInstanceDashboard(&req, p, &resp)
+
+	if err != nil {
+		e.Error(500, err, fmt.Sprintf("查询策略dashboard失败，\r\n失败信息 %s", err.Error()))
+		return
+	}
+
+	e.OK(resp, "查询成功")
 }
