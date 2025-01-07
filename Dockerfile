@@ -20,7 +20,6 @@ WORKDIR /app
 
 COPY --from=builder /app/quanta-admin /app/quanta-admin
 COPY --from=builder /app/config/settings.yml /app/config/settings.yml
-COPY --from=builder /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 
 EXPOSE 8000
 
