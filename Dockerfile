@@ -8,7 +8,7 @@ RUN apk update --no-cache
 RUN apk add --update gcc g++ libc6-compat
 RUN apk add --no-cache ca-certificates
 RUN apk add --no-cache tzdata
-ENV TZ Asia/Shanghai
+#ENV TZ Asia/Shanghai
 
 COPY ./main /main
 COPY ./config/settings.yml /config/settings.yml

@@ -32,4 +32,4 @@ jobs:
           host: 13.230.153.171
           username: ubuntu
           key: ${{ secrets.DEPLOY_KEY_PROD }}
-          script: cd /data/quanta-verse && docker compose -f docker-compose.production.yml up -d --no-deps --build
+          script: cd /data/quanta-admin && docker compose -f docker-compose.production.yml up -d --no-deps --build
