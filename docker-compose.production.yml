@@ -8,9 +8,9 @@ services:
     ports:
       - 8000:8000
     volumes:
-      - ./config/:/quanta-admin-api/config/
-      - ./static/:/quanta-admin-api/static/
-      - ./temp/:/quanta-admin-api/temp/
+      - ./config/:/quanta-admin/config/
+      - ./static/:/quanta-admin/static/
+      - ./temp/:/quanta-admin/temp/
 #    networks:
 #      - myweb
     environment:
