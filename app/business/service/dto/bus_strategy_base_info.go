@@ -26,7 +26,6 @@ type BusStrategyBaseInfoOrder struct {
 	UpdatedAt        string `form:"updatedAtOrder"  search:"type:order;column:updated_at;table:bus_strategy_base_info"`
 	CreateBy         string `form:"createByOrder"  search:"type:order;column:create_by;table:bus_strategy_base_info"`
 	UpdateBy         string `form:"updateByOrder"  search:"type:order;column:update_by;table:bus_strategy_base_info"`
-	IsDeleted        string `form:"isDeletedOrder"  search:"type:order;column:is_deleted;table:bus_strategy_base_info"`
 	DeletedAt        string `form:"deletedAtOrder"  search:"type:order;column:deleted_at;table:bus_strategy_base_info"`
 }
 
@@ -87,7 +86,6 @@ func (s *BusStrategyBaseInfoUpdateReq) Generate(model *models.BusStrategyBaseInf
 	model.Status = s.Status
 	model.Owner = s.Owner
 	model.UpdateBy = s.UpdateBy // 添加这而，需要记录是被谁更新的
-	model.IsDeleted = s.IsDeleted
 }
 
 func (s *BusStrategyBaseInfoUpdateReq) GetId() interface{} {

@@ -146,7 +146,7 @@ func (s *BusTriangleOrdersRecordGetReq) GetId() interface{} {
 
 // BusTriangleOrdersRecordDeleteReq 功能删除请求参数
 type BusTriangleOrdersRecordDeleteReq struct {
-	Ids []int `json:"ids"`
+	Ids []string `json:"ids"`
 }
 
 func (s *BusTriangleOrdersRecordDeleteReq) GetId() interface{} {

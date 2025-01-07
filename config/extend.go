@@ -12,6 +12,7 @@ var ExtConfig Extend
 type Extend struct {
 	AMap AMap // 这里配置对应配置文件的结构即可
 	Lark LarkConfig
+	Grpc map[string]string `yaml:"grpc"`
 }
 
 type AMap struct {

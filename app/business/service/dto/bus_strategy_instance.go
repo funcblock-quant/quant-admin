@@ -1,6 +1,7 @@
 package dto
 
 import (
+	"strconv"
 	"time"
 
 	"quanta-admin/app/business/models"
@@ -61,22 +62,39 @@ type BusStrategyInstanceGetPageResp struct {
 	Status         string     `json:"status"`
 }
 
+type BusStrategyInstanceGetResp struct {
+	Id             string     `json:"id"`
+	StrategyId     string     `json:"strategyId"`
+	AccountGroupId string     `json:"accountGroupId"`
+	ExchangeId1    string     `json:"exchangeId1"`
+	ExchangeName1  string     `json:"exchange1Name"`
+	Exchange1Type  string     `json:"exchange1Type"`
+	ExchangeId2    string     `json:"exchangeId2"`
+	ExchangeName2  string     `json:"exchange2Name"`
+	Exchange2Type  string     `json:"exchange2Type"`
+	InstanceName   string     `json:"instanceName"`
+	StartRunTime   *time.Time `json:"startRunTime" gorm:"default:NULL"`
+	StopRunTime    *time.Time `json:"stopRunTime" gorm:"default:NULL"`
+	ServerIp       string     `json:"serverIp"`
+	ServerName     string     `json:"serverName"`
+	Status         string     `json:"status"`
+}
+
 type BusStrategyInstanceInsertReq struct {
-	Id             int       `json:"-" comment:""` //
-	StrategyId     string    `json:"strategyId" comment:"策略id"`
-	AccountGroupId string    `json:"accountGroupId" comment:"账户组id"`
-	ExchangeId1    string    `json:"exchangeId1" comment:"交易所id1"`
-	Exchange1Name  string    `json:"exchange1Name" comment:"交易所1名称"`
-	Exchange1Type  string    `json:"exchange1Type" comment:"平台类型"`
-	ExchangeId2    string    `json:"exchangeId2" comment:"交易所id2"`
-	Exchange2Name  string    `json:"exchange2Name" comment:"交易所2名称"`
-	Exchange2Type  string    `json:"exchange2Type" comment:"平台类型"`
-	InstanceName   string    `json:"instanceName" comment:"策略实例名称"`
-	StartRunTime   time.Time `json:"startRunTime" comment:"启动时间"`
-	StopRunTime    time.Time `json:"stopRunTime" comment:"停止时间"`
-	ServerIp       string    `json:"serverIp" comment:"服务器ip"`
-	ServerName     string    `json:"serverName" comment:"服务器用户名"`
-	Status         string    `json:"status" comment:"运行状态"`
+	Id             int    `json:"-" comment:""` //
+	StrategyId     string `json:"strategyId" comment:"策略id"`
+	AccountGroupId string `json:"accountGroupId" comment:"账户组id"`
+	ExchangeId1    string `json:"exchangeId1" comment:"交易所id1"`
+	Exchange1Name  string `json:"exchange1Name" comment:"交易所1名称"`
+	Exchange1Type  string `json:"exchange1Type" comment:"平台类型"`
+	ExchangeId2    string `json:"exchangeId2" comment:"交易所id2"`
+	Exchange2Name  string `json:"exchange2Name" comment:"交易所2名称"`
+	Exchange2Type  string `json:"exchange2Type" comment:"平台类型"`
+	InstanceName   string `json:"instanceName" comment:"策略实例名称"`
+	ServerIp       string `json:"serverIp" comment:"服务器ip"`
+	ServerName     string `json:"serverName" comment:"服务器用户名"`
+	Status         string `json:"status" comment:"运行状态"`
+	Configurations []BusStrategyInstanceConfigInsertReq
 	common.ControlBy
 }
 
@@ -93,8 +111,6 @@ func (s *BusStrategyInstanceInsertReq) Generate(model *models.BusStrategyInstanc
 	model.Exchange2Type = s.Exchange2Type
 	model.ExchangeName2 = s.Exchange2Name
 	model.InstanceName = s.InstanceName
-	model.StartRunTime = s.StartRunTime
-	model.StopRunTime = s.StopRunTime
 	model.ServerIp = s.ServerIp
 	model.ServerName = s.ServerName
 	model.Status = s.Status
@@ -106,28 +122,27 @@ func (s *BusStrategyInstanceInsertReq) GetId() interface{} {
 }
 
 type BusStrategyInstanceUpdateReq struct {
-	Id             int       `uri:"id" comment:""` //
-	StrategyId     string    `json:"strategyId" comment:"策略id"`
-	AccountGroupId string    `json:"accountGroupId" comment:"账户组id"`
-	ExchangeId1    string    `json:"exchangeId1" comment:"交易所id1"`
-	Exchange1Type  string    `json:"exchange1Type" comment:"平台类型"`
-	Exchange1Name  string    `json:"exchange1Name" comment:"交易所1名称"`
-	ExchangeId2    string    `json:"exchangeId2" comment:"交易所id2"`
-	Exchange2Type  string    `json:"exchange2Type" comment:"平台类型"`
-	Exchange2Name  string    `json:"exchange2Name" comment:"交易所2名称"`
-	InstanceName   string    `json:"instanceName" comment:"策略实例名称"`
-	StartRunTime   time.Time `json:"startRunTime" comment:"启动时间"`
-	StopRunTime    time.Time `json:"stopRunTime" comment:"停止时间"`
-	ServerIp       string    `json:"serverIp" comment:"服务器ip"`
-	ServerName     string    `json:"serverName" comment:"服务器用户名"`
-	Status         string    `json:"status" comment:"运行状态"`
-	IsDeleted      string    `json:"isDeleted" comment:"删除标识位"`
+	Id             string `uri:"id" comment:""` //
+	StrategyId     string `json:"strategyId" comment:"策略id"`
+	AccountGroupId string `json:"accountGroupId" comment:"账户组id"`
+	ExchangeId1    string `json:"exchangeId1" comment:"交易所id1"`
+	Exchange1Type  string `json:"exchange1Type" comment:"平台类型"`
+	Exchange1Name  string `json:"exchange1Name" comment:"交易所1名称"`
+	ExchangeId2    string `json:"exchangeId2" comment:"交易所id2"`
+	Exchange2Type  string `json:"exchange2Type" comment:"平台类型"`
+	Exchange2Name  string `json:"exchange2Name" comment:"交易所2名称"`
+	InstanceName   string `json:"instanceName" comment:"策略实例名称"`
+	ServerIp       string `json:"serverIp" comment:"服务器ip"`
+	ServerName     string `json:"serverName" comment:"服务器用户名"`
+	Status         string `json:"status" comment:"运行状态"`
+	IsDeleted      string `json:"isDeleted" comment:"删除标识位"`
 	common.ControlBy
 }
 
 func (s *BusStrategyInstanceUpdateReq) Generate(model *models.BusStrategyInstance) {
-	if s.Id == 0 {
-		model.Model = common.Model{Id: s.Id}
+	if s.Id == "0" {
+		id, _ := strconv.Atoi(s.Id)
+		model.Model = common.Model{Id: id}
 	}
 	model.StrategyId = s.StrategyId
 	model.AccountGroupId = s.AccountGroupId
@@ -138,8 +153,6 @@ func (s *BusStrategyInstanceUpdateReq) Generate(model *models.BusStrategyInstanc
 	model.Exchange2Type = s.Exchange2Type
 	model.ExchangeName2 = s.Exchange2Name
 	model.InstanceName = s.InstanceName
-	model.StartRunTime = s.StartRunTime
-	model.StopRunTime = s.StopRunTime
 	model.ServerIp = s.ServerIp
 	model.ServerName = s.ServerName
 	model.Status = s.Status
@@ -161,7 +174,7 @@ func (s *BusStrategyInstanceGetReq) GetId() interface{} {
 
 // BusStrategyInstanceDeleteReq 功能删除请求参数
 type BusStrategyInstanceDeleteReq struct {
-	Ids []int `json:"ids"`
+	Ids []string `json:"ids"`
 }
 
 func (s *BusStrategyInstanceDeleteReq) GetId() interface{} {

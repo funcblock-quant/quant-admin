@@ -73,7 +73,7 @@ func (e *BusStrategyBaseInfo) Insert(c *dto.BusStrategyBaseInfoInsertReq) error 
 	// 1. 生成主表数据，并插入主表
 	c.Status = strconv.Itoa(1) // 新注册策略默认为“已注册”
 	c.Generate(&data)
-	if err := tx.Create(&data).Error; err != nil {
+	if err = tx.Create(&data).Error; err != nil {
 		tx.Rollback() // 插入主表失败，回滚事务
 		e.Log.Errorf("Error while inserting BusStrategyBaseInfo: %v", err)
 		return err

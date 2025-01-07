@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"quanta-admin/app/grpc"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -56,6 +57,7 @@ func init() {
 	//注册路由 fixme 其他应用的路由，在本目录新建文件放在init方法
 	AppRouters = append(AppRouters, router.InitRouter)
 	AppRouters = append(AppRouters, busRouter.InitRouter)
+
 }
 
 func setup() {
@@ -67,6 +69,7 @@ func setup() {
 		database.Setup,
 		storage.Setup,
 	)
+
 	//注册监听函数
 	queue := sdk.Runtime.GetMemoryQueue("")
 	queue.Register(global.LoginLog, models.SaveLoginLog)
@@ -137,6 +140,15 @@ func run() error {
 	fmt.Printf("-  Local:   http://localhost:%d/swagger/admin/index.html \r\n", config.ApplicationConfig.Port)
 	fmt.Printf("-  Network: %s://%s:%d/swagger/admin/index.html \r\n", "http", pkg.GetLocaHonst(), config.ApplicationConfig.Port)
 	fmt.Printf("%s Enter Control + C Shutdown Server \r\n", pkg.GetCurrentTimeStr())
+
+	//创建grpc连接池
+	go func() {
+		err := grpc.InitGrpcPool()
+		if err != nil {
+			log.Fatal("grpc init failed: ", err)
+		}
+	}()
+
 	// 等待中断信号以优雅地关闭服务器（设置 5 秒的超时时间）
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
@@ -157,7 +169,7 @@ func run() error {
 //var Router runtime.Router
 
 func tip() {
-	usageStr := `欢迎使用 ` + pkg.Green(`go-admin `+global.Version) + ` 可以使用 ` + pkg.Red(`-h`) + ` 查看命令`
+	usageStr := `欢迎使用 ` + pkg.Green(`quanta-admin `+global.Version) + ` 可以使用 ` + pkg.Red(`-h`) + ` 查看命令`
 	fmt.Printf("%s \n\n", usageStr)
 }
 

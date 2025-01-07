@@ -98,7 +98,7 @@ func (s *BusStrategySymbolGroupGetReq) GetId() interface{} {
 
 // BusStrategySymbolGroupDeleteReq 功能删除请求参数
 type BusStrategySymbolGroupDeleteReq struct {
-	Ids []int `json:"ids"`
+	Ids []string `json:"ids"`
 }
 
 func (s *BusStrategySymbolGroupDeleteReq) GetId() interface{} {

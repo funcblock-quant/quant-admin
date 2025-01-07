@@ -7,7 +7,8 @@ import (
 )
 
 type BusStrategyInstanceConfigGetPageReq struct {
-	dto.Pagination `search:"-"`
+	dto.Pagination     `search:"-"`
+	StrategyInstanceId string `form:"strategyInstanceId"  search:"type:exact;column:strategy_instance_id;table:bus_strategy_instance_config" comment:"策略实例id"`
 	BusStrategyInstanceConfigOrder
 }
 

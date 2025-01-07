@@ -2,6 +2,7 @@ package apis
 
 import (
 	"fmt"
+	log "github.com/go-admin-team/go-admin-core/logger"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-admin-team/go-admin-core/sdk/api"
@@ -30,6 +31,7 @@ type BusStrategyInstanceConfig struct {
 func (e BusStrategyInstanceConfig) GetPage(c *gin.Context) {
 	req := dto.BusStrategyInstanceConfigGetPageReq{}
 	s := service.BusStrategyInstanceConfig{}
+	log.Infof("api GetPage, req: %v", req)
 	err := e.MakeContext(c).
 		MakeOrm().
 		Bind(&req).

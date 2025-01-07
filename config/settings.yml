@@ -5,9 +5,9 @@ settings:
     # 服务器ip，默认使用 0.0.0.0
     host: 0.0.0.0
     # 服务名称
-    name: testApp
+    name: quantaAdmin
     # 端口号
-    port: 8000 # 服务端口号
+    port: 8001 # 服务端口号
     readtimeout: 1
     writertimeout: 2
     # 数据权限功能开关
@@ -18,12 +18,12 @@ settings:
     # 日志输出，file：文件，default：命令行，其他：命令行
     stdout: '' #控制台日志，启用后，不输出到文件
     # 日志等级, trace, debug, info, warn, error, fatal
-    level: info
+    level: trace
     # 数据库日志开关
     enableddb: false
   jwt:
     # token 密钥，生产环境时及的修改
-    secret: go-admin
+    secret: ${JWT_SECRET}
     # token 过期时间 单位：秒
     timeout: 3600
   database:
@@ -31,44 +31,49 @@ settings:
     # sqlserver: sqlserver://用户名:密码@地址?database=数据库名
     driver: mysql
     # 数据库连接字符串 mysql 缺省信息 charset=utf8&parseTime=True&loc=Local&timeout=1000ms
-    source: user:password@tcp(127.0.0.1:3306)/dbname?charset=utf8&parseTime=True&loc=Local&timeout=1000ms
-#  databases:
-#    'locaohost:8000':
-#      driver: mysql
-#        # 数据库连接字符串 mysql 缺省信息 charset=utf8&parseTime=True&loc=Local&timeout=1000ms
-#        source: user:password@tcp(127.0.0.1:3306)/dbname?charset=utf8&parseTime=True&loc=Local&timeout=1000ms
-#      registers:
-#        - sources:
-#            - user:password@tcp(127.0.0.1:3306)/dbname?charset=utf8&parseTime=True&loc=Local&timeout=1000ms
+    source: ${DATABASE_USERNAME}:${DATABASE_PASSWORD}@tcp(database-1-instance-1.cdme0soo2w00.ap-northeast-1.rds.amazonaws.com:3306)/quanta_verse?charset=utf8&parseTime=True&loc=Local&timeout=1000ms
+  #  databases:
+  #    'locaohost:8000':
+  #      driver: mysql
+  #        # 数据库连接字符串 mysql 缺省信息 charset=utf8&parseTime=True&loc=Local&timeout=1000ms
+  #        source: user:password@tcp(127.0.0.1:3306)/dbname?charset=utf8&parseTime=True&loc=Local&timeout=1000ms
+  #      registers:
+  #        - sources:
+  #            - user:password@tcp(127.0.0.1:3306)/dbname?charset=utf8&parseTime=True&loc=Local&timeout=1000ms
   gen:
     # 代码生成读取的数据库名称
-    dbname: dbname
+    dbname: quanta_verse
     # 代码生成是使用前端代码存放位置，需要指定到src文件夹，相对路径
-    frontpath: ../go-admin-ui/src
+    frontpath: ../quanta-admin-ui/src
   extend: # 扩展项使用说明
     lark:
       webhook: ${LARK_WEBHOOK}
+    grpc:
+  #      solanaserver: 127.0.0.1:2790
+  #      jupserver: 127.0.0.1:2900
   cache:
-#    redis:
-#      addr: 127.0.0.1:6379
-#      password: xxxxxx
-#      db: 2
+    #    redis:
+    #      addr: 127.0.0.1:6379
+    #      password: xxxxxx
+    #      db: 2
     # key存在即可
-    memory: '' 
+    memory: ''
   queue:
     memory:
       poolSize: 100
-#    redis:
-#      addr: 127.0.0.1:6379
-#      password: xxxxxx
-#      producer:
-#        streamMaxLength: 100
-#        approximateMaxLength: true
-#      consumer:
-#        visibilityTimeout: 60
-#        bufferSize: 100
-#        concurrency: 10
-#        blockingTimeout: 5
-#        reclaimInterval: 1
+  #    redis:
+  #      addr: 127.0.0.1:6379
+  #      password: xxxxxx
+  #      producer:
+  #        streamMaxLength: 100
+  #        approximateMaxLength: true
+  #      consumer:
+  #        visibilityTimeout: 60
+  #        bufferSize: 100
+  #        concurrency: 10
+  #        blockingTimeout: 5
+  #        reclaimInterval: 1
   locker:
     redis:
+
+

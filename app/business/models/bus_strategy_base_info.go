@@ -13,7 +13,6 @@ type BusStrategyBaseInfo struct {
 	Description      string `json:"description" gorm:"type:text;comment:策略描述"`
 	Status           string `json:"status" gorm:"type:tinyint;default:1;comment:策略注册状态"`
 	Owner            string `json:"owner" gorm:"type:varchar(255);comment:策略负责人"`
-	IsDeleted        string `json:"isDeleted" gorm:"type:tinyint;default:0;comment:删除标识位"`
 	models.ModelTime
 	models.ControlBy
 }

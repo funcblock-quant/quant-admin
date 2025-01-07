@@ -1,0 +1,35 @@
+name: Production
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: rsync deployments
+        uses: burnett01/rsync-deployments@4.1
+        with:
+          switches: -avzr --delete
+          path: ./
+          remote_path: /data/quanta-verse
+          remote_host: 13.230.153.171
+          remote_user: ubuntu
+          remote_key: ${{ secrets.DEPLOY_KEY_PROD }}
+      - name: executing remote ssh commands
+        uses: appleboy/ssh-action@master
+        env:
+          DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+          DATABASE_USERNAME: ${{ secrets.DATABASE_USERNAME }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          LARK_WEBHOOK: ${{ secrets.LARK_WEBHOOK}}
+        with:
+          envs: DATABASE_PASSWORD, DATABASE_USERNAME, JWT_SECRET, LARK_WEBHOOK
+          host: 13.230.153.171
+          username: ubuntu
+          key: ${{ secrets.DEPLOY_KEY_PROD }}
+          script: cd /data/quanta-verse && docker compose -f docker-compose.production.yml up -d --no-deps --build

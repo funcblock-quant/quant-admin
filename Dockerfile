@@ -11,7 +11,7 @@ RUN apk add --no-cache tzdata
 ENV TZ Asia/Shanghai
 
 COPY ./main /main
-COPY ./config/settings.dev.yml /config/settings.yml
+COPY ./config/settings.yml /config/settings.yml
 EXPOSE 8000
 RUN  chmod +x /main
 CMD ["/main","server","-c", "/config/settings.yml"]

@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"strconv"
 
 	"github.com/go-admin-team/go-admin-core/sdk/service"
 	"gorm.io/gorm"
@@ -39,7 +40,7 @@ func (e *BusStrategyInstance) GetPage(c *dto.BusStrategyInstanceGetPageReq, p *a
 }
 
 // Get 获取BusStrategyInstance对象
-func (e *BusStrategyInstance) Get(d *dto.BusStrategyInstanceGetReq, p *actions.DataPermission, model *models.BusStrategyInstance) error {
+func (e *BusStrategyInstance) Get(d *dto.BusStrategyInstanceGetReq, p *actions.DataPermission, model *dto.BusStrategyInstanceGetResp) error {
 	var data models.BusStrategyInstance
 
 	err := e.Orm.Model(&data).
@@ -63,23 +64,52 @@ func (e *BusStrategyInstance) Get(d *dto.BusStrategyInstanceGetReq, p *actions.D
 func (e *BusStrategyInstance) Insert(c *dto.BusStrategyInstanceInsertReq) error {
 	var err error
 	var data models.BusStrategyInstance
+	var instanceConfigs = make([]models.BusStrategyInstanceConfig, 0, len(c.Configurations))
+	// 启动事务
+	tx := e.Orm.Begin()
+	if tx.Error != nil {
+		return tx.Error
+	}
+
 	c.Generate(&data)
-	err = e.Orm.Create(&data).Error
-	if err != nil {
-		e.Log.Errorf("BusStrategyInstanceService Insert error:%s \r\n", err)
+	if err = tx.Create(&data).Error; err != nil {
+		tx.Rollback() // 插入主表失败，回滚事务
+		e.Log.Errorf("Error while inserting BusStrategyInstance: %v", err)
 		return err
 	}
-	return nil
+
+	// 2. 保存配置表数据，每个配置项需要关联主表的 ID
+	for _, configReq := range c.Configurations {
+		var config models.BusStrategyInstanceConfig
+		configReq.Generate(&config)
+
+		// 为每个配置设置关联主表的ID
+		config.StrategyInstanceId = strconv.Itoa(data.Id) // 关联主表ID
+		instanceConfigs = append(instanceConfigs, config)
+	}
+
+	// 将配置数据插入配置表
+	if err = tx.CreateInBatches(&instanceConfigs, len(instanceConfigs)).Error; err != nil {
+		tx.Rollback() // 插入配置失败，回滚事务
+		e.Log.Errorf("Error while inserting instance config: %v", err)
+		return err
+	}
+
+	// 3. 提交事务
+	err = tx.Commit().Error
+	return err
 }
 
 // Update 修改BusStrategyInstance对象
 func (e *BusStrategyInstance) Update(c *dto.BusStrategyInstanceUpdateReq, p *actions.DataPermission) error {
 	var err error
 	var data = models.BusStrategyInstance{}
+	e.Log.Infof("c:%+v ", *c)
 	e.Orm.Scopes(
 		actions.Permission(data.TableName(), p),
 	).First(&data, c.GetId())
 	c.Generate(&data)
+	e.Log.Infof("data:%+v ", data)
 
 	db := e.Orm.Save(&data)
 	if err = db.Error; err != nil {

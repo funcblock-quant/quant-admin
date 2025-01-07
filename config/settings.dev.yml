@@ -23,7 +23,7 @@ settings:
     enableddb: false
   jwt:
     # token 密钥，生产环境时及的修改
-    secret: go-admin
+    secret: quanta-admin
     # token 过期时间 单位：秒
     timeout: 3600
   database:
@@ -49,6 +49,9 @@ settings:
     lark:
 #      webhook: https://open.larksuite.com/open-apis/bot/v2/hook/d3eec5d3-d60f-46c2-84c5-93a2e4d8a4f3
       webhook: ${LARK_WEBHOOK}
+    grpc:
+#      solanaserver: 127.0.0.1:2790
+#      jupserver: 127.0.0.1:2900
   cache:
 #    redis:
 #      addr: 127.0.0.1:6379
