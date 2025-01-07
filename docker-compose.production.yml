@@ -2,7 +2,6 @@ version: '3.8'
 services:
   quanta-admin-api:
     container_name: quanta-admin
-    image: quanta-admin:latest
     privileged: true
     restart: always
     ports:
@@ -15,6 +14,9 @@ services:
 #      - myweb
     environment:
       - LARK_WEBHOOK=${LARK_WEBHOOK}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+      - DATABASE_USERNAME=${DATABASE_USERNAME}
+      - JWT_SECRET=${JWT_SECRET}
 
 #networks:
 #  myweb:

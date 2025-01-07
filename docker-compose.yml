@@ -2,19 +2,21 @@ version: '3.8'
 services:
   quanta-admin-api:
     container_name: quanta-admin
-    image: quanta-admin:latest
     privileged: true
     restart: always
     ports:
       - 8000:8000
     volumes:
-      - ./config/:/quanta-admin-api/config/
-      - ./static/:/quanta-admin-api/static/
-      - ./temp/:/quanta-admin-api/temp/
+      - ./config/:/quanta-admin/config/
+      - ./static/:/quanta-admin/static/
+      - ./temp/:/quanta-admin/temp/
     networks:
       - myweb
     environment:
       - LARK_WEBHOOK=${LARK_WEBHOOK}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+      - DATABASE_USERNAME=${DATABASE_USERNAME}
+      - JWT_SECRET=${JWT_SECRET}
 networks:
   myweb:
     driver: bridge
