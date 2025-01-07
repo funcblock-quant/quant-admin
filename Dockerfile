@@ -8,8 +8,8 @@ WORKDIR /app
 RUN apk update && apk add tzdata
 
 COPY go.mod ./
-RUN go mod tidy # 整理依赖
-RUN go mod download # 下载依赖
+RUN go mod tidy
+COPY go.sum ./
 COPY . .
 
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -a -installsuffix cgo -o quanta-admin .
