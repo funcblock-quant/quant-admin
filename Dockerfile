@@ -7,7 +7,7 @@ WORKDIR /app
 #RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 RUN apk update && apk add tzdata
 
-COPY go.mod go.sum ./
+COPY go.mod ./
 RUN go mod tidy # 整理依赖
 RUN go mod download # 下载依赖
 COPY . .
