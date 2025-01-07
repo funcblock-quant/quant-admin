@@ -1,6 +1,7 @@
 version: '3.8'
 services:
   quanta-admin-api:
+    build: .
     container_name: quanta-admin
     privileged: true
     restart: always
