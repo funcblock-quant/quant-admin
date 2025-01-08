@@ -232,9 +232,41 @@ func (e *SysMenu) SetLabel() (m []dto.MenuLabel, err error) {
 		e := dto.MenuLabel{}
 		e.Id = list[i].MenuId
 		e.Label = list[i].Title
+		deptsInfo := menuLabelCall(&list, e)
+
+		m = append(m, deptsInfo)
 
 	}
 	return
+}
+
+// menuLabelCall 递归构造组织数据
+func menuLabelCall(eList *[]models.SysMenu, dept dto.MenuLabel) dto.MenuLabel {
+	list := *eList
+
+	min := make([]dto.MenuLabel, 0)
+	for j := 0; j < len(list); j++ {
+
+		if dept.Id != list[j].ParentId {
+			continue
+		}
+		mi := dto.MenuLabel{}
+		mi.Id = list[j].MenuId
+		mi.Label = list[j].Title
+		mi.Children = []dto.MenuLabel{}
+		if list[j].MenuType != "F" {
+			ms := menuLabelCall(eList, mi)
+			min = append(min, ms)
+		} else {
+			min = append(min, mi)
+		}
+	}
+	if len(min) > 0 {
+		dept.Children = min
+	} else {
+		dept.Children = nil
+	}
+	return dept
 }
 
 // GetSysMenuByRoleName 左侧菜单
