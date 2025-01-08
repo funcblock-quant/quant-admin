@@ -117,6 +117,10 @@ func (e *BusDexCexTriangularArbitrageRecord) QueryArbitrageOpportunityList(d *dt
 	var instance = models.BusStrategyInstance{}
 	err = e.Orm.Model(&models.BusStrategyInstance{}).First(&instance, isntanceId).Error
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			e.Log.Info("no record found")
+			return nil
+		}
 		e.Log.Errorf("QueryArbitrageOpportunityList Query error:%s \r\n", err)
 		return err
 	}
