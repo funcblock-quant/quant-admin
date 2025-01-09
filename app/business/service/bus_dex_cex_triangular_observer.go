@@ -45,8 +45,8 @@ func (e *BusDexCexTriangularObserver) GetPage(c *dto.BusDexCexTriangularObserver
 			continue
 		}
 		e.Log.Infof("成功获取监视器state， state:%v [baseProfit- %f, quoteProfit %f] \r\n", *state, *state.BaseProfit, *state.QuoteProfit)
-		(*list)[i].BaseProfit = strconv.FormatFloat(*state.BaseProfit, 'f', -1, 64)   // 修改原始元素
-		(*list)[i].QuoteProfit = strconv.FormatFloat(*state.QuoteProfit, 'f', -1, 64) // 修改原始元素
+		(*list)[i].BaseProfit = strconv.FormatFloat(*state.BaseProfit, 'f', 6, 64)   // 修改原始元素
+		(*list)[i].QuoteProfit = strconv.FormatFloat(*state.QuoteProfit, 'f', 6, 64) // 修改原始元素
 	}
 
 	return nil
@@ -173,6 +173,8 @@ func (e *BusDexCexTriangularObserver) Remove(d *dto.BusDexCexTriangularObserverD
 		e.Log.Errorf("暂停监视器失败 error:%s \r\n", err)
 		return err
 	}
+
+	e.Log.Infof("grpc请求暂停监视器成功")
 
 	db := e.Orm.Model(&data).
 		Scopes(
