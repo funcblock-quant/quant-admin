@@ -1,6 +1,6 @@
 // proto/observe_service.proto
 syntax = "proto2";
-package proto;
+package grpc_service;
 option go_package = "./stub;observe_service";
 
 import "google/protobuf/empty.proto";
