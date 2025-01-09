@@ -1,11 +1,10 @@
-package grpc
+package pool
 
 import (
 	"context"
 	"fmt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/status"
-	"quanta-admin/app/grpc/pool"
 	ext "quanta-admin/config"
 	"sync"
 	"time"
@@ -23,7 +22,7 @@ func InitGrpcPool() error {
 
 	fmt.Printf("start init grpc pool with config: %+v\n", ext.ExtConfig.Grpc)
 
-	tempPools := make(map[string]*pool.Pool) // 使用临时 map 存储连接池
+	tempPools := make(map[string]*Pool) // 使用临时 map 存储连接池
 
 	for serviceName, address := range ext.ExtConfig.Grpc {
 		fmt.Printf("start init grpc pool for server: %s with address %s\n", serviceName, address)
@@ -46,7 +45,7 @@ func InitGrpcPool() error {
 			return conn, nil
 		}
 
-		p, err := pool.NewWithContext(context.Background(), factory, 2, 5, time.Second*10)
+		p, err := NewWithContext(context.Background(), factory, 2, 5, time.Second*10)
 		if err != nil {
 			return fmt.Errorf("create pool for %s failed: %v", serviceName, err) // 返回错误
 		}
@@ -73,7 +72,7 @@ func InitGrpcPool() error {
 }
 
 // GetGrpcClient 根据服务名获取 gRPC 客户端连接
-func GetGrpcClient(serviceName string) (*pool.ClientConn, error) {
+func GetGrpcClient(serviceName string) (*ClientConn, error) {
 	p, ok := grpcPools.pools.Load(serviceName)
 	if !ok {
 		return nil, fmt.Errorf("gRPC client pool for %s not found", serviceName)
@@ -82,7 +81,7 @@ func GetGrpcClient(serviceName string) (*pool.ClientConn, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
-	client, err := p.(*pool.Pool).Get(ctx)
+	client, err := p.(*Pool).Get(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("get grpc client from pool for %s failed: %w", serviceName, err)
 	}
@@ -92,7 +91,7 @@ func GetGrpcClient(serviceName string) (*pool.ClientConn, error) {
 // CloseGrpcClients 关闭所有 gRPC 客户端连接池
 func CloseGrpcClients() {
 	grpcPools.pools.Range(func(key, value interface{}) bool {
-		if p, ok := value.(*pool.Pool); ok {
+		if p, ok := value.(*Pool); ok {
 			p.Close()
 		}
 		return true
