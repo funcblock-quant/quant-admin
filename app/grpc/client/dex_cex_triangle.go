@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"quanta-admin/app/grpc/pool"
-	pb "quanta-admin/app/grpc/proto/stub"
+	pb "quanta-admin/app/grpc/proto/observe_service"
 	"time"
 )
 
