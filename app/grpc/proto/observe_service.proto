@@ -1,0 +1,73 @@
+// proto/observe_service.proto
+syntax = "proto2";
+package proto;
+option go_package = "./stub;observe_service";
+
+import "google/protobuf/empty.proto";
+
+// Define the service
+service Observer {
+  rpc StartObserver (StartRequest) returns (StartResponse);
+  rpc StopObserver (StopRequest) returns (google.protobuf.Empty);
+  rpc ListObservers (google.protobuf.Empty) returns (ListResponse);
+  rpc GetObserverState (GetStateRequest) returns (GetStateResponse);
+}
+
+// Message definitions
+message StartRequest {
+  required AmberConfig amber_config = 1;
+  required AmmDexConfig amm_dex_config = 2;
+  required ArbitrageConfig arbitrage_config = 3;
+}
+
+message StartResponse {
+  required string instance_id = 1;
+}
+
+message StopRequest {
+  required string instance_id = 1;
+}
+
+message ListRequest {
+  required string instance_id = 1;
+}
+
+message ListResponse {
+  repeated string instance_ids = 1;
+}
+
+message GetStateRequest {
+  required string instance_id = 1;
+}
+
+message GetStateResponse {
+  required int64 timestamp = 1;
+  required double base_profit = 2;
+  required double quote_profit = 3;
+}
+
+message AmberConfig {
+  required string exchange_type = 1; // Binance
+  required AmberOrderBookConfig base_token_orderbook = 2;
+  required AmberOrderBookConfig quote_token_orderbook = 3;
+  required double taker_fee = 4; // 0.00023
+}
+
+message AmmDexConfig {
+  required string amm_pool = 1; // 4AZRPNEfCJ7iw28rJu5aUyeQhYcvdcNm8cswyL51AY9i
+  required string base_token_mint = 2; // 2qEHjDLDLbuBgRYvsxhc5D6uDWAivNFZGan56P1tpump
+  required string quote_token_mint = 3; // So11111111111111111111111111111111111111112
+  required uint32 base_token_decimals = 4; // 6
+  required uint32 quote_token_decimals = 5; // 9
+  required uint64 slippage_bps = 6; // 100
+}
+
+message ArbitrageConfig {
+  required double volumn = 1; // 100.0
+}
+
+message AmberOrderBookConfig {
+  required string symbol = 1; // PNUT/USDT
+  optional int32 ask_depth = 2 [default = 20];
+  optional int32 bid_depth = 3 [default = 20];
+}

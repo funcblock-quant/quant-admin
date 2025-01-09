@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"quanta-admin/app/grpc"
+	"quanta-admin/app/grpc/pool"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -143,7 +143,7 @@ func run() error {
 
 	//创建grpc连接池
 	go func() {
-		err := grpc.InitGrpcPool()
+		err := pool.InitGrpcPool()
 		if err != nil {
 			log.Fatal("grpc init failed: ", err)
 		}

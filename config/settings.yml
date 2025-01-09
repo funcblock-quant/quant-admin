@@ -49,7 +49,7 @@ settings:
     lark:
       webhook: ${LARK_WEBHOOK}
     grpc:
-  #      solanaserver: 127.0.0.1:2790
+        solana-observer: 172.31.47.132:8000
   #      jupserver: 127.0.0.1:2900
   cache:
     #    redis:
