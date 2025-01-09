@@ -137,6 +137,8 @@ func (s *BusDexCexTriangularObserverBatchInsertReq) GenerateAmberConfig(amberCon
 		quoteTokenOrderBook.BidDepth = proto.Int32(int32(depthInt))
 		quoteTokenOrderBook.AskDepth = proto.Int32(int32(depthInt))
 	}
+	amberConfig.BaseTokenOrderbook = &baseTokenOrderBook
+	amberConfig.QuoteTokenOrderbook = &quoteTokenOrderBook
 	return nil
 }
 
