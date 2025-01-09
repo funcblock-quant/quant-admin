@@ -22,10 +22,10 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Observer_StartObserver_FullMethodName    = "/proto.Observer/StartObserver"
-	Observer_StopObserver_FullMethodName     = "/proto.Observer/StopObserver"
-	Observer_ListObservers_FullMethodName    = "/proto.Observer/ListObservers"
-	Observer_GetObserverState_FullMethodName = "/proto.Observer/GetObserverState"
+	Observer_StartObserver_FullMethodName    = "/grpc_service.Observer/StartObserver"
+	Observer_StopObserver_FullMethodName     = "/grpc_service.Observer/StopObserver"
+	Observer_ListObservers_FullMethodName    = "/grpc_service.Observer/ListObservers"
+	Observer_GetObserverState_FullMethodName = "/grpc_service.Observer/GetObserverState"
 )
 
 // ObserverClient is the client API for Observer service.
@@ -198,7 +198,7 @@ func _Observer_GetObserverState_Handler(srv interface{}, ctx context.Context, de
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Observer_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "proto.Observer",
+	ServiceName: "grpc_service.Observer",
 	HandlerType: (*ObserverServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

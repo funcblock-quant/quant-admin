@@ -9,7 +9,7 @@ import (
 	"quanta-admin/app/business/models"
 	"quanta-admin/app/business/service/dto"
 	"quanta-admin/app/grpc/client"
-	pb "quanta-admin/app/grpc/proto/stub"
+	pb "quanta-admin/app/grpc/proto/observe_service"
 	"quanta-admin/common/actions"
 	cDto "quanta-admin/common/dto"
 )
