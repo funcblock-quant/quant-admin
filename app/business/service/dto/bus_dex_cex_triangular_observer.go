@@ -79,6 +79,7 @@ func (s *BusDexCexTriangularObserverBatchInsertReq) Generate(model *models.BusDe
 	model.StrategyInstanceId = "1" //default 1
 	model.ObserverId = observerId
 	model.Symbol = symbol
+	model.ExchangeType = s.ExchangeType
 	model.Volume = s.Volume
 	model.TakerFee = s.TakerFee
 	model.BaseTokenMint = s.BaseTokenMint
