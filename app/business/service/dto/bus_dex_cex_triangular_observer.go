@@ -106,6 +106,7 @@ func (s *BusDexCexTriangularObserverBatchInsertReq) GenerateAmmConfig(ammConfig 
 	ammConfig.QuoteTokenDecimals = proto.Uint32(uint32(quoteTokenDecimalInt))
 	slippageBpsUint, err := strconv.ParseUint(*s.SlippageBps, 10, 32)
 	if err != nil {
+		log.Errorf("slippageBps: %v\n", slippageBpsUint)
 		return errors.New("error slippageBps")
 	}
 	log.Infof("slippageBps: %v\n", slippageBpsUint)
