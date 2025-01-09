@@ -58,6 +58,8 @@ func InitGrpcPool() error {
 		grpcPools.pools.Store(k, v)
 	}
 
+	fmt.Printf("grpc pools %v\n", grpcPools.pools)
+
 	//健康检查
 	for serviceName, p := range tempPools {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
@@ -85,6 +87,7 @@ func GetGrpcClient(serviceName string) (*ClientConn, error) {
 	if err != nil {
 		return nil, fmt.Errorf("get grpc client from pool for %s failed: %w", serviceName, err)
 	}
+	fmt.Printf("get gRPC client %s successfully. client: %v\n", serviceName, *client.ClientConn)
 	return client, nil
 }
 
