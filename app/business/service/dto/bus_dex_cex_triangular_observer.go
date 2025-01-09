@@ -2,7 +2,7 @@ package dto
 
 import (
 	"errors"
-	"fmt"
+	log "github.com/go-admin-team/go-admin-core/logger"
 	"google.golang.org/protobuf/proto"
 	"quanta-admin/app/business/models"
 	pb "quanta-admin/app/grpc/proto/stub"
@@ -108,7 +108,7 @@ func (s *BusDexCexTriangularObserverBatchInsertReq) GenerateAmmConfig(ammConfig 
 	if err != nil {
 		return errors.New("error slippageBps")
 	}
-	fmt.Printf("slippageBps: %v\n", slippageBpsUint)
+	log.Infof("slippageBps: %v\n", slippageBpsUint)
 	ammConfig.SlippageBps = proto.Uint64(slippageBpsUint)
 	return nil
 }

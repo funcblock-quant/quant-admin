@@ -110,6 +110,7 @@ func (e *BusDexCexTriangularObserver) Insert(c *dto.BusDexCexTriangularObserverI
 func (e *BusDexCexTriangularObserver) BatchInsert(c *dto.BusDexCexTriangularObserverBatchInsertReq) error {
 	var data models.BusDexCexTriangularObserver
 	e.Log.Infof("e[BatchInsert], data: %+v", c)
+	e.Log.Infof("e[SlippageBps], data: %s", *c.SlippageBps)
 	symbols := c.Symbols
 	if len(symbols) == 0 {
 		return errors.New("empty symbols")
