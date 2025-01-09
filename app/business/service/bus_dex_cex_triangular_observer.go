@@ -37,16 +37,16 @@ func (e *BusDexCexTriangularObserver) GetPage(c *dto.BusDexCexTriangularObserver
 		return err
 	}
 
-	for _, resp := range *list {
-		observerId := resp.ObserverId
+	for i := range *list { // 使用索引 i
+		observerId := (*list)[i].ObserverId // 使用 (*list)[i] 访问原始元素
 		state, err := client.GetObserverState(observerId)
 		if err != nil {
 			e.Log.Errorf("grpc实时获取观察状态失败， error:%s \r\n", err)
 			continue
 		}
-		e.Log.Infof("成功获取监视器state， state:%v [baseProfit- %d, quoteProfit %d] \r\n", *state, *state.QuoteProfit, *state.QuoteProfit)
-		resp.BaseProfit = strconv.FormatFloat(*state.BaseProfit, 'f', -1, 64)
-		resp.QuoteProfit = strconv.FormatFloat(*state.QuoteProfit, 'f', -1, 64)
+		e.Log.Infof("成功获取监视器state， state:%v [baseProfit- %f, quoteProfit %f] \r\n", *state, *state.BaseProfit, *state.QuoteProfit)
+		(*list)[i].BaseProfit = strconv.FormatFloat(*state.BaseProfit, 'f', -1, 64)   // 修改原始元素
+		(*list)[i].QuoteProfit = strconv.FormatFloat(*state.QuoteProfit, 'f', -1, 64) // 修改原始元素
 	}
 
 	return nil
