@@ -44,6 +44,7 @@ func (e *BusDexCexTriangularObserver) GetPage(c *dto.BusDexCexTriangularObserver
 			e.Log.Errorf("grpc实时获取观察状态失败， error:%s \r\n", err)
 			continue
 		}
+		e.Log.Infof("成功获取监视器state， state:%v [baseProfit- %d, quoteProfit %d] \r\n", *state, *state.QuoteProfit, *state.QuoteProfit)
 		resp.BaseProfit = strconv.FormatFloat(*state.BaseProfit, 'f', -1, 64)
 		resp.QuoteProfit = strconv.FormatFloat(*state.QuoteProfit, 'f', -1, 64)
 	}
