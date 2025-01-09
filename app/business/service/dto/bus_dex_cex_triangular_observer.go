@@ -59,16 +59,16 @@ type BusDexCexTriangularObserverInsertReq struct {
 type BusDexCexTriangularObserverBatchInsertReq struct {
 	StrategyInstanceId string   `json:"strategyInstanceId" comment:"策略id"`
 	ObserverId         string   `json:"observerId" comment:"观察器id"`
-	Symbols            []string `json:"symbol" comment:"观察币种"`
+	Symbols            []string `json:"symbolsArray" comment:"观察币种"`
 	ExchangeType       string   `json:"exchangeType"`
 	Volume             *float64 `json:"volume"`
 	TakerFee           *float64 `json:"takerFee"`
-	AmmPoolId          *string  `json:"ammPoolId"`
+	AmmPoolId          *string  `json:"ammPool"`
 	BaseTokenMint      *string  `json:"baseTokenMint"`
-	BaseTokenDecimal   *string  `json:"baseTokenDecimal"`
+	BaseTokenDecimal   *string  `json:"baseTokenDecimals"`
 	QuoteTokenMint     *string  `json:"quoteTokenMint"`
-	QuoteTokenDecimal  *string  `json:"quoteTokenDecimal"`
-	SlippageBps        *string  `json:"slippageBps"`
+	QuoteTokenDecimal  *string  `json:"quoteTokenDecimals"`
+	SlippageBps        *string  `json:"slippage"`
 	Depth              string   `json:"depth"`
 	Status             string   `json:"status" comment:"状态"`
 	common.ControlBy
