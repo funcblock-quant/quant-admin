@@ -28,8 +28,7 @@ type BusStrategyInstanceOrder struct {
 	InstanceName   string `form:"instanceNameOrder"  search:"type:order;column:instance_name;table:bus_strategy_instance"`
 	StartRunTime   string `form:"startRunTimeOrder"  search:"type:order;column:start_run_time;table:bus_strategy_instance"`
 	StopRunTime    string `form:"stopRunTimeOrder"  search:"type:order;column:stop_run_time;table:bus_strategy_instance"`
-	ServerIp       string `form:"serverIpOrder"  search:"type:order;column:server_ip;table:bus_strategy_instance"`
-	ServerName     string `form:"serverNameOrder"  search:"type:order;column:server_name;table:bus_strategy_instance"`
+	ServerId       string `form:"serverIdOrder"  search:"type:order;column:server_id;table:bus_strategy_instance"`
 	Status         string `form:"statusOrder"  search:"type:order;column:status;table:bus_strategy_instance"`
 	CreateBy       string `form:"createByOrder"  search:"type:order;column:create_by;table:bus_strategy_instance"`
 	UpdateBy       string `form:"updateByOrder"  search:"type:order;column:update_by;table:bus_strategy_instance"`
@@ -57,44 +56,43 @@ type BusStrategyInstanceGetPageResp struct {
 	InstanceName   string     `json:"instanceName"`
 	StartRunTime   *time.Time `json:"startRunTime" gorm:"default:NULL"`
 	StopRunTime    *time.Time `json:"stopRunTime" gorm:"default:NULL"`
-	ServerIp       string     `json:"serverIp"`
-	ServerName     string     `json:"serverName"`
+	ServerId       string     `json:"serverId"`
 	Status         string     `json:"status"`
 }
 
 type BusStrategyInstanceGetResp struct {
-	Id             string     `json:"id"`
-	StrategyId     string     `json:"strategyId"`
-	AccountGroupId string     `json:"accountGroupId"`
-	ExchangeId1    string     `json:"exchangeId1"`
-	ExchangeName1  string     `json:"exchange1Name"`
-	Exchange1Type  string     `json:"exchange1Type"`
-	ExchangeId2    string     `json:"exchangeId2"`
-	ExchangeName2  string     `json:"exchange2Name"`
-	Exchange2Type  string     `json:"exchange2Type"`
-	InstanceName   string     `json:"instanceName"`
-	StartRunTime   *time.Time `json:"startRunTime" gorm:"default:NULL"`
-	StopRunTime    *time.Time `json:"stopRunTime" gorm:"default:NULL"`
-	ServerIp       string     `json:"serverIp"`
-	ServerName     string     `json:"serverName"`
-	Status         string     `json:"status"`
+	Id             string                             `json:"id"`
+	StrategyId     string                             `json:"strategyId"`
+	AccountGroupId string                             `json:"accountGroupId"`
+	ExchangeId1    string                             `json:"exchangeId1"`
+	ExchangeName1  string                             `json:"exchange1Name"`
+	Exchange1Type  string                             `json:"exchange1Type"`
+	ExchangeId2    string                             `json:"exchangeId2"`
+	ExchangeName2  string                             `json:"exchange2Name"`
+	Exchange2Type  string                             `json:"exchange2Type"`
+	InstanceName   string                             `json:"instanceName"`
+	StartRunTime   *time.Time                         `json:"startRunTime" gorm:"default:NULL"`
+	StopRunTime    *time.Time                         `json:"stopRunTime" gorm:"default:NULL"`
+	ServerId       string                             `json:"serverId"`
+	Status         string                             `json:"status"`
+	Configs        []models.BusStrategyInstanceConfig `json:"configs"`
 }
 
 type BusStrategyInstanceInsertReq struct {
-	Id             int    `json:"-" comment:""` //
-	StrategyId     string `json:"strategyId" comment:"策略id"`
-	AccountGroupId string `json:"accountGroupId" comment:"账户组id"`
-	ExchangeId1    string `json:"exchangeId1" comment:"交易所id1"`
-	Exchange1Name  string `json:"exchange1Name" comment:"交易所1名称"`
-	Exchange1Type  string `json:"exchange1Type" comment:"平台类型"`
-	ExchangeId2    string `json:"exchangeId2" comment:"交易所id2"`
-	Exchange2Name  string `json:"exchange2Name" comment:"交易所2名称"`
-	Exchange2Type  string `json:"exchange2Type" comment:"平台类型"`
-	InstanceName   string `json:"instanceName" comment:"策略实例名称"`
-	ServerIp       string `json:"serverIp" comment:"服务器ip"`
-	ServerName     string `json:"serverName" comment:"服务器用户名"`
-	Status         string `json:"status" comment:"运行状态"`
-	Configurations []BusStrategyInstanceConfigInsertReq
+	Id             int                                  `json:"-" comment:""` //
+	StrategyId     string                               `json:"strategyId" comment:"策略id"`
+	AccountGroupId string                               `json:"accountGroupId" comment:"账户组id"`
+	ExchangeId1    string                               `json:"exchangeId1" comment:"交易所id1"`
+	Exchange1Name  string                               `json:"exchange1Name" comment:"交易所1名称"`
+	Exchange1Type  string                               `json:"exchange1Type" comment:"平台类型"`
+	ExchangeId2    string                               `json:"exchangeId2" comment:"交易所id2"`
+	Exchange2Name  string                               `json:"exchange2Name" comment:"交易所2名称"`
+	Exchange2Type  string                               `json:"exchange2Type" comment:"平台类型"`
+	InstanceName   string                               `json:"instanceName" comment:"策略实例名称"`
+	ServerId       string                               `json:"serverId" comment:"服务器id"`
+	ServerName     string                               `json:"serverName" comment:"服务器用户名"`
+	Status         string                               `json:"status" comment:"运行状态"`
+	Configurations []BusStrategyInstanceConfigInsertReq `json:"configurations" comment:""`
 	common.ControlBy
 }
 
@@ -111,8 +109,7 @@ func (s *BusStrategyInstanceInsertReq) Generate(model *models.BusStrategyInstanc
 	model.Exchange2Type = s.Exchange2Type
 	model.ExchangeName2 = s.Exchange2Name
 	model.InstanceName = s.InstanceName
-	model.ServerIp = s.ServerIp
-	model.ServerName = s.ServerName
+	model.ServerId = s.ServerId
 	model.Status = s.Status
 	model.CreateBy = s.CreateBy // 添加这而，需要记录是被谁创建的
 }
@@ -122,20 +119,20 @@ func (s *BusStrategyInstanceInsertReq) GetId() interface{} {
 }
 
 type BusStrategyInstanceUpdateReq struct {
-	Id             string `uri:"id" comment:""` //
-	StrategyId     string `json:"strategyId" comment:"策略id"`
-	AccountGroupId string `json:"accountGroupId" comment:"账户组id"`
-	ExchangeId1    string `json:"exchangeId1" comment:"交易所id1"`
-	Exchange1Type  string `json:"exchange1Type" comment:"平台类型"`
-	Exchange1Name  string `json:"exchange1Name" comment:"交易所1名称"`
-	ExchangeId2    string `json:"exchangeId2" comment:"交易所id2"`
-	Exchange2Type  string `json:"exchange2Type" comment:"平台类型"`
-	Exchange2Name  string `json:"exchange2Name" comment:"交易所2名称"`
-	InstanceName   string `json:"instanceName" comment:"策略实例名称"`
-	ServerIp       string `json:"serverIp" comment:"服务器ip"`
-	ServerName     string `json:"serverName" comment:"服务器用户名"`
-	Status         string `json:"status" comment:"运行状态"`
-	IsDeleted      string `json:"isDeleted" comment:"删除标识位"`
+	Id             string                               `uri:"id" comment:""` //
+	StrategyId     string                               `json:"strategyId" comment:"策略id"`
+	AccountGroupId string                               `json:"accountGroupId" comment:"账户组id"`
+	ExchangeId1    string                               `json:"exchangeId1" comment:"交易所id1"`
+	Exchange1Type  string                               `json:"exchange1Type" comment:"平台类型"`
+	Exchange1Name  string                               `json:"exchange1Name" comment:"交易所1名称"`
+	ExchangeId2    string                               `json:"exchangeId2" comment:"交易所id2"`
+	Exchange2Type  string                               `json:"exchange2Type" comment:"平台类型"`
+	Exchange2Name  string                               `json:"exchange2Name" comment:"交易所2名称"`
+	InstanceName   string                               `json:"instanceName" comment:"策略实例名称"`
+	ServerId       string                               `json:"serverId" comment:"服务器id"`
+	ServerName     string                               `json:"serverName" comment:"服务器用户名"`
+	Status         string                               `json:"status" comment:"运行状态"`
+	Configurations []BusStrategyInstanceConfigInsertReq `json:"configurations" comment:""`
 	common.ControlBy
 }
 
@@ -153,8 +150,7 @@ func (s *BusStrategyInstanceUpdateReq) Generate(model *models.BusStrategyInstanc
 	model.Exchange2Type = s.Exchange2Type
 	model.ExchangeName2 = s.Exchange2Name
 	model.InstanceName = s.InstanceName
-	model.ServerIp = s.ServerIp
-	model.ServerName = s.ServerName
+	model.ServerId = s.ServerId
 	model.Status = s.Status
 	model.UpdateBy = s.UpdateBy // 添加这而，需要记录是被谁更新的
 }
@@ -169,6 +165,24 @@ type BusStrategyInstanceGetReq struct {
 }
 
 func (s *BusStrategyInstanceGetReq) GetId() interface{} {
+	return s.Id
+}
+
+// BusStrategyInstanceStartReq 功能获取请求参数
+type BusStrategyInstanceStartReq struct {
+	Id int `uri:"id"`
+}
+
+func (s *BusStrategyInstanceStartReq) GetId() interface{} {
+	return s.Id
+}
+
+// BusStrategyInstanceStopReq 功能获取请求参数
+type BusStrategyInstanceStopReq struct {
+	Id int `uri:"id"`
+}
+
+func (s *BusStrategyInstanceStopReq) GetId() interface{} {
 	return s.Id
 }
 

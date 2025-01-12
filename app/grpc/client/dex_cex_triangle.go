@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	"quanta-admin/app/grpc/pool"
-	pb "quanta-admin/app/grpc/proto/observe_service"
+	"quanta-admin/app/grpc/proto/client/observe_service"
 	"time"
 )
 
-func StartNewObserver(amberConfig *pb.AmberConfig, ammDexConfig *pb.AmmDexConfig, arbitrageConfig *pb.ArbitrageConfig) (string, error) {
+func StartNewObserver(amberConfig *observe_service.AmberConfig, ammDexConfig *observe_service.AmmDexConfig, arbitrageConfig *observe_service.ArbitrageConfig) (string, error) {
 	// 获取 gRPC 客户端连接
 	clientConn, err := pool.GetGrpcClient("solana-observer")
 	if err != nil {
@@ -17,14 +17,14 @@ func StartNewObserver(amberConfig *pb.AmberConfig, ammDexConfig *pb.AmmDexConfig
 	defer clientConn.Close() // 确保连接在使用后返回连接池
 
 	// 创建 gRPC 客户端实例
-	c := pb.NewObserverClient(clientConn)
+	c := observe_service.NewObserverClient(clientConn)
 
 	// 设置超时 Context
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	// 构造请求消息
-	req := &pb.StartRequest{
+	req := &observe_service.StartRequest{
 		AmberConfig:     amberConfig,
 		AmmDexConfig:    ammDexConfig,
 		ArbitrageConfig: arbitrageConfig,
@@ -51,14 +51,14 @@ func StopObserver(observerID string) (err error) {
 	defer clientConn.Close() // 确保连接在使用后返回连接池
 
 	// 创建 gRPC 客户端实例
-	c := pb.NewObserverClient(clientConn)
+	c := observe_service.NewObserverClient(clientConn)
 
 	// 设置超时 Context
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	// 构造请求消息
-	req := &pb.StopRequest{
+	req := &observe_service.StopRequest{
 		InstanceId: &observerID,
 	}
 
@@ -76,7 +76,7 @@ func ListObservers() {
 
 }
 
-func GetObserverState(observerId string) (*pb.GetStateResponse, error) {
+func GetObserverState(observerId string) (*observe_service.GetStateResponse, error) {
 	// 获取 gRPC 客户端连接
 	clientConn, err := pool.GetGrpcClient("solana-observer")
 	if err != nil {
@@ -85,13 +85,13 @@ func GetObserverState(observerId string) (*pb.GetStateResponse, error) {
 	defer clientConn.Close() // 确保连接在使用后返回连接池
 
 	// 创建 gRPC 客户端实例
-	c := pb.NewObserverClient(clientConn)
+	c := observe_service.NewObserverClient(clientConn)
 
 	// 设置超时 Context
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	req := &pb.GetStateRequest{
+	req := &observe_service.GetStateRequest{
 		InstanceId: &observerId,
 	}
 	resp, err := c.GetObserverState(ctx, req)

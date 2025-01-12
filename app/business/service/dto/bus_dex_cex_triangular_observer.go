@@ -5,7 +5,7 @@ import (
 	log "github.com/go-admin-team/go-admin-core/logger"
 	"google.golang.org/protobuf/proto"
 	"quanta-admin/app/business/models"
-	pb "quanta-admin/app/grpc/proto/observe_service"
+	pb "quanta-admin/app/grpc/proto/client/observe_service"
 	"quanta-admin/common/dto"
 	common "quanta-admin/common/models"
 	"strconv"

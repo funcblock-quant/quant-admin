@@ -4,11 +4,14 @@ import (
 	"context"
 	"fmt"
 	"github.com/pkg/errors"
+	"google.golang.org/grpc"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"quanta-admin/app/grpc/pool"
+	"syscall"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -22,6 +25,8 @@ import (
 	"quanta-admin/app/admin/models"
 	"quanta-admin/app/admin/router"
 	busRouter "quanta-admin/app/business/router"
+	pb "quanta-admin/app/grpc/proto/server/quanta_admin_service"
+	"quanta-admin/app/grpc/server"
 	"quanta-admin/app/jobs"
 	"quanta-admin/common/database"
 	"quanta-admin/common/global"
@@ -119,6 +124,17 @@ func run() error {
 		}
 	}
 
+	// gRPC Server setup
+	grpcServer := grpc.NewServer()
+	// 注册你的 gRPC 服务，如果有多个，需要依次注册。例如：
+	pb.RegisterQuantaAdminServer(grpcServer, &server.QuantaAdminServer{})
+
+	// 获取 gRPC 监听地址，使用单独的端口配置
+	grpcLis, err := net.Listen("tcp", fmt.Sprintf(":%d", config.ApplicationConfig.Port+10000))
+	if err != nil {
+		log.Fatalf("failed to listen for gRPC: %v", err)
+	}
+
 	go func() {
 		// 服务连接
 		if config.SslConfig.Enable {
@@ -131,11 +147,23 @@ func run() error {
 			}
 		}
 	}()
+
+	// 启动 gRPC Server (goroutine)
+	go func() {
+		log.Printf("gRPC server listening at %v", grpcLis.Addr())
+		if err := grpcServer.Serve(grpcLis); err != nil {
+			log.Fatalf("failed to serve gRPC: %v", err)
+		}
+	}()
+
 	fmt.Println(pkg.Red(string(global.LogoContent)))
 	tip()
 	fmt.Println(pkg.Green("Server run at:"))
 	fmt.Printf("-  Local:   %s://localhost:%d/ \r\n", "http", config.ApplicationConfig.Port)
 	fmt.Printf("-  Network: %s://%s:%d/ \r\n", "http", pkg.GetLocaHonst(), config.ApplicationConfig.Port)
+	fmt.Println(pkg.Green("gRPC Server run at:"))
+	fmt.Printf("-  Local:   localhost:%d/ \r\n", config.ApplicationConfig.Port+10000)
+	fmt.Printf("-  Network: %s:%d/ \r\n", pkg.GetLocaHonst(), config.ApplicationConfig.Port+10000)
 	fmt.Println(pkg.Green("Swagger run at:"))
 	fmt.Printf("-  Local:   http://localhost:%d/swagger/admin/index.html \r\n", config.ApplicationConfig.Port)
 	fmt.Printf("-  Network: %s://%s:%d/swagger/admin/index.html \r\n", "http", pkg.GetLocaHonst(), config.ApplicationConfig.Port)
@@ -149,18 +177,24 @@ func run() error {
 		}
 	}()
 
-	// 等待中断信号以优雅地关闭服务器（设置 5 秒的超时时间）
+	// 优雅关闭服务器（重要修改）
 	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt)
-	<-quit
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM) // 添加 syscall.SIGTERM
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+	<-quit
 	fmt.Printf("%s Shutdown Server ... \r\n", pkg.GetCurrentTimeStr())
 
+	// 创建一个 context 用于关闭服务器，设置超时时间
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// 优雅关闭 HTTP server
 	if err := srv.Shutdown(ctx); err != nil {
 		log.Fatal("Server Shutdown:", err)
 	}
+
+	// 优雅关闭 gRPC server
+	grpcServer.GracefulStop() // 使用 GracefulStop 进行优雅关闭
 	log.Println("Server exiting")
 
 	return nil
