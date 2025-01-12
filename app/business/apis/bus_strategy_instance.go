@@ -159,6 +159,74 @@ func (e BusStrategyInstance) Update(c *gin.Context) {
 	e.OK(req.GetId(), "修改成功")
 }
 
+// StartInstance 启动策略实例
+// @Summary 启动策略实例
+// @Description 启动策略实例
+// @Tags 策略实例启动
+// @Accept application/json
+// @Product application/json
+// @Param id path int true "id"
+// @Param data body dto.BusStrategyInstanceStartReq true "body"
+// @Success 200 {object} response.Response	"{"code": 200, "message": "启动成功"}"
+// @Router /api/v1/startStrategyInstance/{id} [put]
+// @Security Bearer
+func (e BusStrategyInstance) StartInstance(c *gin.Context) {
+	req := dto.BusStrategyInstanceStartReq{}
+	s := service.BusStrategyInstance{}
+	err := e.MakeContext(c).
+		MakeOrm().
+		Bind(&req).
+		MakeService(&s.Service).
+		Errors
+	if err != nil {
+		e.Logger.Error(err)
+		e.Error(500, err, err.Error())
+		return
+	}
+	p := actions.GetPermissionFromContext(c)
+
+	err = s.StartInstance(&req, p)
+	if err != nil {
+		e.Error(500, err, fmt.Sprintf("启动策略实例失败，\r\n失败信息 %s", err.Error()))
+		return
+	}
+	e.OK(req.GetId(), "启动成功")
+}
+
+// StopInstance 暂停策略实例
+// @Summary 暂停策略实例
+// @Description 暂停策略实例
+// @Tags 策略实例暂停
+// @Accept application/json
+// @Product application/json
+// @Param id path int true "id"
+// @Param data body dto.BusStrategyInstanceStopReq true "body"
+// @Success 200 {object} response.Response	"{"code": 200, "message": "暂停成功"}"
+// @Router /api/v1/stopStrategyInstance/{id} [put]
+// @Security Bearer
+func (e BusStrategyInstance) StopInstance(c *gin.Context) {
+	req := dto.BusStrategyInstanceStopReq{}
+	s := service.BusStrategyInstance{}
+	err := e.MakeContext(c).
+		MakeOrm().
+		Bind(&req).
+		MakeService(&s.Service).
+		Errors
+	if err != nil {
+		e.Logger.Error(err)
+		e.Error(500, err, err.Error())
+		return
+	}
+	p := actions.GetPermissionFromContext(c)
+
+	err = s.StopInstance(&req, p)
+	if err != nil {
+		e.Error(500, err, fmt.Sprintf("暂停策略实例失败，\r\n失败信息 %s", err.Error()))
+		return
+	}
+	e.OK(req.GetId(), "暂停成功")
+}
+
 // Delete 删除策略实例配置
 // @Summary 删除策略实例配置
 // @Description 删除策略实例配置

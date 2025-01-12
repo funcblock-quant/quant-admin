@@ -24,4 +24,8 @@ func registerBusStrategyInstanceRouter(v1 *gin.RouterGroup, authMiddleware *jwt.
 		r.PUT("/:id", actions.PermissionAction(), api.Update)
 		r.DELETE("", api.Delete)
 	}
+
+	r = v1.PUT("startStrategyInstance/:id", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.StartInstance)
+	r = v1.PUT("stopStrategyInstance/:id", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.StopInstance)
+
 }
