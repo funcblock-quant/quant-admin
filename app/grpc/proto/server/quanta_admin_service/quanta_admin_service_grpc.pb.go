@@ -32,7 +32,7 @@ type QuantaAdminClient interface {
 	// 获取策略实例配置信息
 	GetStrategyInstanceConfig(ctx context.Context, in *CommonGetRequest, opts ...grpc.CallOption) (*GetInstanceConfigResponse, error)
 	// 获取策略启停标志
-	GetStartOrStopFlag(ctx context.Context, in *CommonGetRequest, opts ...grpc.CallOption) (*GetStartOrStopFlagResponse, error)
+	GetStartOrStopFlag(ctx context.Context, in *CommonGetRequest, opts ...grpc.CallOption) (*GetStartOrStopStatusResponse, error)
 }
 
 type quantaAdminClient struct {
@@ -52,8 +52,8 @@ func (c *quantaAdminClient) GetStrategyInstanceConfig(ctx context.Context, in *C
 	return out, nil
 }
 
-func (c *quantaAdminClient) GetStartOrStopFlag(ctx context.Context, in *CommonGetRequest, opts ...grpc.CallOption) (*GetStartOrStopFlagResponse, error) {
-	out := new(GetStartOrStopFlagResponse)
+func (c *quantaAdminClient) GetStartOrStopFlag(ctx context.Context, in *CommonGetRequest, opts ...grpc.CallOption) (*GetStartOrStopStatusResponse, error) {
+	out := new(GetStartOrStopStatusResponse)
 	err := c.cc.Invoke(ctx, QuantaAdmin_GetStartOrStopFlag_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -68,7 +68,7 @@ type QuantaAdminServer interface {
 	// 获取策略实例配置信息
 	GetStrategyInstanceConfig(context.Context, *CommonGetRequest) (*GetInstanceConfigResponse, error)
 	// 获取策略启停标志
-	GetStartOrStopFlag(context.Context, *CommonGetRequest) (*GetStartOrStopFlagResponse, error)
+	GetStartOrStopFlag(context.Context, *CommonGetRequest) (*GetStartOrStopStatusResponse, error)
 	mustEmbedUnimplementedQuantaAdminServer()
 }
 
@@ -79,7 +79,7 @@ type UnimplementedQuantaAdminServer struct {
 func (UnimplementedQuantaAdminServer) GetStrategyInstanceConfig(context.Context, *CommonGetRequest) (*GetInstanceConfigResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetStrategyInstanceConfig not implemented")
 }
-func (UnimplementedQuantaAdminServer) GetStartOrStopFlag(context.Context, *CommonGetRequest) (*GetStartOrStopFlagResponse, error) {
+func (UnimplementedQuantaAdminServer) GetStartOrStopFlag(context.Context, *CommonGetRequest) (*GetStartOrStopStatusResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetStartOrStopFlag not implemented")
 }
 func (UnimplementedQuantaAdminServer) mustEmbedUnimplementedQuantaAdminServer() {}

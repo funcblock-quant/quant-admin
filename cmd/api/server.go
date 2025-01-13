@@ -127,7 +127,7 @@ func run() error {
 	// gRPC Server setup
 	grpcServer := grpc.NewServer()
 	// 注册你的 gRPC 服务，如果有多个，需要依次注册。例如：
-	pb.RegisterQuantaAdminServer(grpcServer, &server.QuantaAdminServer{})
+	pb.RegisterQuantaAdminServer(grpcServer, server.NewQuantaAdminServer())
 
 	// 获取 gRPC 监听地址，使用单独的端口配置
 	grpcLis, err := net.Listen("tcp", fmt.Sprintf(":%d", config.ApplicationConfig.Port+10000))

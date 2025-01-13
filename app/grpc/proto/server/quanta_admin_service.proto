@@ -1,5 +1,5 @@
 // proto/quanta_admin_service.proto
-syntax = "proto2";
+syntax = "proto3";
 package grpc_service;
 option go_package = "./quanta_admin_service;quanta_admin_service";
 
@@ -9,25 +9,26 @@ service QuantaAdmin {
   // 获取策略实例配置信息
   rpc GetStrategyInstanceConfig (CommonGetRequest) returns (GetInstanceConfigResponse);
   // 获取策略启停标志
-  rpc GetStartOrStopFlag (CommonGetRequest) returns (GetStartOrStopFlagResponse);
+  rpc GetStartOrStopFlag (CommonGetRequest) returns (GetStartOrStopStatusResponse);
 }
 
 // Message definitions
 message CommonGetRequest {
-  required string instance_id = 1;
+  string instance_id = 1;
 }
 
+
 message GetInstanceConfigResponse {
-  required string instance_id = 1;
+  string instance_id = 1;
   repeated InstanceConfig configs = 2; //配置信息
 }
 
 message InstanceConfig {
-  required string param_key = 1;
-  required string param_value = 2;
+  string param_key = 1;
+  string param_value = 2;
 }
 
-message GetStartOrStopFlagResponse {
-  required string instance_id = 1;
-  required bool flag  = 2;
+message GetStartOrStopStatusResponse {
+  string instance_id = 1;
+  string status  = 2; // 0-stop，1-start
 }
