@@ -28,6 +28,10 @@ func (m *BusStrategyInstanceConfigGetPageReq) GetNeedSearch() interface{} {
 	return *m
 }
 
+type BusStrategyInstanceConfigGetByInstanceIdReq struct {
+	StrategyInstanceId string
+}
+
 type BusStrategyInstanceConfigInsertReq struct {
 	Id                 int    `json:"-" comment:""` //
 	StrategyInstanceId string `json:"strategyInstanceId" comment:"策略实例id"`
