@@ -47,8 +47,8 @@ func (s *QuantaAdminServer) GetStrategyInstanceConfig(ctx context.Context, req *
 	configs := make([]*pb.InstanceConfig, 0)
 	for _, item := range list {
 		config := pb.InstanceConfig{
-			ParamKey:   item.ParamKey,
-			ParamValue: item.ParamValue,
+			SchemaText: item.SchemaText,
+			SchemaType: item.SchemaType,
 		}
 		configs = append(configs, &config)
 	}

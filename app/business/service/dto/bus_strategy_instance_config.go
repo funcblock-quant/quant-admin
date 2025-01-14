@@ -15,8 +15,8 @@ type BusStrategyInstanceConfigGetPageReq struct {
 type BusStrategyInstanceConfigOrder struct {
 	Id                 string `form:"idOrder"  search:"type:order;column:id;table:bus_strategy_instance_config"`
 	StrategyInstanceId string `form:"strategyInstanceIdOrder"  search:"type:order;column:strategy_instance_id;table:bus_strategy_instance_config"`
-	ParamKey           string `form:"paramKeyOrder"  search:"type:order;column:param_key;table:bus_strategy_instance_config"`
-	ParamValue         string `form:"paramValueOrder"  search:"type:order;column:param_value;table:bus_strategy_instance_config"`
+	SchemaText         string `form:"schemaTextOrder"  search:"type:order;column:schema_text;table:bus_strategy_config_schema"`
+	SchemaType         string `form:"schemaTypeOrder"  search:"type:order;column:schema_type;table:bus_strategy_config_schema"`
 	CreateBy           string `form:"createByOrder"  search:"type:order;column:create_by;table:bus_strategy_instance_config"`
 	UpdateBy           string `form:"updateByOrder"  search:"type:order;column:update_by;table:bus_strategy_instance_config"`
 	CreatedAt          string `form:"createdAtOrder"  search:"type:order;column:created_at;table:bus_strategy_instance_config"`
@@ -35,8 +35,8 @@ type BusStrategyInstanceConfigGetByInstanceIdReq struct {
 type BusStrategyInstanceConfigInsertReq struct {
 	Id                 int    `json:"-" comment:""` //
 	StrategyInstanceId string `json:"strategyInstanceId" comment:"策略实例id"`
-	ParamKey           string `json:"paramKey" comment:"参数的唯一标识"`
-	ParamValue         string `json:"paramValue" comment:"参数值"`
+	SchemaText         string `json:"schemaText" comment:"参数schema"`
+	SchemaType         string `json:"schemaType" comment:"schema类型"`
 	common.ControlBy
 }
 
@@ -45,8 +45,8 @@ func (s *BusStrategyInstanceConfigInsertReq) Generate(model *models.BusStrategyI
 		model.Model = common.Model{Id: s.Id}
 	}
 	model.StrategyInstanceId = s.StrategyInstanceId
-	model.ParamKey = s.ParamKey
-	model.ParamValue = s.ParamValue
+	model.SchemaType = s.SchemaType
+	model.SchemaText = s.SchemaText
 	model.CreateBy = s.CreateBy // 添加这而，需要记录是被谁创建的
 }
 
@@ -57,8 +57,8 @@ func (s *BusStrategyInstanceConfigInsertReq) GetId() interface{} {
 type BusStrategyInstanceConfigUpdateReq struct {
 	Id                 int    `uri:"id" comment:""` //
 	StrategyInstanceId string `json:"strategyInstanceId" comment:"策略实例id"`
-	ParamKey           string `json:"paramKey" comment:"参数的唯一标识"`
-	ParamValue         string `json:"paramValue" comment:"参数值"`
+	SchemaText         string `json:"schemaText" comment:"参数schema"`
+	SchemaType         string `json:"schemaType" comment:"schema类型"`
 	common.ControlBy
 }
 
@@ -67,8 +67,8 @@ func (s *BusStrategyInstanceConfigUpdateReq) Generate(model *models.BusStrategyI
 		model.Model = common.Model{Id: s.Id}
 	}
 	model.StrategyInstanceId = s.StrategyInstanceId
-	model.ParamKey = s.ParamKey
-	model.ParamValue = s.ParamValue
+	model.SchemaType = s.SchemaType
+	model.SchemaText = s.SchemaText
 	model.UpdateBy = s.UpdateBy // 添加这而，需要记录是被谁更新的
 }
 

@@ -28,9 +28,8 @@ func (e *BusStrategyInstance) GetPage(c *dto.BusStrategyInstanceGetPageReq, p *a
 			cDto.MakeCondition(c.GetNeedSearch()),
 			cDto.Paginate(c.GetPageSize(), c.GetPageIndex()),
 			actions.Permission(data.TableName(), p),
-		).Joins("LEFT JOIN bus_strategy_base_info ON bus_strategy_base_info.id = bus_strategy_instance.strategy_id").            // 关联策略表
-		Joins("LEFT JOIN bus_exchange_account_group ON bus_exchange_account_group.id = bus_strategy_instance.account_group_id"). // 关联group表
-		Select("bus_strategy_instance.*, bus_exchange_account_group.group_name, bus_strategy_base_info.strategy_name").
+		).Joins("LEFT JOIN bus_strategy_base_info ON bus_strategy_base_info.id = bus_strategy_instance.strategy_id"). // 关联策略表
+		Select("bus_strategy_instance.*, bus_strategy_base_info.strategy_name").
 		Find(list).Limit(-1).Offset(-1).
 		Count(count).Error
 	if err != nil {
@@ -66,7 +65,9 @@ func (e *BusStrategyInstance) Get(d *dto.BusStrategyInstanceGetReq, p *actions.D
 		return err
 	}
 	e.Log.Infof("configs %+v, 配置数量 %d \n", configs, len(configs))
-	model.Configs = configs
+	if len(configs) > 0 {
+		model.Schema = configs[0]
+	}
 
 	return nil
 }
@@ -75,7 +76,8 @@ func (e *BusStrategyInstance) Get(d *dto.BusStrategyInstanceGetReq, p *actions.D
 func (e *BusStrategyInstance) Insert(c *dto.BusStrategyInstanceInsertReq) error {
 	var err error
 	var data models.BusStrategyInstance
-	var instanceConfigs = make([]models.BusStrategyInstanceConfig, 0, len(c.Configurations))
+	var instanceConfig = models.BusStrategyInstanceConfig{}
+
 	// 启动事务
 	tx := e.Orm.Begin()
 	if tx.Error != nil {
@@ -90,18 +92,11 @@ func (e *BusStrategyInstance) Insert(c *dto.BusStrategyInstanceInsertReq) error 
 	}
 
 	// 2. 保存配置表数据，每个配置项需要关联主表的 ID
-	for _, configReq := range c.Configurations {
-		var config models.BusStrategyInstanceConfig
-		configReq.Generate(&config)
-
-		// 为每个配置设置关联主表的ID
-		config.StrategyInstanceId = strconv.Itoa(data.Id) // 关联主表ID
-		instanceConfigs = append(instanceConfigs, config)
-	}
-
-	// 将配置数据插入配置表
-	if err = tx.CreateInBatches(&instanceConfigs, len(instanceConfigs)).Error; err != nil {
-		tx.Rollback() // 插入配置失败，回滚事务
+	c.Schema.StrategyInstanceId = strconv.Itoa(data.Id)
+	c.Schema.Generate(&instanceConfig)
+	e.Log.Infof("instanceConfig: %+v", instanceConfig)
+	if err := tx.Create(&instanceConfig).Error; err != nil {
+		tx.Rollback()
 		e.Log.Errorf("Error while inserting instance config: %v", err)
 		return err
 	}
@@ -131,7 +126,7 @@ func (e *BusStrategyInstance) Update(c *dto.BusStrategyInstanceUpdateReq, p *act
 	db := tx.Save(&data)
 	if err = db.Error; err != nil {
 		tx.Rollback()
-		e.Log.Errorf("BusStrategyInstanceService Save error:%s \r\n", err)
+		e.Log.Errorf("BusStrategyInstanceService update error:%s \r\n", err)
 		return err
 	}
 	if db.RowsAffected == 0 {
@@ -146,21 +141,16 @@ func (e *BusStrategyInstance) Update(c *dto.BusStrategyInstanceUpdateReq, p *act
 		return err
 	}
 
-	var instanceConfigs = make([]models.BusStrategyInstanceConfig, 0, len(c.Configurations))
-	// 2. 保存配置表数据，每个配置项需要关联主表的 ID
-	for _, configReq := range c.Configurations {
-		var config models.BusStrategyInstanceConfig
-		configReq.Generate(&config)
+	var instanceConfig = models.BusStrategyInstanceConfig{}
+	// 3. 保存配置表数据，每个配置项需要关联主表的 ID
 
-		// 为每个配置设置关联主表的ID
-		config.StrategyInstanceId = strconv.Itoa(data.Id) // 关联主表ID
-		instanceConfigs = append(instanceConfigs, config)
-	}
-
+	c.Schema.StrategyInstanceId = strconv.Itoa(data.Id)
+	c.Schema.Generate(&instanceConfig)
 	// 将配置数据插入配置表
-	if err = tx.CreateInBatches(&instanceConfigs, len(instanceConfigs)).Error; err != nil {
-		tx.Rollback() // 插入配置失败，回滚事务
-		e.Log.Errorf("Error while inserting instance config: %v", err)
+	e.Log.Infof("instanceConfig: %+v", instanceConfig)
+	if err := tx.Create(&instanceConfig).Error; err != nil {
+		tx.Rollback()
+		e.Log.Errorf("Error while update instance config: %v", err)
 		return err
 	}
 

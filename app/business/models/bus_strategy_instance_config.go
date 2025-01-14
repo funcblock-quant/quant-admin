@@ -8,8 +8,8 @@ type BusStrategyInstanceConfig struct {
 	models.Model
 
 	StrategyInstanceId string `json:"strategyInstanceId" gorm:"type:bigint;comment:策略实例id"`
-	ParamKey           string `json:"paramKey" gorm:"type:varchar(64);comment:参数的唯一标识"`
-	ParamValue         string `json:"paramValue" gorm:"type:text;comment:参数值"`
+	SchemaText         string `json:"schemaText" gorm:"type:longtext;comment:参数schema"`
+	SchemaType         string `json:"schemaType" gorm:"type:varchar(16);comment:schema类型"`
 	models.ModelTime
 	models.ControlBy
 }
