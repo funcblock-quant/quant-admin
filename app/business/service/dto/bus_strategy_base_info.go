@@ -42,7 +42,7 @@ type BusStrategyBaseInfoInsertReq struct {
 	Status           string `json:"status" comment:"策略运行状态"`
 	Owner            string `json:"owner" comment:"策略负责人"`
 	common.ControlBy
-	Configurations []BusStrategyConfigDictInsertReq
+	Schema BusStrategyConfigSchemaInsertReq
 }
 
 func (s *BusStrategyBaseInfoInsertReq) Generate(model *models.BusStrategyBaseInfo) {
@@ -72,7 +72,7 @@ type BusStrategyBaseInfoUpdateReq struct {
 	Owner            string `json:"owner" comment:"策略负责人"`
 	IsDeleted        string `json:"isDeleted" comment:"删除标识位"`
 	common.ControlBy
-	Configurations []BusStrategyConfigDictUpdateReq
+	Schema BusStrategyConfigSchemaUpdateReq
 }
 
 func (s *BusStrategyBaseInfoUpdateReq) Generate(model *models.BusStrategyBaseInfo) {

@@ -154,11 +154,11 @@ func (e *BusDexCexTriangularArbitrageRecord) QueryArbitrageOpportunityList(d *dt
 		return err
 	}
 
-	for i := range *list {
-		//封装其他信息
-		(*list)[i].Exchange1 = instance.ExchangeName1
-		(*list)[i].Exchange2 = instance.ExchangeName2
-	}
+	//for i := range *list {
+	//	//封装其他信息
+	//	(*list)[i].Exchange1 = instance.ExchangeName1
+	//	(*list)[i].Exchange2 = instance.ExchangeName2
+	//}
 
 	e.Log.Infof("QueryArbitrageOpportunityList: %v\r\n", list)
 	return err

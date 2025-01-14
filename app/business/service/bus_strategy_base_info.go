@@ -63,7 +63,8 @@ func (e *BusStrategyBaseInfo) Get(d *dto.BusStrategyBaseInfoGetReq, p *actions.D
 func (e *BusStrategyBaseInfo) Insert(c *dto.BusStrategyBaseInfoInsertReq) error {
 	var err error
 	var data models.BusStrategyBaseInfo
-	var configs = make([]models.BusStrategyConfigDict, 0, len(c.Configurations))
+	//var configs = make([]models.BusStrategyConfigDict, 0, len(c.Configurations))
+	configSchema := models.BusStrategyConfigSchema{}
 	// 启动事务
 	tx := e.Orm.Begin()
 	if tx.Error != nil {
@@ -80,21 +81,28 @@ func (e *BusStrategyBaseInfo) Insert(c *dto.BusStrategyBaseInfoInsertReq) error 
 	}
 
 	// 2. 保存配置表数据，每个配置项需要关联主表的 ID
-	for _, configReq := range c.Configurations {
-		var config models.BusStrategyConfigDict
-		configReq.Generate(&config)
-
-		// 为每个配置设置关联主表的ID
-		config.StrategyId = strconv.Itoa(data.Id) // 关联主表ID
-
-		configs = append(configs, config)
-	}
-	// 将配置数据插入配置表
-	if err := tx.CreateInBatches(&configs, len(configs)).Error; err != nil {
+	c.Schema.StrategyId = strconv.Itoa(data.Id)
+	c.Schema.Generate(&configSchema)
+	if err := tx.Create(&configSchema).Error; err != nil {
 		tx.Rollback() // 插入配置失败，回滚事务
 		e.Log.Errorf("Error while inserting config: %v", err)
 		return err
 	}
+	//for _, configReq := range c.Configurations {
+	//	var config models.BusStrategyConfigDict
+	//	configReq.Generate(&config)
+	//
+	//	// 为每个配置设置关联主表的ID
+	//	config.StrategyId = strconv.Itoa(data.Id) // 关联主表ID
+	//
+	//	configs = append(configs, config)
+	//}
+	//// 将配置数据插入配置表
+	//if err := tx.CreateInBatches(&configs, len(configs)).Error; err != nil {
+	//	tx.Rollback() // 插入配置失败，回滚事务
+	//	e.Log.Errorf("Error while inserting config: %v", err)
+	//	return err
+	//}
 
 	// 3. 提交事务
 	err = tx.Commit().Error
@@ -105,7 +113,7 @@ func (e *BusStrategyBaseInfo) Insert(c *dto.BusStrategyBaseInfoInsertReq) error 
 func (e *BusStrategyBaseInfo) Update(c *dto.BusStrategyBaseInfoUpdateReq, p *actions.DataPermission) error {
 	var err error
 	var data = models.BusStrategyBaseInfo{}
-	var configs = make([]models.BusStrategyConfigDict, 0, len(c.Configurations))
+	configSchema := models.BusStrategyConfigSchema{}
 
 	// 启动事务
 	tx := e.Orm.Begin()
@@ -131,27 +139,19 @@ func (e *BusStrategyBaseInfo) Update(c *dto.BusStrategyBaseInfoUpdateReq, p *act
 
 	// 2. 删除旧的配置数据
 	log.Infof("strategy_id: %d", data.Id)
-	if err := tx.Where("strategy_id = ?", data.Id).Delete(&models.BusStrategyConfigDict{}).Error; err != nil {
+	if err := tx.Where("strategy_id = ?", data.Id).Delete(&models.BusStrategyConfigSchema{}).Error; err != nil {
 		tx.Rollback()
 		e.Log.Errorf("Error deleting old configurations: %v", err)
 		return err
 	}
 
 	// 3. 插入新的配置数据
-	for _, configReq := range c.Configurations {
-		var config models.BusStrategyConfigDict
-		configReq.Generate(&config)
-
-		// 关联主表 ID
-		config.StrategyId = strconv.Itoa(data.Id)
-
-		// 插入配置数据
-		if err := tx.Create(&config).Error; err != nil {
-			tx.Rollback()
-			e.Log.Errorf("Error inserting new config: %v", err)
-			return err
-		}
-		configs = append(configs, config)
+	c.Schema.StrategyId = strconv.Itoa(data.Id)
+	c.Schema.Generate(&configSchema)
+	if err := tx.Create(&configSchema).Error; err != nil {
+		tx.Rollback() // 插入配置失败，回滚事务
+		e.Log.Errorf("Error while inserting config: %v", err)
+		return err
 	}
 
 	// 4. 提交事务

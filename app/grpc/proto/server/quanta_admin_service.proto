@@ -24,8 +24,8 @@ message GetInstanceConfigResponse {
 }
 
 message InstanceConfig {
-  string param_key = 1;
-  string param_value = 2;
+  string schema_text = 1;
+  string schema_type = 2;
 }
 
 message GetStartOrStopStatusResponse {
