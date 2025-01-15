@@ -76,6 +76,21 @@ func InitGrpcPool() error {
 
 // GetGrpcClient 根据服务名获取 gRPC 客户端连接
 func GetGrpcClient(serviceName string) (*ClientConn, error) {
+	for serverName, _ := range ext.ExtConfig.Grpc {
+		value, ok := grpcPools.pools.Load(serverName)
+		if !ok {
+			return nil, fmt.Errorf("gRPC client pool for %s not found", serverName)
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+		defer cancel()
+		client, err := value.(*Pool).Get(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("get grpc client from pool for %s failed: %w", serviceName, err)
+		}
+		fmt.Printf("gRPC client pool for %s - %v\n", serverName, client)
+
+	}
+
 	p, ok := grpcPools.pools.Load(serviceName)
 	if !ok {
 		return nil, fmt.Errorf("gRPC client pool for %s not found", serviceName)
