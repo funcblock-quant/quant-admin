@@ -80,7 +80,7 @@ func GetGrpcClient(serviceName string) (*ClientConn, error) {
 	if !ok {
 		return nil, fmt.Errorf("gRPC client pool for %s not found", serviceName)
 	}
-
+	fmt.Printf("Loaded pool for service: %s, Address: %v\n", serviceName, p)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
