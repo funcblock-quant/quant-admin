@@ -34,7 +34,7 @@ message StopInstanceRequest {
 }
 
 message InstanceListResponse {
-  string instance_ids = 1;
+  repeated string instance_ids = 1;
 }
 
 message GetRealtimeInfoRequest {
