@@ -31,17 +31,20 @@ func InitGrpcPool() error {
 			dialCtx, cancel := context.WithTimeout(ctx, 5*time.Second) // 设置连接超时
 			defer cancel()
 
-			fmt.Printf("dialing to %s with context deadline\n", address)
+			serviceCopy := serviceName
+			addressCopy := address
 
-			conn, err := grpc.DialContext(dialCtx, address, grpc.WithInsecure(), grpc.WithBlock()) // 使用 grpc.DialContext
+			fmt.Printf("dialing to %s with context deadline\n", addressCopy)
+
+			conn, err := grpc.DialContext(dialCtx, addressCopy, grpc.WithInsecure(), grpc.WithBlock()) // 使用 grpc.DialContext
 			if err != nil {
-				fmt.Printf("dialing to %s failed: %v, error type: %T, detail: %+v\n", address, err, err, err)
+				fmt.Printf("dialing to %s failed: %v, error type: %T, detail: %+v\n", addressCopy, err, err, err)
 				if st, ok := status.FromError(err); ok {
 					fmt.Printf("gRPC error code: %v, message: %v, details: %+v\n", st.Code(), st.Message(), st.Details())
 				}
-				return nil, fmt.Errorf("connect to %s(%s) failed: %w", serviceName, address, err)
+				return nil, fmt.Errorf("connect to %s(%s) failed: %w", serviceCopy, addressCopy, err)
 			}
-			fmt.Printf("dialed to %s successfully\n", address)
+			fmt.Printf("dialed to %s successfully\n", addressCopy)
 			return conn, nil
 		}
 
@@ -81,6 +84,7 @@ func GetGrpcClient(serviceName string) (*ClientConn, error) {
 		if !ok {
 			return nil, fmt.Errorf("gRPC client pool for %s not found", serverName)
 		}
+		fmt.Printf("Loaded pool for service: %s, Address: %v\n", serviceName, value)
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 		defer cancel()
 		client, err := value.(*Pool).Get(ctx)

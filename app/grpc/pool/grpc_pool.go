@@ -152,6 +152,7 @@ func (p *Pool) IsClosed() bool {
 // A timeout of 0 is an indefinite wait
 func (p *Pool) Get(ctx context.Context) (*ClientConn, error) {
 	clients := p.getClients()
+	fmt.Printf("grpc_pool: Get() new clients: %d\n", len(clients))
 	if clients == nil {
 		return nil, ErrClosed
 	}
