@@ -14,7 +14,7 @@ func InitJob() {
 	jobList = map[string]JobExec{
 		"ExamplesOne":                 ExamplesOne{},
 		"MonitorArbitrageOpportunity": MonitorArbitrageOpportunity{}, //监控套利机会定时任务
-		"InstanceInspection":          InstanceInspection{},
+		//"InstanceInspection":          InstanceInspection{},
 		// ...
 	}
 }
