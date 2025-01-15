@@ -26,13 +26,13 @@ func InitGrpcPool() error {
 
 	for serviceName, address := range ext.ExtConfig.Grpc {
 		fmt.Printf("start init grpc pool for server: %s with address %s\n", serviceName, address)
+		// 复制操作在循环体内部，闭包外部！
+		serviceNameCopy := serviceName
+		addressCopy := address
 
 		factory := func(ctx context.Context) (*grpc.ClientConn, error) {
 			dialCtx, cancel := context.WithTimeout(ctx, 5*time.Second) // 设置连接超时
 			defer cancel()
-
-			serviceCopy := serviceName
-			addressCopy := address
 
 			fmt.Printf("dialing to %s with context deadline\n", addressCopy)
 
@@ -42,7 +42,7 @@ func InitGrpcPool() error {
 				if st, ok := status.FromError(err); ok {
 					fmt.Printf("gRPC error code: %v, message: %v, details: %+v\n", st.Code(), st.Message(), st.Details())
 				}
-				return nil, fmt.Errorf("connect to %s(%s) failed: %w", serviceCopy, addressCopy, err)
+				return nil, fmt.Errorf("connect to %s(%s) failed: %w", serviceNameCopy, addressCopy, err)
 			}
 			fmt.Printf("dialed to %s successfully\n", addressCopy)
 			return conn, nil
