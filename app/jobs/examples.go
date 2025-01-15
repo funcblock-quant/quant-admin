@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"fmt"
+	"quanta-admin/app/grpc/client"
 	"quanta-admin/notification/lark"
 	"time"
 )
@@ -13,6 +14,7 @@ func InitJob() {
 	jobList = map[string]JobExec{
 		"ExamplesOne":                 ExamplesOne{},
 		"MonitorArbitrageOpportunity": MonitorArbitrageOpportunity{}, //监控套利机会定时任务
+		"InstanceInspection":          InstanceInspection{},
 		// ...
 	}
 }
@@ -56,5 +58,18 @@ func (t MonitorArbitrageOpportunity) Exec(arg interface{}) error {
 	str := time.Now().Format(timeFormat) + " [INFO] JobCore MonitorArbitrageOpportunity exec success"
 
 	fmt.Println(str)
+	return nil
+}
+
+// InstanceInspection 实例巡检，防止策略端服务重启后实例下线
+type InstanceInspection struct{}
+
+func (t InstanceInspection) Exec(arg interface{}) error {
+	instance, err := client.ListInstance("market-making")
+	if err != nil {
+		fmt.Printf(err.Error())
+		return err
+	}
+	fmt.Printf("instance:%+v\n", instance.InstanceIds)
 	return nil
 }
