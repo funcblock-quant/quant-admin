@@ -39,6 +39,7 @@ type BusStrategyBaseInfoInsertReq struct {
 	StrategyCategory string `json:"strategyCategory" comment:"策略交易类型"`
 	Preference       string `json:"preference" comment:"策略偏好"`
 	Description      string `json:"description" comment:"策略描述"`
+	GrpcEndpoint     string `json:"grpcEndpoint" comment:"grpc端点"`
 	Status           string `json:"status" comment:"策略运行状态"`
 	Owner            string `json:"owner" comment:"策略负责人"`
 	common.ControlBy
@@ -53,6 +54,7 @@ func (s *BusStrategyBaseInfoInsertReq) Generate(model *models.BusStrategyBaseInf
 	model.StrategyCategory = s.StrategyCategory
 	model.Preference = s.Preference
 	model.Description = s.Description
+	model.GrpcEndpoint = s.GrpcEndpoint
 	model.Status = s.Status
 	model.Owner = s.Owner
 	model.CreateBy = s.CreateBy // 添加这而，需要记录是被谁创建的
@@ -68,6 +70,7 @@ type BusStrategyBaseInfoUpdateReq struct {
 	StrategyCategory string `json:"strategyCategory" comment:"策略交易类型"`
 	Preference       string `json:"preference" comment:"策略偏好"`
 	Description      string `json:"description" comment:"策略描述"`
+	GrpcEndpoint     string `json:"grpcEndpoint" comment:"grpc端点"`
 	Status           string `json:"status" comment:"策略运行状态"`
 	Owner            string `json:"owner" comment:"策略负责人"`
 	IsDeleted        string `json:"isDeleted" comment:"删除标识位"`
@@ -83,6 +86,7 @@ func (s *BusStrategyBaseInfoUpdateReq) Generate(model *models.BusStrategyBaseInf
 	model.StrategyCategory = s.StrategyCategory
 	model.Preference = s.Preference
 	model.Description = s.Description
+	model.GrpcEndpoint = s.GrpcEndpoint
 	model.Status = s.Status
 	model.Owner = s.Owner
 	model.UpdateBy = s.UpdateBy // 添加这而，需要记录是被谁更新的

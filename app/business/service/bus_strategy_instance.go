@@ -2,16 +2,21 @@ package service
 
 import (
 	"errors"
-	log "github.com/go-admin-team/go-admin-core/logger"
+	"google.golang.org/protobuf/types/known/structpb"
+	"gopkg.in/yaml.v3"
 	"gorm.io/gorm"
 	"strconv"
 	"time"
 
+	log "github.com/go-admin-team/go-admin-core/logger"
 	"github.com/go-admin-team/go-admin-core/sdk/service"
 	"quanta-admin/app/business/models"
 	"quanta-admin/app/business/service/dto"
+	"quanta-admin/app/grpc/client"
+	"quanta-admin/app/grpc/proto/client/instance_service"
 	"quanta-admin/common/actions"
 	cDto "quanta-admin/common/dto"
+	ext "quanta-admin/config"
 )
 
 type BusStrategyInstance struct {
@@ -64,7 +69,6 @@ func (e *BusStrategyInstance) Get(d *dto.BusStrategyInstanceGetReq, p *actions.D
 		e.Log.Errorf("db error:%s", err)
 		return err
 	}
-	e.Log.Infof("configs %+v, 配置数量 %d \n", configs, len(configs))
 	if len(configs) > 0 {
 		model.Schema = configs[0]
 	}
@@ -167,8 +171,60 @@ func (e *BusStrategyInstance) Update(c *dto.BusStrategyInstanceUpdateReq, p *act
 // StartInstance 启动BusStrategyInstance
 func (e *BusStrategyInstance) StartInstance(d *dto.BusStrategyInstanceStartReq, p *actions.DataPermission) error {
 	var data models.BusStrategyInstance
+	// 查询策略实例
+	err := e.Orm.Model(&data).First(&data, d.GetId()).Error
+	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+		e.Log.Errorf("can not find bus strategy_instance_id:%d \r\n", d.Id)
+		return err
+	}
 
-	//TODO 后期这里需要真实去启动实例
+	strategy := models.BusStrategyBaseInfo{}
+	// 获取策略基本信息
+	err = e.Orm.Model(&strategy).First(&strategy, "id=?", data.StrategyId).Error
+	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+		e.Log.Errorf("can not find bus strategy_id:%s \r\n", data.StrategyId)
+		return err
+	}
+
+	//获取策略实例配置
+	instanceConfig := models.BusStrategyInstanceConfig{}
+	err = e.Orm.Model(&instanceConfig).First(&instanceConfig, "strategy_instance_id=?", data.Id).Error
+	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+		e.Log.Errorf("can not find instance config :%s \r\n", data.Id)
+		return err
+	}
+
+	endpoint := strategy.GrpcEndpoint
+	config := ext.Extend{}
+	serviceName := config.GetGrpcWithURL(endpoint)
+	if serviceName == "" {
+		e.Log.Errorf("can not find bus strategy_id:%s \r\n", data.StrategyId)
+		return errors.New("can not find grpc service info")
+	}
+
+	var instanceType instance_service.InstanceType
+	//启动实例
+	if data.Type == "0" { // 观察者
+		instanceType = instance_service.InstanceType_OBSERVER_INSTANCE
+	} else if data.Type == "1" { // 交易者
+		instanceType = instance_service.InstanceType_TRADER_INSTANCE
+	} else {
+		e.Log.Errorf("unsupport instance type :%s \r\n", data.Type)
+		return errors.New("unsupported instance type")
+	}
+
+	configStruct, err := e.ParseInstanceConfig(instanceConfig)
+	if err != nil {
+		e.Log.Errorf("Parse instance config error:%s \r\n", err)
+		return errors.New("Parse instance config error")
+	}
+
+	_, err = client.StartNewInstance(serviceName, strconv.Itoa(data.Id), instanceType, configStruct)
+	if err != nil {
+		e.Log.Errorf("start instance occur grpc error :%v \r\n", err)
+		return errors.New("start instance failed")
+	}
+
 	db := e.Orm.Model(&data).
 		Scopes(
 			actions.Permission(data.TableName(), p),
@@ -179,6 +235,8 @@ func (e *BusStrategyInstance) StartInstance(d *dto.BusStrategyInstanceStartReq, 
 			"status":         1,
 		})
 	if err := db.Error; err != nil {
+		//如果保存数据库失败了，则需要尝试停止实例
+		client.StopInstance(serviceName, strconv.Itoa(data.Id))
 		e.Log.Errorf("Service BusStrategyInstance start error:%s \r\n", err)
 		return err
 	}
@@ -191,8 +249,33 @@ func (e *BusStrategyInstance) StartInstance(d *dto.BusStrategyInstanceStartReq, 
 // StopInstance 暂停BusStrategyInstance
 func (e *BusStrategyInstance) StopInstance(d *dto.BusStrategyInstanceStopReq, p *actions.DataPermission) error {
 	var data models.BusStrategyInstance
+	// 查询策略实例
+	err := e.Orm.Model(&data).First(&data, d.GetId()).Error
+	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+		e.Log.Errorf("can not find bus strategy_instance_id:%d \r\n", d.Id)
+		return err
+	}
 
-	//TODO 后期这里需要真实去停用实例
+	strategy := models.BusStrategyBaseInfo{}
+	// 获取策略基本信息
+	err = e.Orm.Model(&strategy).First(&strategy, "id=?", data.StrategyId).Error
+	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+		e.Log.Errorf("can not find bus strategy_id:%s \r\n", data.StrategyId)
+		return err
+	}
+	endpoint := strategy.GrpcEndpoint
+	config := ext.Extend{}
+	serviceName := config.GetGrpcWithURL(endpoint)
+	if serviceName == "" {
+		e.Log.Errorf("can not find bus strategy_id:%s \r\n", data.StrategyId)
+		return errors.New("can not find grpc service info")
+	}
+	err = client.StopInstance(serviceName, strconv.Itoa(data.Id))
+	if err != nil {
+		e.Log.Errorf("stop instance failed , grpc error:%v \r\n", err)
+		return errors.New("stop instance failed")
+	}
+
 	db := e.Orm.Model(&data).
 		Scopes(
 			actions.Permission(data.TableName(), p),
@@ -282,4 +365,23 @@ func (e *BusStrategyInstance) QueryInstanceDashboard(d *dto.BusStrategyInstanceD
 		return errors.New("无权删除该数据")
 	}
 	return nil
+}
+
+// ParseInstanceConfig 将实例配置转成struct
+func (e *BusStrategyInstance) ParseInstanceConfig(config models.BusStrategyInstanceConfig) (*structpb.Struct, error) {
+	yamlString := config.SchemaText
+	e.Log.Infof("yamlString : %v", yamlString)
+	var result map[string]interface{}
+	err := yaml.Unmarshal([]byte(yamlString), &result)
+	e.Log.Infof("result map : %v", result)
+	if err != nil {
+		e.Log.Errorf("Failed to parse YAML: %v", err)
+		return nil, err
+	}
+	protoStruct, err := structpb.NewStruct(result)
+	if err != nil {
+		e.Log.Errorf("Failed to convert to Struct: %v", err)
+		return nil, err
+	}
+	return protoStruct, nil
 }

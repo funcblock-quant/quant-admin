@@ -1,0 +1,52 @@
+// proto/instance_service.proto
+syntax = "proto3";
+package grpc_service;
+option go_package = "./instance_service;instance_service";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/struct.proto";
+
+// Define the service
+service Instance {
+  // 开启实例
+  rpc StartInstance (StartInstanceRequest) returns (StartInstanceResponse);
+  // 暂停实例
+  rpc StopInstance (StopInstanceRequest) returns (google.protobuf.Empty);
+  // 查看所有启动的实例ids
+  rpc ListInstances (google.protobuf.Empty) returns (InstanceListResponse);
+  // 查看实例实时数据监控，如果有监控需求，可以在此实现逻辑
+  rpc GetInstanceRealtimeInfo (GetRealtimeInfoRequest) returns (GetRealtimeInfoResponse);
+}
+
+// Message definitions
+message StartInstanceRequest {
+  string        instance_id = 1; // 中台实例id
+  InstanceType  instance_type = 2; // 实例类型，
+  google.protobuf.Struct   config_yaml = 3; // 策略启动实例的参数封装
+}
+
+message StartInstanceResponse {
+  string instance_id = 1;
+}
+
+message StopInstanceRequest {
+  string instance_id = 1;
+}
+
+message InstanceListResponse {
+  string instance_ids = 1;
+}
+
+message GetRealtimeInfoRequest {
+  string instance_id = 1;
+}
+
+message GetRealtimeInfoResponse {
+  int64 timestamp = 1;
+  google.protobuf.Struct data = 2; // 通用数据字段
+}
+
+enum InstanceType {
+  OBSERVER_INSTANCE = 0; //观察者实例
+  TRADER_INSTANCE = 1; //交易者实例
+}

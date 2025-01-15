@@ -22,3 +22,12 @@ type AMap struct {
 type LarkConfig struct {
 	Webhook string `yaml:"webhook"`
 }
+
+func (e *Extend) GetGrpcWithURL(endpoint string) string {
+	for k, v := range ExtConfig.Grpc {
+		if endpoint == v {
+			return k
+		}
+	}
+	return ""
+}

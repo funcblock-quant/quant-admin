@@ -11,6 +11,7 @@ type BusStrategyBaseInfo struct {
 	StrategyCategory string `json:"strategyCategory" gorm:"type:tinyint;comment:策略交易类型"`
 	Preference       string `json:"preference" gorm:"type:tinyint;comment:策略偏好"`
 	Description      string `json:"description" gorm:"type:text;comment:策略描述"`
+	GrpcEndpoint     string `json:"grpcEndpoint" gorm:"type:text;comment:grpc端点"`
 	Status           string `json:"status" gorm:"type:tinyint;default:1;comment:策略注册状态"`
 	Owner            string `json:"owner" gorm:"type:varchar(255);comment:策略负责人"`
 	models.ModelTime
