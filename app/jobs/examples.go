@@ -14,7 +14,7 @@ func InitJob() {
 	jobList = map[string]JobExec{
 		"ExamplesOne":                 ExamplesOne{},
 		"MonitorArbitrageOpportunity": MonitorArbitrageOpportunity{}, //监控套利机会定时任务
-		//"InstanceInspection":          InstanceInspection{},
+		"InstanceInspection":          InstanceInspection{},
 		// ...
 	}
 }
@@ -65,11 +65,13 @@ func (t MonitorArbitrageOpportunity) Exec(arg interface{}) error {
 type InstanceInspection struct{}
 
 func (t InstanceInspection) Exec(arg interface{}) error {
+	str := time.Now().Format(timeFormat) + " [INFO] JobCore InstanceInspection exec success"
 	instance, err := client.ListInstance("market-making")
 	if err != nil {
 		fmt.Printf(err.Error())
 		return err
 	}
 	fmt.Printf("instance:%+v\n", instance.InstanceIds)
+	fmt.Printf(str)
 	return nil
 }
