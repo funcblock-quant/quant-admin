@@ -22,7 +22,6 @@ type BusStrategyInstanceOrder struct {
 	InstanceName string `form:"instanceNameOrder"  search:"type:order;column:instance_name;table:bus_strategy_instance"`
 	StartRunTime string `form:"startRunTimeOrder"  search:"type:order;column:start_run_time;table:bus_strategy_instance"`
 	StopRunTime  string `form:"stopRunTimeOrder"  search:"type:order;column:stop_run_time;table:bus_strategy_instance"`
-	ServerId     string `form:"serverIdOrder"  search:"type:order;column:server_id;table:bus_strategy_instance"`
 	Status       string `form:"statusOrder"  search:"type:order;column:status;table:bus_strategy_instance"`
 	CreateBy     string `form:"createByOrder"  search:"type:order;column:create_by;table:bus_strategy_instance"`
 	UpdateBy     string `form:"updateByOrder"  search:"type:order;column:update_by;table:bus_strategy_instance"`
@@ -42,7 +41,7 @@ type BusStrategyInstanceGetPageResp struct {
 	InstanceName string     `json:"instanceName"`
 	StartRunTime *time.Time `json:"startRunTime" gorm:"default:NULL"`
 	StopRunTime  *time.Time `json:"stopRunTime" gorm:"default:NULL"`
-	ServerId     string     `json:"serverId"`
+	Type         string     `json:"Type"`
 	Status       string     `json:"status"`
 }
 
@@ -52,7 +51,7 @@ type BusStrategyInstanceGetResp struct {
 	InstanceName string                           `json:"instanceName"`
 	StartRunTime *time.Time                       `json:"startRunTime" gorm:"default:NULL"`
 	StopRunTime  *time.Time                       `json:"stopRunTime" gorm:"default:NULL"`
-	ServerId     string                           `json:"serverId" gorm:"default:NULL"`
+	Type         string                           `json:"type" gorm:"default:NULL"`
 	Status       string                           `json:"status"`
 	Schema       models.BusStrategyInstanceConfig `json:"schema"`
 }
@@ -61,7 +60,7 @@ type BusStrategyInstanceInsertReq struct {
 	Id           int                                `json:"-" comment:""` //
 	StrategyId   string                             `json:"strategyId" comment:"策略id"`
 	InstanceName string                             `json:"instanceName" comment:"策略实例名称"`
-	ServerId     string                             `json:"serverId" comment:"服务器id"`
+	Type         string                             `json:"type" comment:"实例类型"`
 	ServerName   string                             `json:"serverName" comment:"服务器用户名"`
 	Status       string                             `json:"status" comment:"运行状态"`
 	Schema       BusStrategyInstanceConfigInsertReq `json:"schema" comment:""`
@@ -74,7 +73,7 @@ func (s *BusStrategyInstanceInsertReq) Generate(model *models.BusStrategyInstanc
 	}
 	model.StrategyId = s.StrategyId
 	model.InstanceName = s.InstanceName
-	model.ServerId = s.ServerId
+	model.Type = s.Type
 	model.Status = s.Status
 	model.CreateBy = s.CreateBy // 添加这而，需要记录是被谁创建的
 }
@@ -87,8 +86,7 @@ type BusStrategyInstanceUpdateReq struct {
 	Id           string                             `uri:"id" comment:""` //
 	StrategyId   string                             `json:"strategyId" comment:"策略id"`
 	InstanceName string                             `json:"instanceName" comment:"策略实例名称"`
-	ServerId     string                             `json:"serverId" comment:"服务器id"`
-	ServerName   string                             `json:"serverName" comment:"服务器用户名"`
+	Type         string                             `json:"type" comment:"实例类型"`
 	Status       string                             `json:"status" comment:"运行状态"`
 	Schema       BusStrategyInstanceConfigInsertReq `json:"schema" comment:""`
 	common.ControlBy
@@ -101,9 +99,7 @@ func (s *BusStrategyInstanceUpdateReq) Generate(model *models.BusStrategyInstanc
 	}
 	model.StrategyId = s.StrategyId
 	model.InstanceName = s.InstanceName
-	if s.ServerId != "" {
-		model.ServerId = s.ServerId
-	}
+	model.Type = s.Type
 	model.Status = s.Status
 	model.UpdateBy = s.UpdateBy // 添加这而，需要记录是被谁更新的
 }

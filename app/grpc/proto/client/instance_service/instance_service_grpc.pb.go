@@ -33,11 +33,11 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type InstanceClient interface {
 	// 开启实例
-	StartInstance(ctx context.Context, in *StartRequest, opts ...grpc.CallOption) (*StartResponse, error)
+	StartInstance(ctx context.Context, in *StartInstanceRequest, opts ...grpc.CallOption) (*StartInstanceResponse, error)
 	// 暂停实例
-	StopInstance(ctx context.Context, in *StopRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	StopInstance(ctx context.Context, in *StopInstanceRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// 查看所有启动的实例ids
-	ListInstances(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ListResponse, error)
+	ListInstances(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*InstanceListResponse, error)
 	// 查看实例实时数据监控，如果有监控需求，可以在此实现逻辑
 	GetInstanceRealtimeInfo(ctx context.Context, in *GetRealtimeInfoRequest, opts ...grpc.CallOption) (*GetRealtimeInfoResponse, error)
 }
@@ -50,8 +50,8 @@ func NewInstanceClient(cc grpc.ClientConnInterface) InstanceClient {
 	return &instanceClient{cc}
 }
 
-func (c *instanceClient) StartInstance(ctx context.Context, in *StartRequest, opts ...grpc.CallOption) (*StartResponse, error) {
-	out := new(StartResponse)
+func (c *instanceClient) StartInstance(ctx context.Context, in *StartInstanceRequest, opts ...grpc.CallOption) (*StartInstanceResponse, error) {
+	out := new(StartInstanceResponse)
 	err := c.cc.Invoke(ctx, Instance_StartInstance_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -59,7 +59,7 @@ func (c *instanceClient) StartInstance(ctx context.Context, in *StartRequest, op
 	return out, nil
 }
 
-func (c *instanceClient) StopInstance(ctx context.Context, in *StopRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *instanceClient) StopInstance(ctx context.Context, in *StopInstanceRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, Instance_StopInstance_FullMethodName, in, out, opts...)
 	if err != nil {
@@ -68,8 +68,8 @@ func (c *instanceClient) StopInstance(ctx context.Context, in *StopRequest, opts
 	return out, nil
 }
 
-func (c *instanceClient) ListInstances(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ListResponse, error) {
-	out := new(ListResponse)
+func (c *instanceClient) ListInstances(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*InstanceListResponse, error) {
+	out := new(InstanceListResponse)
 	err := c.cc.Invoke(ctx, Instance_ListInstances_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -91,11 +91,11 @@ func (c *instanceClient) GetInstanceRealtimeInfo(ctx context.Context, in *GetRea
 // for forward compatibility
 type InstanceServer interface {
 	// 开启实例
-	StartInstance(context.Context, *StartRequest) (*StartResponse, error)
+	StartInstance(context.Context, *StartInstanceRequest) (*StartInstanceResponse, error)
 	// 暂停实例
-	StopInstance(context.Context, *StopRequest) (*emptypb.Empty, error)
+	StopInstance(context.Context, *StopInstanceRequest) (*emptypb.Empty, error)
 	// 查看所有启动的实例ids
-	ListInstances(context.Context, *emptypb.Empty) (*ListResponse, error)
+	ListInstances(context.Context, *emptypb.Empty) (*InstanceListResponse, error)
 	// 查看实例实时数据监控，如果有监控需求，可以在此实现逻辑
 	GetInstanceRealtimeInfo(context.Context, *GetRealtimeInfoRequest) (*GetRealtimeInfoResponse, error)
 	mustEmbedUnimplementedInstanceServer()
@@ -105,13 +105,13 @@ type InstanceServer interface {
 type UnimplementedInstanceServer struct {
 }
 
-func (UnimplementedInstanceServer) StartInstance(context.Context, *StartRequest) (*StartResponse, error) {
+func (UnimplementedInstanceServer) StartInstance(context.Context, *StartInstanceRequest) (*StartInstanceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StartInstance not implemented")
 }
-func (UnimplementedInstanceServer) StopInstance(context.Context, *StopRequest) (*emptypb.Empty, error) {
+func (UnimplementedInstanceServer) StopInstance(context.Context, *StopInstanceRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StopInstance not implemented")
 }
-func (UnimplementedInstanceServer) ListInstances(context.Context, *emptypb.Empty) (*ListResponse, error) {
+func (UnimplementedInstanceServer) ListInstances(context.Context, *emptypb.Empty) (*InstanceListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListInstances not implemented")
 }
 func (UnimplementedInstanceServer) GetInstanceRealtimeInfo(context.Context, *GetRealtimeInfoRequest) (*GetRealtimeInfoResponse, error) {
@@ -131,7 +131,7 @@ func RegisterInstanceServer(s grpc.ServiceRegistrar, srv InstanceServer) {
 }
 
 func _Instance_StartInstance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(StartRequest)
+	in := new(StartInstanceRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -143,13 +143,13 @@ func _Instance_StartInstance_Handler(srv interface{}, ctx context.Context, dec f
 		FullMethod: Instance_StartInstance_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(InstanceServer).StartInstance(ctx, req.(*StartRequest))
+		return srv.(InstanceServer).StartInstance(ctx, req.(*StartInstanceRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Instance_StopInstance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(StopRequest)
+	in := new(StopInstanceRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -161,7 +161,7 @@ func _Instance_StopInstance_Handler(srv interface{}, ctx context.Context, dec fu
 		FullMethod: Instance_StopInstance_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(InstanceServer).StopInstance(ctx, req.(*StopRequest))
+		return srv.(InstanceServer).StopInstance(ctx, req.(*StopInstanceRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }

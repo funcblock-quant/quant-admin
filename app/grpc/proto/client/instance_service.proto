@@ -9,31 +9,31 @@ import "google/protobuf/struct.proto";
 // Define the service
 service Instance {
   // 开启实例
-  rpc StartInstance (StartRequest) returns (StartResponse);
+  rpc StartInstance (StartInstanceRequest) returns (StartInstanceResponse);
   // 暂停实例
-  rpc StopInstance (StopRequest) returns (google.protobuf.Empty);
+  rpc StopInstance (StopInstanceRequest) returns (google.protobuf.Empty);
   // 查看所有启动的实例ids
-  rpc ListInstances (google.protobuf.Empty) returns (ListResponse);
+  rpc ListInstances (google.protobuf.Empty) returns (InstanceListResponse);
   // 查看实例实时数据监控，如果有监控需求，可以在此实现逻辑
   rpc GetInstanceRealtimeInfo (GetRealtimeInfoRequest) returns (GetRealtimeInfoResponse);
 }
 
 // Message definitions
-message StartRequest {
+message StartInstanceRequest {
   string        instance_id = 1; // 中台实例id
   InstanceType  instance_type = 2; // 实例类型，
   google.protobuf.Struct   config_yaml = 3; // 策略启动实例的参数封装
 }
 
-message StartResponse {
+message StartInstanceResponse {
   string instance_id = 1;
 }
 
-message StopRequest {
+message StopInstanceRequest {
   string instance_id = 1;
 }
 
-message ListResponse {
+message InstanceListResponse {
   string instance_ids = 1;
 }
 

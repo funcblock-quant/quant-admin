@@ -26,7 +26,7 @@ func StartNewInstance(serviceName string, instanceId string, instanceType instan
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	request := &instance_service.StartRequest{
+	request := &instance_service.StartInstanceRequest{
 		InstanceId:   instanceId,
 		InstanceType: instanceType,
 		ConfigYaml:   config,
@@ -58,7 +58,7 @@ func StopInstance(serviceName string, instanceId string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	request := &instance_service.StopRequest{
+	request := &instance_service.StopInstanceRequest{
 		InstanceId: instanceId,
 	}
 
@@ -72,7 +72,7 @@ func StopInstance(serviceName string, instanceId string) error {
 	return nil
 }
 
-func ListInstance(serviceName string) (*instance_service.ListResponse, error) {
+func ListInstance(serviceName string) (*instance_service.InstanceListResponse, error) {
 	// 获取 gRPC 客户端连接
 	clientConn, err := pool.GetGrpcClient(serviceName)
 	if err != nil {
