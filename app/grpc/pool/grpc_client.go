@@ -45,7 +45,7 @@ func InitGrpcPool() error {
 			return conn, nil
 		}
 
-		p, err := NewWithContext(context.Background(), factory, 2, 5, time.Second*10)
+		p, err := NewWithContext(context.Background(), address, factory, 2, 5, time.Second*10)
 		if err != nil {
 			return fmt.Errorf("create pool for %s failed: %v", serviceName, err) // 返回错误
 		}

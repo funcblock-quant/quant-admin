@@ -36,6 +36,7 @@ type Pool struct {
 	idleTimeout     time.Duration
 	maxLifeDuration time.Duration
 	mu              sync.RWMutex
+	target          string // 连接目标地址
 }
 
 // ClientConn is the wrapper for a grpc client conn
@@ -50,9 +51,9 @@ type ClientConn struct {
 // New creates a new clients pool with the given initial and maximum capacity,
 // and the timeout for the idle clients. Returns an error if the initial
 // clients could not be created
-func New(factory Factory, init, capacity int, idleTimeout time.Duration,
+func New(address string, factory Factory, init, capacity int, idleTimeout time.Duration,
 	maxLifeDuration ...time.Duration) (*Pool, error) {
-	return NewWithContext(context.Background(), func(ctx context.Context) (*grpc.ClientConn, error) { return factory() },
+	return NewWithContext(context.Background(), address, func(ctx context.Context) (*grpc.ClientConn, error) { return factory() },
 		init, capacity, idleTimeout, maxLifeDuration...)
 }
 
@@ -60,7 +61,7 @@ func New(factory Factory, init, capacity int, idleTimeout time.Duration,
 // capacity, and the timeout for the idle clients. The context parameter would
 // be passed to the factory method during initialization. Returns an error if the
 // initial clients could not be created.
-func NewWithContext(ctx context.Context, factory FactoryWithContext, init, capacity int, idleTimeout time.Duration,
+func NewWithContext(ctx context.Context, address string, factory FactoryWithContext, init, capacity int, idleTimeout time.Duration,
 	maxLifeDuration ...time.Duration) (*Pool, error) {
 	fmt.Printf("grpc pool: creating a new pool with capacity %d\n", capacity)
 	if capacity <= 0 {
@@ -76,6 +77,7 @@ func NewWithContext(ctx context.Context, factory FactoryWithContext, init, capac
 		clients:     make(chan ClientConn, capacity),
 		factory:     factory,
 		idleTimeout: idleTimeout,
+		target:      address,
 	}
 	if len(maxLifeDuration) > 0 {
 		p.maxLifeDuration = maxLifeDuration[0]
@@ -100,6 +102,14 @@ func NewWithContext(ctx context.Context, factory FactoryWithContext, init, capac
 		}
 	}
 	return p, nil
+}
+
+func (p *Pool) String() string {
+	if p == nil {
+		return "<nil Pool>"
+	}
+	//根据你的Pool结构，进行修改
+	return fmt.Sprintf("Pool{Target: %s", p.target) // 输出连接目标和连接地址
 }
 
 func (p *Pool) getClients() chan ClientConn {
