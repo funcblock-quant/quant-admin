@@ -214,8 +214,8 @@ type BusArbitrageOpportunityGetReq struct {
 }
 
 type BusArbitrageOpportunityGetResp struct {
-	Exchange1 string `json:"exchange1"`
-	Exchange2 string `json:"exchange2"`
-	Symbol    string `json:"symbol" gorm:"column:symbol"`
-	Count     int    `json:"count" gorm:"column:count"`
+	DexPlatform string `json:"dex"`
+	CexPlatform string `json:"cex"`
+	Symbol      string `json:"symbol" gorm:"column:symbol"`
+	Count       int    `json:"count" gorm:"column:count"`
 }

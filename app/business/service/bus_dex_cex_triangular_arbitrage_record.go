@@ -130,8 +130,8 @@ func (e *BusDexCexTriangularArbitrageRecord) QueryArbitrageOpportunityList(d *dt
 	tx := e.Orm.Scopes(
 		actions.Permission(model.TableName(), p)).
 		Model(&model).
-		Select("dex_symbol as symbol, count(*) as count").
-		Group("dex_symbol")
+		Select("dex_symbol as symbol, dex_platform, cex_platform, count(*) as count").
+		Group("dex_symbol, dex_platform, cex_platform")
 	tx.Where("type = ?", constant.ARBITRAGE_TYPE_SIMULATE)
 	if len(d.Symbols) > 0 {
 		tx.Where("dex_symbol in ?", d.Symbols)
@@ -153,12 +153,6 @@ func (e *BusDexCexTriangularArbitrageRecord) QueryArbitrageOpportunityList(d *dt
 		e.Log.Errorf("QueryArbitrageOpportunityList Query error:%s \r\n", err)
 		return err
 	}
-
-	//for i := range *list {
-	//	//封装其他信息
-	//	(*list)[i].Exchange1 = instance.ExchangeName1
-	//	(*list)[i].Exchange2 = instance.ExchangeName2
-	//}
 
 	e.Log.Infof("QueryArbitrageOpportunityList: %v\r\n", list)
 	return err
