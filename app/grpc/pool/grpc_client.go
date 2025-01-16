@@ -58,11 +58,8 @@ func InitGrpcPool() error {
 
 	// 将临时 map 的内容存储到全局 sync.Map 中，保证并发安全
 	for k, v := range tempPools {
-		fmt.Printf("grpc pool store client: %s - %v\n", k, v)
 		grpcPools.pools.Store(k, v)
 	}
-
-	fmt.Printf("grpc pools %v\n", grpcPools.pools)
 
 	//健康检查
 	for serviceName, p := range tempPools {
