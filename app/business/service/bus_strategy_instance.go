@@ -198,7 +198,7 @@ func (e *BusStrategyInstance) StartInstance(d *dto.BusStrategyInstanceStartReq, 
 	config := ext.Extend{}
 	serviceName := config.GetGrpcWithURL(endpoint)
 	if serviceName == "" {
-		e.Log.Errorf("can not find bus strategy_id:%s \r\n", data.StrategyId)
+		e.Log.Errorf("can not find bus grpc service:%s \r\n", endpoint)
 		return errors.New("can not find grpc service info")
 	}
 
@@ -213,13 +213,9 @@ func (e *BusStrategyInstance) StartInstance(d *dto.BusStrategyInstanceStartReq, 
 		return errors.New("unsupported instance type")
 	}
 
-	configStruct, err := e.ParseInstanceConfig(instanceConfig)
-	if err != nil {
-		e.Log.Errorf("Parse instance config error:%s \r\n", err)
-		return errors.New("Parse instance config error")
-	}
+	configStruct := instanceConfig.SchemaText
 
-	_, err = client.StartNewInstance(serviceName, strconv.Itoa(data.Id), instanceType, configStruct)
+	_, err = client.StartNewInstance(serviceName, strconv.Itoa(data.Id), instanceType, &configStruct)
 	if err != nil {
 		e.Log.Errorf("start instance occur grpc error :%v \r\n", err)
 		return errors.New("start instance failed")
