@@ -5,13 +5,12 @@ import (
 	"fmt"
 	log "github.com/go-admin-team/go-admin-core/logger"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
-	structpb "google.golang.org/protobuf/types/known/structpb"
 	"quanta-admin/app/grpc/pool"
 	"quanta-admin/app/grpc/proto/client/instance_service"
 	"time"
 )
 
-func StartNewInstance(serviceName string, instanceId string, instanceType instance_service.InstanceType, config *structpb.Struct) (string, error) {
+func StartNewInstance(serviceName string, instanceId string, instanceType instance_service.InstanceType, config *string) (string, error) {
 	// 获取 gRPC 客户端连接
 	clientConn, err := pool.GetGrpcClient(serviceName)
 	if err != nil {
@@ -29,7 +28,7 @@ func StartNewInstance(serviceName string, instanceId string, instanceType instan
 	request := &instance_service.StartInstanceRequest{
 		InstanceId:   instanceId,
 		InstanceType: instanceType,
-		ConfigYaml:   config,
+		ConfigYaml:   *config,
 	}
 
 	// 发送 gRPC 请求

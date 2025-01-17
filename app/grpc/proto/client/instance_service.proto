@@ -22,7 +22,7 @@ service Instance {
 message StartInstanceRequest {
   string        instance_id = 1; // 中台实例id
   InstanceType  instance_type = 2; // 实例类型，
-  google.protobuf.Struct   config_yaml = 3; // 策略启动实例的参数封装
+  string   config_yaml = 3; // 策略启动实例的参数封装
 }
 
 message StartInstanceResponse {
