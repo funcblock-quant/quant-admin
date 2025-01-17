@@ -181,7 +181,7 @@ func (p *Pool) Get(ctx context.Context) (*ClientConn, error) {
 	var err error
 	if wrapper.ClientConn == nil {
 		wrapper.ClientConn, err = p.factory(ctx)
-		if err != nil {
+		if err != nil || wrapper.ClientConn == nil {
 			// If there was an error, we want to put back a placeholder
 			// client in the channel
 			clients <- ClientConn{

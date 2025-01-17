@@ -38,11 +38,11 @@ func InitGrpcPool() error {
 
 			conn, err := grpc.DialContext(dialCtx, addressCopy, grpc.WithInsecure(), grpc.WithBlock()) // 使用 grpc.DialContext
 			if err != nil {
-				fmt.Printf("dialing to %s failed: %v, error type: %T, detail: %+v\n", addressCopy, err, err, err)
+				fmt.Printf("dialing to %s (%s) failed: %v, error type: %T, detail: %+v\n", serviceNameCopy, addressCopy, err, err, err)
 				if st, ok := status.FromError(err); ok {
 					fmt.Printf("gRPC error code: %v, message: %v, details: %+v\n", st.Code(), st.Message(), st.Details())
 				}
-				return nil, fmt.Errorf("connect to %s(%s) failed: %w", serviceNameCopy, addressCopy, err)
+				return nil, nil
 			}
 			fmt.Printf("dialed to %s successfully\n", addressCopy)
 			return conn, nil
@@ -50,7 +50,8 @@ func InitGrpcPool() error {
 
 		p, err := NewWithContext(context.Background(), address, factory, 2, 5, time.Second*10)
 		if err != nil {
-			return fmt.Errorf("create pool for %s failed: %v", serviceName, err) // 返回错误
+			fmt.Printf("create pool for %s failed: %v", serviceName, err)
+			return nil // 返回错误
 		}
 		tempPools[serviceName] = p // 存储到临时 map 中
 		fmt.Printf("gRPC pool for service '%s' created successfully.\n", serviceName)
@@ -67,7 +68,8 @@ func InitGrpcPool() error {
 		defer cancel()
 		client, err := p.Get(ctx)
 		if err != nil {
-			return fmt.Errorf("health check for %s failed: %w", serviceName, err)
+			fmt.Printf("WARNING: health check for %s failed: %v. Service will still start.\n", serviceName, err)
+			continue // 跳过此服务的检查
 		}
 		client.Close() // 立即释放连接
 	}
