@@ -106,6 +106,7 @@ func (e *BusPriceTriggerStrategyInstance) Insert(c *dto.BusPriceTriggerStrategyI
 		e.Log.Errorf("Service grpc start error:%s \r\n", err)
 		return err
 	}
+	e.Log.Infof("instance id : %d grpc start success\r\n", data.Id)
 
 	tx.Commit()
 
