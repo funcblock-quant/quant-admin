@@ -88,6 +88,7 @@ func (e *BusPriceTriggerStrategyInstance) Insert(c *dto.BusPriceTriggerStrategyI
 		e.Log.Errorf("BusPriceTriggerStrategyInstanceService Insert error:%s \r\n", err)
 		return err
 	}
+	e.Log.Infof("instance id : %d\r\n", data.Id)
 
 	//创建成功后， 自动通过grpc启动
 	request := &trigger_service.StartTriggerRequest{
@@ -105,6 +106,9 @@ func (e *BusPriceTriggerStrategyInstance) Insert(c *dto.BusPriceTriggerStrategyI
 		e.Log.Errorf("Service grpc start error:%s \r\n", err)
 		return err
 	}
+	e.Log.Infof("instance id : %d grpc start success\r\n", data.Id)
+
+	tx.Commit()
 
 	err = e.Orm.Model(&data).Update("status", "started").Error
 	if err != nil {
