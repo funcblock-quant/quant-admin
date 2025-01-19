@@ -7,17 +7,17 @@ option go_package = "./trigger_service;trigger_service";
 import "google/protobuf/empty.proto";
 
 // Define the service
-service Instance {
+service TriggerInstance {
   // 开启实例
-  rpc StartInstance (StartInstanceRequest) returns (StartInstanceResponse);
+  rpc StartInstance (StartTriggerRequest) returns (StartTriggerResponse);
   // 暂停实例
 //  rpc StopInstance (StopInstanceRequest) returns (google.protobuf.Empty);
   // 查看所有启动的实例ids
-  rpc ListInstances (google.protobuf.Empty) returns (InstanceListResponse);
+  rpc ListInstances (google.protobuf.Empty) returns (TriggerListResponse);
 }
 
 // Message definitions
-message StartInstanceRequest {
+message StartTriggerRequest {
   string        instance_id = 1; // 中台实例id
   string        open_price = 2; // 开仓价格
   string        close_price = 3; // 平仓价格
@@ -27,15 +27,15 @@ message StartInstanceRequest {
   string        stop_time = 7; //停止时间
 }
 
-message StartInstanceResponse {
+message StartTriggerResponse {
   string instance_id = 1;
 }
 
-message StopInstanceRequest {
+message StopTriggerRequest {
   string instance_id = 1;
 }
 
-message InstanceListResponse {
+message TriggerListResponse {
   repeated string instance_ids = 1;
 }
 

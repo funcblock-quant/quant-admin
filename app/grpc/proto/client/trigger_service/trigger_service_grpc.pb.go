@@ -22,138 +22,138 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Instance_StartInstance_FullMethodName = "/grpc_service.Instance/StartInstance"
-	Instance_ListInstances_FullMethodName = "/grpc_service.Instance/ListInstances"
+	TriggerInstance_StartInstance_FullMethodName = "/grpc_service.TriggerInstance/StartInstance"
+	TriggerInstance_ListInstances_FullMethodName = "/grpc_service.TriggerInstance/ListInstances"
 )
 
-// InstanceClient is the client API for Instance service.
+// TriggerInstanceClient is the client API for TriggerInstance service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type InstanceClient interface {
+type TriggerInstanceClient interface {
 	// 开启实例
-	StartInstance(ctx context.Context, in *StartInstanceRequest, opts ...grpc.CallOption) (*StartInstanceResponse, error)
+	StartInstance(ctx context.Context, in *StartTriggerRequest, opts ...grpc.CallOption) (*StartTriggerResponse, error)
 	// 暂停实例
 	//
 	//	rpc StopInstance (StopInstanceRequest) returns (google.protobuf.Empty);
 	//
 	// 查看所有启动的实例ids
-	ListInstances(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*InstanceListResponse, error)
+	ListInstances(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*TriggerListResponse, error)
 }
 
-type instanceClient struct {
+type triggerInstanceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewInstanceClient(cc grpc.ClientConnInterface) InstanceClient {
-	return &instanceClient{cc}
+func NewTriggerInstanceClient(cc grpc.ClientConnInterface) TriggerInstanceClient {
+	return &triggerInstanceClient{cc}
 }
 
-func (c *instanceClient) StartInstance(ctx context.Context, in *StartInstanceRequest, opts ...grpc.CallOption) (*StartInstanceResponse, error) {
-	out := new(StartInstanceResponse)
-	err := c.cc.Invoke(ctx, Instance_StartInstance_FullMethodName, in, out, opts...)
+func (c *triggerInstanceClient) StartInstance(ctx context.Context, in *StartTriggerRequest, opts ...grpc.CallOption) (*StartTriggerResponse, error) {
+	out := new(StartTriggerResponse)
+	err := c.cc.Invoke(ctx, TriggerInstance_StartInstance_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *instanceClient) ListInstances(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*InstanceListResponse, error) {
-	out := new(InstanceListResponse)
-	err := c.cc.Invoke(ctx, Instance_ListInstances_FullMethodName, in, out, opts...)
+func (c *triggerInstanceClient) ListInstances(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*TriggerListResponse, error) {
+	out := new(TriggerListResponse)
+	err := c.cc.Invoke(ctx, TriggerInstance_ListInstances_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// InstanceServer is the server API for Instance service.
-// All implementations must embed UnimplementedInstanceServer
+// TriggerInstanceServer is the server API for TriggerInstance service.
+// All implementations must embed UnimplementedTriggerInstanceServer
 // for forward compatibility
-type InstanceServer interface {
+type TriggerInstanceServer interface {
 	// 开启实例
-	StartInstance(context.Context, *StartInstanceRequest) (*StartInstanceResponse, error)
+	StartInstance(context.Context, *StartTriggerRequest) (*StartTriggerResponse, error)
 	// 暂停实例
 	//
 	//	rpc StopInstance (StopInstanceRequest) returns (google.protobuf.Empty);
 	//
 	// 查看所有启动的实例ids
-	ListInstances(context.Context, *emptypb.Empty) (*InstanceListResponse, error)
-	mustEmbedUnimplementedInstanceServer()
+	ListInstances(context.Context, *emptypb.Empty) (*TriggerListResponse, error)
+	mustEmbedUnimplementedTriggerInstanceServer()
 }
 
-// UnimplementedInstanceServer must be embedded to have forward compatible implementations.
-type UnimplementedInstanceServer struct {
+// UnimplementedTriggerInstanceServer must be embedded to have forward compatible implementations.
+type UnimplementedTriggerInstanceServer struct {
 }
 
-func (UnimplementedInstanceServer) StartInstance(context.Context, *StartInstanceRequest) (*StartInstanceResponse, error) {
+func (UnimplementedTriggerInstanceServer) StartInstance(context.Context, *StartTriggerRequest) (*StartTriggerResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StartInstance not implemented")
 }
-func (UnimplementedInstanceServer) ListInstances(context.Context, *emptypb.Empty) (*InstanceListResponse, error) {
+func (UnimplementedTriggerInstanceServer) ListInstances(context.Context, *emptypb.Empty) (*TriggerListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListInstances not implemented")
 }
-func (UnimplementedInstanceServer) mustEmbedUnimplementedInstanceServer() {}
+func (UnimplementedTriggerInstanceServer) mustEmbedUnimplementedTriggerInstanceServer() {}
 
-// UnsafeInstanceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to InstanceServer will
+// UnsafeTriggerInstanceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to TriggerInstanceServer will
 // result in compilation errors.
-type UnsafeInstanceServer interface {
-	mustEmbedUnimplementedInstanceServer()
+type UnsafeTriggerInstanceServer interface {
+	mustEmbedUnimplementedTriggerInstanceServer()
 }
 
-func RegisterInstanceServer(s grpc.ServiceRegistrar, srv InstanceServer) {
-	s.RegisterService(&Instance_ServiceDesc, srv)
+func RegisterTriggerInstanceServer(s grpc.ServiceRegistrar, srv TriggerInstanceServer) {
+	s.RegisterService(&TriggerInstance_ServiceDesc, srv)
 }
 
-func _Instance_StartInstance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(StartInstanceRequest)
+func _TriggerInstance_StartInstance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StartTriggerRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(InstanceServer).StartInstance(ctx, in)
+		return srv.(TriggerInstanceServer).StartInstance(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Instance_StartInstance_FullMethodName,
+		FullMethod: TriggerInstance_StartInstance_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(InstanceServer).StartInstance(ctx, req.(*StartInstanceRequest))
+		return srv.(TriggerInstanceServer).StartInstance(ctx, req.(*StartTriggerRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Instance_ListInstances_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _TriggerInstance_ListInstances_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(emptypb.Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(InstanceServer).ListInstances(ctx, in)
+		return srv.(TriggerInstanceServer).ListInstances(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Instance_ListInstances_FullMethodName,
+		FullMethod: TriggerInstance_ListInstances_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(InstanceServer).ListInstances(ctx, req.(*emptypb.Empty))
+		return srv.(TriggerInstanceServer).ListInstances(ctx, req.(*emptypb.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// Instance_ServiceDesc is the grpc.ServiceDesc for Instance service.
+// TriggerInstance_ServiceDesc is the grpc.ServiceDesc for TriggerInstance service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var Instance_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "grpc_service.Instance",
-	HandlerType: (*InstanceServer)(nil),
+var TriggerInstance_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "grpc_service.TriggerInstance",
+	HandlerType: (*TriggerInstanceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "StartInstance",
-			Handler:    _Instance_StartInstance_Handler,
+			Handler:    _TriggerInstance_StartInstance_Handler,
 		},
 		{
 			MethodName: "ListInstances",
-			Handler:    _Instance_ListInstances_Handler,
+			Handler:    _TriggerInstance_ListInstances_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
