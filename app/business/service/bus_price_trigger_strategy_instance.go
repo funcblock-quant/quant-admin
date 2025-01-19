@@ -4,6 +4,9 @@ import (
 	"errors"
 	"github.com/go-admin-team/go-admin-core/sdk/service"
 	"gorm.io/gorm"
+	"quanta-admin/app/grpc/client"
+	"quanta-admin/app/grpc/proto/client/trigger_service"
+	"strconv"
 
 	"quanta-admin/app/business/models"
 	"quanta-admin/app/business/service/dto"
@@ -79,21 +82,21 @@ func (e *BusPriceTriggerStrategyInstance) Insert(c *dto.BusPriceTriggerStrategyI
 		return err
 	}
 
-	// 创建成功后， 自动通过grpc启动
-	//request := &trigger_service.StartInstanceRequest{
-	//	InstanceId: strconv.Itoa(data.Id),
-	//	OpenPrice:  c.OpenPrice,
-	//	ClosePrice: c.ClosePrice,
-	//	Side:       c.Side,
-	//	Amount:     c.Amount,
-	//	Symbol:     c.Symbol,
-	//	StopTime:   strconv.FormatInt(c.CloseTime.UnixMilli(), 10),
-	//}
-	//_, err = client.StartInstance(request)
-	//if err != nil {
-	//	e.Log.Errorf("Service grpc start error:%s \r\n", err)
-	//	return err
-	//}
+	//创建成功后， 自动通过grpc启动
+	request := &trigger_service.StartTriggerRequest{
+		InstanceId: strconv.Itoa(data.Id),
+		OpenPrice:  c.OpenPrice,
+		ClosePrice: c.ClosePrice,
+		Side:       c.Side,
+		Amount:     c.Amount,
+		Symbol:     c.Symbol,
+		StopTime:   strconv.FormatInt(c.CloseTime.UnixMilli(), 10),
+	}
+	_, err = client.StartInstance(request)
+	if err != nil {
+		e.Log.Errorf("Service grpc start error:%s \r\n", err)
+		return err
+	}
 
 	err = e.Orm.Model(&data).Update("status", "started").Error
 	if err != nil {
