@@ -45,7 +45,7 @@ type BusPriceTriggerStrategyResp struct {
 	CloseTime  time.Time                                `json:"closeTime"`
 	Status     string                                   `json:"status"`
 	CreatedAt  time.Time                                `json:"createdAt"`
-	Details    []models.BusPriceMonitorForOptionHedging `json:"details"`
+	Details    []models.BusPriceMonitorForOptionHedging `json:"details" gorm:"-"`
 }
 
 type BusPriceTriggerStrategyInstanceInsertReq struct {
