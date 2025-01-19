@@ -76,7 +76,14 @@ func (e *BusPriceTriggerStrategyInstance) Insert(c *dto.BusPriceTriggerStrategyI
 	var data models.BusPriceTriggerStrategyInstance
 	c.Generate(&data)
 	data.Status = "created"
-	err = e.Orm.Create(&data).Error
+	//启动事务
+	tx := e.Orm.Begin()
+	if tx.Error != nil {
+		e.Log.Errorf("BusPriceTriggerStrategyInstanceService error:%s \r\n", tx.Error)
+		return tx.Error
+	}
+
+	err = tx.Create(&data).Error
 	if err != nil {
 		e.Log.Errorf("BusPriceTriggerStrategyInstanceService Insert error:%s \r\n", err)
 		return err
@@ -94,6 +101,7 @@ func (e *BusPriceTriggerStrategyInstance) Insert(c *dto.BusPriceTriggerStrategyI
 	}
 	_, err = client.StartInstance(request)
 	if err != nil {
+		tx.Rollback()
 		e.Log.Errorf("Service grpc start error:%s \r\n", err)
 		return err
 	}
