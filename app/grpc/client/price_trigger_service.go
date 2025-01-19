@@ -10,7 +10,7 @@ import (
 
 func StartInstance(request *trigger_service.StartTriggerRequest) (string, error) {
 	// 获取 gRPC 客户端连接
-	clientConn, err := pool.GetGrpcClient("trigger_service")
+	clientConn, err := pool.GetGrpcClient("trigger-service")
 	if err != nil {
 		return "", fmt.Errorf("获取grpc客户端失败: %w", err)
 	}
