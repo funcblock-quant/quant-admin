@@ -81,7 +81,6 @@ type BusPriceTriggerStrategyApikeyConfigGetReq struct {
 	Id int `uri:"id"`
 }
 
-func (s *BusPriceTriggerStrategyApikeyConfigGetReq) GetId() interface{} 
 func (s *BusPriceTriggerStrategyApikeyConfigGetReq) GetId() interface{} {
 	return s.Id
 }
