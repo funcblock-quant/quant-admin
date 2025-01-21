@@ -90,8 +90,9 @@ func (e *BusPriceTriggerStrategyInstance) Insert(c *dto.BusPriceTriggerStrategyI
 	}
 	e.Log.Infof("instance id : %d\r\n", data.Id)
 
+	e.Log.Infof("api config key: %d", c.ApiConfig)
 	var apiKeyConfig models.BusPriceTriggerStrategyApikeyConfig
-	err = tx.First(&apiKeyConfig, c.Id).Error
+	err = tx.First(&apiKeyConfig, c.ApiConfig).Error
 	if err != nil {
 		tx.Rollback()
 		e.Log.Errorf("cannot found apikey config:%s \r\n", err)
