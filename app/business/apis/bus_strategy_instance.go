@@ -1,6 +1,7 @@
 package apis
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/gin-gonic/gin"
@@ -191,6 +192,48 @@ func (e BusStrategyInstance) StartInstance(c *gin.Context) {
 		return
 	}
 	e.OK(req.GetId(), "启动成功")
+}
+
+// BatchStartInstance 批量启动策略实例
+// @Summary 批量启动策略实例
+// @Description 批量启动策略实例
+// @Tags 批量策略实例启动
+// @Accept application/json
+// @Product application/json
+// @Param id path int true "id"
+// @Param data body dto.BusStrategyInstanceBatchStartReq true "body"
+// @Success 200 {object} response.Response	"{"code": 200, "message": "启动成功"}"
+// @Router /api/v1/batchStartStrategyInstance [POST]
+// @Security Bearer
+func (e BusStrategyInstance) BatchStartInstance(c *gin.Context) {
+	req := dto.BusStrategyInstanceBatchStartReq{}
+	//e.Logger.Infof("BatchStartInstance req : %v", req)
+	s := service.BusStrategyInstance{}
+	err := e.MakeContext(c).
+		MakeOrm().
+		Bind(&req).
+		MakeService(&s.Service).
+		Errors
+	if err != nil {
+		e.Logger.Error(err)
+		e.Error(500, err, err.Error())
+		return
+	}
+	p := actions.GetPermissionFromContext(c)
+
+	failedCount := 0
+	err = s.BatchStartInstance(&req, p, &failedCount)
+	if err != nil {
+		e.Error(500, err, fmt.Sprintf("启动策略实例失败，\r\n失败信息 %s", err.Error()))
+		return
+	}
+	if failedCount > 0 && failedCount != len(req.Ids) {
+		e.OK(failedCount, "部分启动成功")
+	} else if failedCount == 0 {
+		e.OK(failedCount, "启动成功")
+	} else {
+		e.Error(500, errors.New("批量启动失败"), "批量启动失败")
+	}
 }
 
 // StopInstance 暂停策略实例

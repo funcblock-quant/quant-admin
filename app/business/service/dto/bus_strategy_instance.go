@@ -117,7 +117,7 @@ func (s *BusStrategyInstanceGetReq) GetId() interface{} {
 	return s.Id
 }
 
-// BusStrategyInstanceStartReq 功能获取请求参数
+// BusStrategyInstanceStartReq 实例启动请求参数
 type BusStrategyInstanceStartReq struct {
 	Id int `uri:"id"`
 }
@@ -126,7 +126,16 @@ func (s *BusStrategyInstanceStartReq) GetId() interface{} {
 	return s.Id
 }
 
-// BusStrategyInstanceStopReq 功能获取请求参数
+// BusStrategyInstanceBatchStartReq 实例批量启动请求参数
+type BusStrategyInstanceBatchStartReq struct {
+	Ids []int `json:"ids"`
+}
+
+func (s *BusStrategyInstanceBatchStartReq) GetId() interface{} {
+	return s.Ids
+}
+
+// BusStrategyInstanceStopReq 实例暂停请求参数
 type BusStrategyInstanceStopReq struct {
 	Id int `uri:"id"`
 }
