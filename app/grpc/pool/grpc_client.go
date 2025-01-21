@@ -89,7 +89,7 @@ func GetGrpcClient(serviceName string) (*ClientConn, error) {
 	if err != nil {
 		return nil, fmt.Errorf("get grpc client from pool for %s failed: %w", serviceName, err)
 	}
-	fmt.Printf("get gRPC client %s successfully. client: %v\n", serviceName, *client.ClientConn)
+	fmt.Printf("get gRPC client %s successfully.\n", serviceName)
 	return client, nil
 }
 

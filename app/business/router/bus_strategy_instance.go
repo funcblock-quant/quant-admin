@@ -27,5 +27,6 @@ func registerBusStrategyInstanceRouter(v1 *gin.RouterGroup, authMiddleware *jwt.
 
 	r = v1.PUT("startStrategyInstance/:id", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.StartInstance)
 	r = v1.PUT("stopStrategyInstance/:id", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.StopInstance)
+	r = v1.POST("batchStartStrategyInstance", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.BatchStartInstance)
 
 }
