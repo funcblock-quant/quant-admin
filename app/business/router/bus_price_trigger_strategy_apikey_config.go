@@ -3,6 +3,7 @@ package router
 import (
 	"github.com/gin-gonic/gin"
 	jwt "github.com/go-admin-team/go-admin-core/sdk/pkg/jwtauth"
+	"quanta-admin/common/middleware"
 
 	"quanta-admin/app/business/apis"
 	"quanta-admin/common/actions"
