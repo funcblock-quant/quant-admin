@@ -125,6 +125,29 @@ func (e BusPriceTriggerStrategyApikeyConfig) Insert(c *gin.Context) {
 	e.OK(req.GetId(), "创建成功")
 }
 
+// CheckApiKeyHealth 检查API key正确性
+func (e BusPriceTriggerStrategyApikeyConfig) CheckApiKeyHealth(c *gin.Context) {
+	req := dto.BusPriceTriggerStrategyApikeyConfigCheckReq{}
+	s := service.BusPriceTriggerStrategyApikeyConfig{}
+	err := e.MakeContext(c).
+		MakeOrm().
+		Bind(&req).
+		MakeService(&s.Service).
+		Errors
+	if err != nil {
+		e.Logger.Error(err)
+		e.Error(500, err, err.Error())
+		return
+	}
+	isHealth, err := s.CheckApiKeyHealth(&req)
+	if err != nil {
+		e.Error(500, err, fmt.Sprintf("测试api key连接失败，\r\n失败信息 %s", err.Error()))
+		return
+	}
+
+	e.OK(isHealth, "检查完成")
+}
+
 // Update 修改价格触发下单策略实例amber配置信息
 // @Summary 修改价格触发下单策略实例amber配置信息
 // @Description 修改价格触发下单策略实例amber配置信息

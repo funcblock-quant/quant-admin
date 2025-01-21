@@ -15,8 +15,6 @@ type BusPriceTriggerStrategyApikeyConfigOrder struct {
 	Id        string `form:"idOrder"  search:"type:order;column:id;table:bus_price_trigger_strategy_apikey_config"`
 	UserId    string `form:"userIdOrder"  search:"type:order;column:user_id;table:bus_price_trigger_strategy_apikey_config"`
 	ApiKey    string `form:"apiKeyOrder"  search:"type:order;column:api_key;table:bus_price_trigger_strategy_apikey_config"`
-	Username  string `form:"usernameOrder"  search:"type:order;column:username;table:bus_price_trigger_strategy_apikey_config"`
-	Password  string `form:"passwordOrder"  search:"type:order;column:password;table:bus_price_trigger_strategy_apikey_config"`
 	CreateBy  string `form:"createByOrder"  search:"type:order;column:create_by;table:bus_price_trigger_strategy_apikey_config"`
 	UpdateBy  string `form:"updateByOrder"  search:"type:order;column:update_by;table:bus_price_trigger_strategy_apikey_config"`
 	CreatedAt string `form:"createdAtOrder"  search:"type:order;column:created_at;table:bus_price_trigger_strategy_apikey_config"`
@@ -29,11 +27,12 @@ func (m *BusPriceTriggerStrategyApikeyConfigGetPageReq) GetNeedSearch() interfac
 }
 
 type BusPriceTriggerStrategyApikeyConfigInsertReq struct {
-	Id       int    `json:"-" comment:""` //
-	UserId   string `json:"userId" comment:"用户id"`
-	ApiKey   string `json:"apiKey" comment:"api key"`
-	Username string `json:"username" comment:"用户名"`
-	Password string `json:"password" comment:"密码"`
+	Id          int    `json:"-" comment:""` //
+	UserId      string `json:"userId" comment:"用户id"`
+	ApiKey      string `json:"apiKey" comment:"api key"`
+	SecretKey   string `json:"secretKey" comment:"私钥"`
+	Exchange    string `json:"exchange" comment:"交易所"`
+	AccountName string `json:"accountName" comment:"账号别名"`
 	common.ControlBy
 }
 
@@ -43,8 +42,9 @@ func (s *BusPriceTriggerStrategyApikeyConfigInsertReq) Generate(model *models.Bu
 	}
 	model.UserId = s.UserId
 	model.ApiKey = s.ApiKey
-	model.Username = s.Username
-	model.Password = s.Password
+	model.SecretKey = s.SecretKey
+	model.Exchange = s.Exchange
+	model.AccountName = s.AccountName
 	model.CreateBy = s.CreateBy // 添加这而，需要记录是被谁创建的
 }
 
@@ -52,12 +52,19 @@ func (s *BusPriceTriggerStrategyApikeyConfigInsertReq) GetId() interface{} {
 	return s.Id
 }
 
+type BusPriceTriggerStrategyApikeyConfigCheckReq struct {
+	ApiKey    string `json:"apiKey" comment:"api key"`
+	SecretKey string `json:"secretKey" comment:"私钥"`
+	Exchange  string `json:"exchange" comment:"交易所"`
+}
+
 type BusPriceTriggerStrategyApikeyConfigUpdateReq struct {
-	Id       int    `uri:"id" comment:""` //
-	UserId   string `json:"userId" comment:"用户id"`
-	ApiKey   string `json:"apiKey" comment:"api key"`
-	Username string `json:"username" comment:"用户名"`
-	Password string `json:"password" comment:"密码"`
+	Id          int    `uri:"id" comment:""` //
+	UserId      string `json:"userId" comment:"用户id"`
+	ApiKey      string `json:"apiKey" comment:"api key"`
+	SecretKey   string `json:"secretKey" comment:"私钥"`
+	Exchange    string `json:"exchange" comment:"交易所"`
+	AccountName string `json:"accountName" comment:"账号别名"`
 	common.ControlBy
 }
 
@@ -67,8 +74,9 @@ func (s *BusPriceTriggerStrategyApikeyConfigUpdateReq) Generate(model *models.Bu
 	}
 	model.UserId = s.UserId
 	model.ApiKey = s.ApiKey
-	model.Username = s.Username
-	model.Password = s.Password
+	model.SecretKey = s.SecretKey
+	model.Exchange = s.Exchange
+	model.AccountName = s.AccountName
 	model.UpdateBy = s.UpdateBy // 添加这而，需要记录是被谁更新的
 }
 

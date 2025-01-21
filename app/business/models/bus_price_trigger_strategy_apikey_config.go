@@ -7,10 +7,11 @@ import (
 type BusPriceTriggerStrategyApikeyConfig struct {
 	models.Model
 
-	UserId   string `json:"userId" gorm:"type:bigint;comment:用户id"`
-	ApiKey   string `json:"apiKey" gorm:"type:varchar(255);comment:api key"`
-	Username string `json:"username" gorm:"type:varchar(255);comment:用户名"`
-	Password string `json:"password" gorm:"type:varchar(255);comment:密码"`
+	UserId      string `json:"userId" gorm:"type:bigint;comment:用户id"`
+	ApiKey      string `json:"apiKey" gorm:"type:varchar(255);comment:api key"`
+	SecretKey   string `json:"secretKey" gorm:"type:varchar(255);comment:私钥"`
+	AccountName string `json:"accountName" gorm:"type:varchar(255);comment:用户名"`
+	Exchange    string `json:"exchange" gorm:"type:varchar(32);comment:交易所"`
 	models.ModelTime
 	models.ControlBy
 }

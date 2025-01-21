@@ -90,7 +90,20 @@ func (e *BusPriceTriggerStrategyInstance) Insert(c *dto.BusPriceTriggerStrategyI
 	}
 	e.Log.Infof("instance id : %d\r\n", data.Id)
 
+	var apiKeyConfig models.BusPriceTriggerStrategyApikeyConfig
+	err = tx.First(&apiKeyConfig, c.Id).Error
+	if err != nil {
+		tx.Rollback()
+		e.Log.Errorf("cannot found apikey config:%s \r\n", err)
+	}
+
 	//创建成功后， 自动通过grpc启动
+	apiConfigReq := trigger_service.APIConfig{
+		ApiKey:    apiKeyConfig.ApiKey,
+		SecretKey: apiKeyConfig.SecretKey,
+		Exchange:  apiKeyConfig.Exchange,
+	}
+
 	request := &trigger_service.StartTriggerRequest{
 		InstanceId: strconv.Itoa(data.Id),
 		OpenPrice:  c.OpenPrice,
@@ -99,6 +112,7 @@ func (e *BusPriceTriggerStrategyInstance) Insert(c *dto.BusPriceTriggerStrategyI
 		Amount:     c.Amount,
 		Symbol:     c.Symbol,
 		StopTime:   strconv.FormatInt(c.CloseTime.UnixMilli(), 10),
+		ApiConfig:  &apiConfigReq,
 	}
 	_, err = client.StartInstance(request)
 	if err != nil {

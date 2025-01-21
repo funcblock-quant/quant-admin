@@ -4,6 +4,8 @@ import (
 	"errors"
 	"github.com/go-admin-team/go-admin-core/sdk/service"
 	"gorm.io/gorm"
+	"quanta-admin/app/grpc/client"
+	"quanta-admin/app/grpc/proto/client/trigger_service"
 
 	"quanta-admin/app/business/models"
 	"quanta-admin/app/business/service/dto"
@@ -57,6 +59,23 @@ func (e *BusPriceTriggerStrategyApikeyConfig) Get(d *dto.BusPriceTriggerStrategy
 	return nil
 }
 
+// CheckApiKeyHealth 测试apikey 连通性
+func (e *BusPriceTriggerStrategyApikeyConfig) CheckApiKeyHealth(c *dto.BusPriceTriggerStrategyApikeyConfigCheckReq) (bool, error) {
+	var err error
+
+	grpcReq := trigger_service.APIConfig{
+		ApiKey:    c.ApiKey,
+		SecretKey: c.SecretKey,
+		Exchange:  c.Exchange,
+	}
+	isHealth, err := client.CheckApiKeyHealth(&grpcReq)
+	if err != nil {
+		e.Log.Errorf("check api key health error:%s \r\n", err)
+		return false, err
+	}
+	return isHealth, nil
+}
+
 // Insert 创建BusPriceTriggerStrategyApikeyConfig对象
 func (e *BusPriceTriggerStrategyApikeyConfig) Insert(c *dto.BusPriceTriggerStrategyApikeyConfigInsertReq) error {
 	var err error
@@ -93,6 +112,10 @@ func (e *BusPriceTriggerStrategyApikeyConfig) Update(c *dto.BusPriceTriggerStrat
 // Remove 删除BusPriceTriggerStrategyApikeyConfig
 func (e *BusPriceTriggerStrategyApikeyConfig) Remove(d *dto.BusPriceTriggerStrategyApikeyConfigDeleteReq, p *actions.DataPermission) error {
 	var data models.BusPriceTriggerStrategyApikeyConfig
+	var instance models.BusPriceTriggerStrategyInstance
+
+	e.Orm.Model(&instance).
+		Where("status = ? and ")
 
 	db := e.Orm.Model(&data).
 		Scopes(

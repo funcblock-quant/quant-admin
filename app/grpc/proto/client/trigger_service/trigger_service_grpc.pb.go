@@ -24,6 +24,7 @@ const _ = grpc.SupportPackageIsVersion7
 const (
 	TriggerInstance_StartInstance_FullMethodName = "/grpc_service.TriggerInstance/StartInstance"
 	TriggerInstance_ListInstances_FullMethodName = "/grpc_service.TriggerInstance/ListInstances"
+	TriggerInstance_CheckApiKey_FullMethodName   = "/grpc_service.TriggerInstance/CheckApiKey"
 )
 
 // TriggerInstanceClient is the client API for TriggerInstance service.
@@ -38,6 +39,8 @@ type TriggerInstanceClient interface {
 	//
 	// 查看所有启动的实例ids
 	ListInstances(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*TriggerListResponse, error)
+	// 检查apikey连通性
+	CheckApiKey(ctx context.Context, in *APIConfig, opts ...grpc.CallOption) (*CheckApiKeyHealthyResponse, error)
 }
 
 type triggerInstanceClient struct {
@@ -66,6 +69,15 @@ func (c *triggerInstanceClient) ListInstances(ctx context.Context, in *emptypb.E
 	return out, nil
 }
 
+func (c *triggerInstanceClient) CheckApiKey(ctx context.Context, in *APIConfig, opts ...grpc.CallOption) (*CheckApiKeyHealthyResponse, error) {
+	out := new(CheckApiKeyHealthyResponse)
+	err := c.cc.Invoke(ctx, TriggerInstance_CheckApiKey_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TriggerInstanceServer is the server API for TriggerInstance service.
 // All implementations must embed UnimplementedTriggerInstanceServer
 // for forward compatibility
@@ -78,6 +90,8 @@ type TriggerInstanceServer interface {
 	//
 	// 查看所有启动的实例ids
 	ListInstances(context.Context, *emptypb.Empty) (*TriggerListResponse, error)
+	// 检查apikey连通性
+	CheckApiKey(context.Context, *APIConfig) (*CheckApiKeyHealthyResponse, error)
 	mustEmbedUnimplementedTriggerInstanceServer()
 }
 
@@ -90,6 +104,9 @@ func (UnimplementedTriggerInstanceServer) StartInstance(context.Context, *StartT
 }
 func (UnimplementedTriggerInstanceServer) ListInstances(context.Context, *emptypb.Empty) (*TriggerListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListInstances not implemented")
+}
+func (UnimplementedTriggerInstanceServer) CheckApiKey(context.Context, *APIConfig) (*CheckApiKeyHealthyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CheckApiKey not implemented")
 }
 func (UnimplementedTriggerInstanceServer) mustEmbedUnimplementedTriggerInstanceServer() {}
 
@@ -140,6 +157,24 @@ func _TriggerInstance_ListInstances_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TriggerInstance_CheckApiKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(APIConfig)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TriggerInstanceServer).CheckApiKey(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TriggerInstance_CheckApiKey_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TriggerInstanceServer).CheckApiKey(ctx, req.(*APIConfig))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // TriggerInstance_ServiceDesc is the grpc.ServiceDesc for TriggerInstance service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -154,6 +189,10 @@ var TriggerInstance_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListInstances",
 			Handler:    _TriggerInstance_ListInstances_Handler,
+		},
+		{
+			MethodName: "CheckApiKey",
+			Handler:    _TriggerInstance_CheckApiKey_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

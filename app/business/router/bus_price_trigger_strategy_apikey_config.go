@@ -24,4 +24,5 @@ func registerBusPriceTriggerStrategyApikeyConfigRouter(v1 *gin.RouterGroup, auth
 		r.PUT("/:id", actions.PermissionAction(), api.Update)
 		r.DELETE("", api.Delete)
 	}
+	r = v1.POST("checkApiKeyHealth", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.CheckApiKeyHealth)
 }
