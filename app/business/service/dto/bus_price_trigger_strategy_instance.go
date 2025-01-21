@@ -12,6 +12,7 @@ type BusPriceTriggerStrategyInstanceGetPageReq struct {
 	dto.Pagination `search:"-"`
 	CloseTime      time.Time `form:"closeTime"  search:"type:exact;column:close_time;table:bus_price_trigger_strategy_instance" comment:"停止时间"`
 	Status         string    `form:"status"  search:"type:exact;column:status;table:bus_price_trigger_strategy_instance" comment:"状态，created, started, stopped, closed"`
+	UserId         string    `form:"createBy"  search:"type:exact;column:create_by;table:bus_price_trigger_strategy_instance" comment:"创建人"`
 	BusPriceTriggerStrategyInstanceOrder
 }
 

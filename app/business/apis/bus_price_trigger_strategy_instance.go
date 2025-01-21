@@ -2,6 +2,7 @@ package apis
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-admin-team/go-admin-core/sdk/api"
@@ -42,7 +43,8 @@ func (e BusPriceTriggerStrategyInstance) GetPage(c *gin.Context) {
 		e.Error(500, err, err.Error())
 		return
 	}
-
+	userId := user.GetUserId(c)
+	req.UserId = strconv.Itoa(userId)
 	p := actions.GetPermissionFromContext(c)
 	list := make([]dto.BusPriceTriggerStrategyResp, 0)
 	var count int64
