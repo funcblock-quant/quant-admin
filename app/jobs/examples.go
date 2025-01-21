@@ -2,8 +2,13 @@ package jobs
 
 import (
 	"fmt"
+	"github.com/go-admin-team/go-admin-core/sdk"
+	"quanta-admin/app/business/daos"
+	"quanta-admin/app/business/models"
 	"quanta-admin/app/grpc/client"
+	"quanta-admin/app/grpc/proto/client/trigger_service"
 	"quanta-admin/notification/lark"
+	"strconv"
 	"time"
 )
 
@@ -15,6 +20,7 @@ func InitJob() {
 		"ExamplesOne":                 ExamplesOne{},
 		"MonitorArbitrageOpportunity": MonitorArbitrageOpportunity{}, //监控套利机会定时任务
 		"InstanceInspection":          InstanceInspection{},
+		"PriceTriggerInspection":      PriceTriggerInspection{},
 		// ...
 	}
 }
@@ -74,4 +80,79 @@ func (t InstanceInspection) Exec(arg interface{}) error {
 	fmt.Printf("instance:%+v\n", instance.InstanceIds)
 	fmt.Printf(str)
 	return nil
+}
+
+// PriceTriggerInspection 实例巡检，防止策略端服务重启后实例下线
+type PriceTriggerInspection struct{}
+
+func (t PriceTriggerInspection) Exec(arg interface{}) error {
+	str := time.Now().Format(timeFormat) + " [INFO] JobCore PriceTriggerInspection exec success"
+	instanceIds, err := client.ListInstances()
+	if err != nil {
+		fmt.Printf(err.Error())
+		return err
+	}
+	fmt.Printf("instanceIds:%+v\n", instanceIds)
+	service := daos.BusPriceTriggerInstanceDAO{
+		Db: sdk.Runtime.GetDbByKey("*"),
+	}
+	apiConfigService := daos.BusPriceTriggerApiConfigDAO{
+		Db: sdk.Runtime.GetDbByKey("*"),
+	}
+
+	instances := make([]models.BusPriceTriggerStrategyInstance, 0)
+	err = service.GetInstancesList(&instances)
+	if err != nil {
+		fmt.Printf(err.Error())
+		return err
+	}
+
+	for _, instance := range instances {
+		if instance.Status == "started" && !contains(instanceIds, strconv.Itoa(instance.Id)) && instance.CloseTime.Before(time.Now()) {
+			//中台状态为started，但是策略端没有，则需要重启
+			apiConfig := models.BusPriceTriggerStrategyApikeyConfig{}
+			err := apiConfigService.GetApiConfigById(instance.ApiConfig, &apiConfig)
+			if err != nil {
+				fmt.Printf("重启 instance id: %d 失败, 异常信息：%v", instance.Id, err.Error())
+				continue
+			}
+
+			apiConfigReq := trigger_service.APIConfig{
+				ApiKey:    apiConfig.ApiKey,
+				SecretKey: apiConfig.SecretKey,
+				Exchange:  apiConfig.Exchange,
+			}
+			request := &trigger_service.StartTriggerRequest{
+				InstanceId: strconv.Itoa(instance.Id),
+				OpenPrice:  instance.OpenPrice,
+				ClosePrice: instance.ClosePrice,
+				Side:       instance.Side,
+				Amount:     instance.Amount,
+				Symbol:     instance.Symbol,
+				StopTime:   strconv.FormatInt(instance.CloseTime.UnixMilli(), 10),
+				ApiConfig:  &apiConfigReq,
+			}
+
+			_, err = client.StartInstance(request)
+			if err != nil {
+				fmt.Errorf("Service grpc start error:%s \r\n", err)
+				continue
+			}
+		}
+		if instance.Status == "started" && instance.CloseTime.After(time.Now()) {
+			//超过close time，自动关停
+			instance.Status = "expired"
+		}
+	}
+	fmt.Printf(str)
+	return nil
+}
+
+func contains(instanceIds []string, target string) bool {
+	for _, id := range instanceIds {
+		if id == target {
+			return true
+		}
+	}
+	return false
 }

@@ -14,6 +14,8 @@ service TriggerInstance {
 //  rpc StopInstance (StopInstanceRequest) returns (google.protobuf.Empty);
   // 查看所有启动的实例ids
   rpc ListInstances (google.protobuf.Empty) returns (TriggerListResponse);
+  // 检查apikey连通性
+  rpc CheckApiKey (APIConfig) returns (CheckApiKeyHealthyResponse);
 }
 
 // Message definitions
@@ -25,6 +27,23 @@ message StartTriggerRequest {
   string        amount = 5; //开仓数量
   string        symbol = 6; // 交易对
   string        stop_time = 7; //停止时间
+  APIConfig     api_config = 8; //Apikey相关
+}
+
+message CheckApiKeyHealthyRequest {
+  string api_key = 1;
+  string secret_key = 2;
+  string exchange= 3;
+}
+
+message APIConfig {
+  string api_key = 1;
+  string secret_key = 2;
+  string exchange= 3;
+}
+
+message CheckApiKeyHealthyResponse {
+  bool is_health = 1;
 }
 
 message StartTriggerResponse {
@@ -38,4 +57,3 @@ message StopTriggerRequest {
 message TriggerListResponse {
   repeated string instance_ids = 1;
 }
-

@@ -15,6 +15,7 @@ type BusPriceTriggerStrategyInstance struct {
 	Side       string    `json:"side" gorm:"type:varchar(16);comment:买卖方向"`
 	Symbol     string    `json:"symbol" gorm:"type:varchar(64);comment:交易币种"`
 	CloseTime  time.Time `json:"closeTime" gorm:"type:timestamp;comment:停止时间"`
+	ApiConfig  int       `json:"apiConfig" gorm:"type:timestamp;comment:api配置id"`
 	Status     string    `json:"status" gorm:"type:varchar(16);comment:状态，created, started, stopped, closed"`
 	models.ModelTime
 	models.ControlBy
