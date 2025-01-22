@@ -109,7 +109,6 @@ func (t PriceTriggerInspection) Exec(arg interface{}) error {
 	}
 
 	for _, instance := range instances {
-		fmt.Printf("check instance:%+v\n", instance)
 		if instance.Status == "started" && !contains(instanceIds, strconv.Itoa(instance.Id)) && instance.CloseTime.After(time.Now()) {
 			//中台状态为started，但是策略端没有，则需要重启
 			apiConfig := models.BusPriceTriggerStrategyApikeyConfig{}
