@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"github.com/go-admin-team/go-admin-core/sdk/service"
+	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 	"quanta-admin/app/grpc/client"
 	"quanta-admin/app/grpc/proto/client/trigger_service"
@@ -34,12 +35,30 @@ func (e *BusPriceTriggerStrategyInstance) GetPage(c *dto.BusPriceTriggerStrategy
 		Count(count).Error
 
 	for index, strategy := range *list {
+		statistical := dto.BusPriceTriggerStrategyStatistical{}
 		details := make([]models.BusPriceMonitorForOptionHedging, 0)
 		err := e.Orm.Model(&detail).Where("strategy_instance_id = ?", strategy.Id).Order("id desc").Find(&details).Error
 		if err != nil {
 			e.Log.Errorf("BusPriceTriggerStrategyInstanceService Get details error:%s \r\n", err)
 			return err
 		}
+		totalOrderNum := len(details)
+		totalPnl := decimal.NewFromFloat(0)
+		for _, d := range details {
+			var pnl decimal.Decimal
+			if d.Pnl == "" {
+				pnl = decimal.NewFromFloat(0)
+			} else {
+				pnl, err = decimal.NewFromString(d.Pnl)
+				if err != nil {
+					e.Log.Errorf("BusPriceTriggerStrategyInstanceService Get details error:%s \r\n", err)
+				}
+			}
+			totalPnl = totalPnl.Add(pnl)
+		}
+		statistical.OrderNum = totalOrderNum
+		statistical.TotalPnl = totalPnl.StringFixed(8)
+		(*list)[index].Statistical = statistical
 		(*list)[index].Details = details
 	}
 	if err != nil {

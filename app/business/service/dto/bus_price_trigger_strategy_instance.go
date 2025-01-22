@@ -38,17 +38,24 @@ func (m *BusPriceTriggerStrategyInstanceGetPageReq) GetNeedSearch() interface{} 
 }
 
 type BusPriceTriggerStrategyResp struct {
-	Id         string                                   `json:"id"`
-	OpenPrice  string                                   `json:"openPrice"`
-	ClosePrice string                                   `json:"closePrice"`
-	Amount     string                                   `json:"amount"`
-	Side       string                                   `json:"side"`
-	Symbol     string                                   `json:"symbol"`
-	CloseTime  time.Time                                `json:"closeTime"`
-	Status     string                                   `json:"status"`
-	ApiConfig  int                                      `json:"apiConfig"`
-	CreatedAt  time.Time                                `json:"createdAt"`
-	Details    []models.BusPriceMonitorForOptionHedging `json:"details" gorm:"-"`
+	Id          string                                   `json:"id"`
+	OpenPrice   string                                   `json:"openPrice"`
+	ClosePrice  string                                   `json:"closePrice"`
+	Amount      string                                   `json:"amount"`
+	Side        string                                   `json:"side"`
+	Symbol      string                                   `json:"symbol"`
+	CloseTime   time.Time                                `json:"closeTime"`
+	Status      string                                   `json:"status"`
+	ApiConfig   int                                      `json:"apiConfig"`
+	CreatedAt   time.Time                                `json:"createdAt"`
+	Details     []models.BusPriceMonitorForOptionHedging `json:"details" gorm:"-"`
+	Statistical BusPriceTriggerStrategyStatistical       `json:"statistical" gorm:"-"`
+}
+
+// BusPriceTriggerStrategyStatistical 价格触发下单的统计数据
+type BusPriceTriggerStrategyStatistical struct {
+	OrderNum int    `json:"orderNum"`
+	TotalPnl string `json:"totalPnl"`
 }
 
 type BusPriceTriggerStrategyInstanceInsertReq struct {
