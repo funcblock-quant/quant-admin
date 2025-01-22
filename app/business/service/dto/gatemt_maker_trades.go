@@ -39,7 +39,7 @@ func (m *GatemtMakerTradesGetPageReq) GetNeedSearch() interface{} {
 }
 
 type GatemtMakerTradesGetListReq struct {
-	ClientOrderId int `uri:"clientOrderId"`
+	ClientOrderId string `uri:"clientOrderId"`
 }
 
 type GatemtMakerTradesInsertReq struct {
