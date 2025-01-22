@@ -10,5 +10,5 @@ type BusPriceTriggerApiConfigDAO struct {
 }
 
 func (dao *BusPriceTriggerApiConfigDAO) GetApiConfigById(id int, apiConfig *models.BusPriceTriggerStrategyApikeyConfig) error {
-	return dao.Db.Model(&models.BusPriceTriggerStrategyInstance{}).Where("id =", id).Find(apiConfig).Error
+	return dao.Db.Model(&models.BusPriceTriggerStrategyApikeyConfig{}).Where("id =", id).First(apiConfig).Error
 }
