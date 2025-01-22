@@ -86,7 +86,7 @@ func GetGrpcClient(serviceName string) (*ClientConn, error) {
 	defer cancel()
 
 	client, err := p.(*Pool).Get(ctx)
-	if err != nil {
+	if err != nil || client == nil {
 		return nil, fmt.Errorf("get grpc client from pool for %s failed: %w", serviceName, err)
 	}
 	fmt.Printf("get gRPC client %s successfully.\n", serviceName)

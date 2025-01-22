@@ -15,6 +15,9 @@ func StartInstance(request *trigger_service.StartTriggerRequest) (string, error)
 	if err != nil {
 		return "", fmt.Errorf("获取grpc客户端失败: %w", err)
 	}
+	if clientConn == nil || clientConn.ClientConn == nil { // 再次检查 clientConn 是否为 nil
+		return "", fmt.Errorf("grpc客户端连接为空")
+	}
 	defer clientConn.Close() // 确保连接在使用后返回连接池
 
 	// 创建 gRPC 客户端实例
@@ -39,10 +42,19 @@ func StartInstance(request *trigger_service.StartTriggerRequest) (string, error)
 func ListInstances() ([]string, error) {
 	// 获取 gRPC 客户端连接
 	clientConn, err := pool.GetGrpcClient("trigger-service")
+	fmt.Printf("clientConn: %+v\n", clientConn)
 	if err != nil {
 		return nil, fmt.Errorf("获取grpc客户端失败: %w", err)
 	}
-	defer clientConn.Close() // 确保连接在使用后返回连接池
+	if clientConn == nil || clientConn.ClientConn == nil { // 再次检查 clientConn 是否为 nil
+		return nil, fmt.Errorf("grpc客户端连接为空")
+	}
+
+	defer func() {
+		if clientConn != nil {
+			clientConn.Close()
+		}
+	}() // 确保连接在使用后返回连接池
 
 	// 创建 gRPC 客户端实例
 	c := trigger_service.NewTriggerInstanceClient(clientConn)
@@ -67,6 +79,9 @@ func CheckApiKeyHealth(request *trigger_service.APIConfig) (bool, error) {
 	clientConn, err := pool.GetGrpcClient("trigger-service")
 	if err != nil {
 		return false, fmt.Errorf("获取grpc客户端失败: %w", err)
+	}
+	if clientConn == nil || clientConn.ClientConn == nil { // 再次检查 clientConn 是否为 nil
+		return false, fmt.Errorf("grpc客户端连接为空")
 	}
 	defer clientConn.Close() // 确保连接在使用后返回连接池
 

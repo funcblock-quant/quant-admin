@@ -49,6 +49,9 @@ func StopInstance(serviceName string, instanceId string) error {
 	if err != nil {
 		return fmt.Errorf("获取 %s grpc客户端失败: %w", serviceName, err)
 	}
+	if clientConn == nil || clientConn.ClientConn == nil { // 再次检查 clientConn 是否为 nil
+		return fmt.Errorf("grpc客户端连接为空")
+	}
 	defer clientConn.Close() // 确保连接在使用后返回连接池
 
 	// 创建 gRPC 客户端实例
@@ -76,6 +79,9 @@ func ListInstance(serviceName string) (*instance_service.InstanceListResponse, e
 	clientConn, err := pool.GetGrpcClient(serviceName)
 	if err != nil {
 		return nil, fmt.Errorf("获取 %s grpc客户端失败: %w", serviceName, err)
+	}
+	if clientConn == nil || clientConn.ClientConn == nil { // 再次检查 clientConn 是否为 nil
+		return nil, fmt.Errorf("grpc客户端连接为空")
 	}
 	defer clientConn.Close() // 确保连接在使用后返回连接池
 
