@@ -17,10 +17,11 @@ import (
 // 字典 key 可以配置到 自动任务 调用目标 中；
 func InitJob() {
 	jobList = map[string]JobExec{
-		"ExamplesOne":                 ExamplesOne{},
-		"MonitorArbitrageOpportunity": MonitorArbitrageOpportunity{}, //监控套利机会定时任务
-		"InstanceInspection":          InstanceInspection{},
-		"PriceTriggerInspection":      PriceTriggerInspection{},
+		"ExamplesOne":                  ExamplesOne{},
+		"MonitorArbitrageOpportunity":  MonitorArbitrageOpportunity{}, //监控套利机会定时任务
+		"InstanceInspection":           InstanceInspection{},
+		"PriceTriggerInspection":       PriceTriggerInspection{},
+		"PriceTriggerExpireInspection": PriceTriggerExpireInspection{},
 		// ...
 	}
 }
@@ -108,6 +109,7 @@ func (t PriceTriggerInspection) Exec(arg interface{}) error {
 	}
 
 	for _, instance := range instances {
+		fmt.Printf("check instance:%+v\n", instance)
 		if instance.Status == "started" && !contains(instanceIds, strconv.Itoa(instance.Id)) && instance.CloseTime.Before(time.Now()) {
 			//中台状态为started，但是策略端没有，则需要重启
 			apiConfig := models.BusPriceTriggerStrategyApikeyConfig{}
@@ -139,10 +141,6 @@ func (t PriceTriggerInspection) Exec(arg interface{}) error {
 				continue
 			}
 		}
-		if instance.Status == "started" && instance.CloseTime.After(time.Now()) {
-			//超过close time，自动关停
-			instance.Status = "expired"
-		}
 	}
 	fmt.Printf(str)
 	return nil
@@ -155,4 +153,36 @@ func contains(instanceIds []string, target string) bool {
 		}
 	}
 	return false
+}
+
+type PriceTriggerExpireInspection struct{}
+
+func (t PriceTriggerExpireInspection) Exec(arg interface{}) error {
+	str := time.Now().Format(timeFormat) + " [INFO] JobCore PriceTriggerExpireInspection exec success"
+	fmt.Println("开始执行price-trigger 过期扫描任务")
+	service := daos.BusPriceTriggerInstanceDAO{
+		Db: sdk.Runtime.GetDbByKey("*"),
+	}
+
+	instances := make([]models.BusPriceTriggerStrategyInstance, 0)
+	err := service.GetInstancesList(&instances)
+	if err != nil {
+		fmt.Printf(err.Error())
+		return err
+	}
+	expiredIds := make([]string, 0)
+	for _, instance := range instances {
+		if instance.Status == "started" && instance.CloseTime.Before(time.Now()) {
+			//超过close time，自动关停
+			expiredIds = append(expiredIds, strconv.Itoa(instance.Id))
+		}
+	}
+	fmt.Println("过期任务id：", expiredIds)
+	err = service.ExpireInstanceWithIds(expiredIds)
+	if err != nil {
+		fmt.Printf("关停过期下单实例失败, 异常信息：%v\n", err.Error())
+	}
+
+	fmt.Printf(str)
+	return nil
 }

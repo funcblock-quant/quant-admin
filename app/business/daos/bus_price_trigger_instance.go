@@ -16,3 +16,10 @@ func (dao *BusPriceTriggerInstanceDAO) GetInstancesListByIds(ids []string, insta
 func (dao *BusPriceTriggerInstanceDAO) GetInstancesList(instances *[]models.BusPriceTriggerStrategyInstance) error {
 	return dao.Db.Model(&models.BusPriceTriggerStrategyInstance{}).Find(instances).Error
 }
+
+func (dao *BusPriceTriggerInstanceDAO) ExpireInstanceWithIds(ids []string) error {
+	return dao.Db.Model(&models.BusPriceTriggerStrategyInstance{}).
+		Where("id in ?", ids).
+		Update("status", "expired").
+		Error
+}

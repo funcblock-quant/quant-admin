@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"sync"
 	"time"
 
@@ -181,12 +182,16 @@ func (p *Pool) Get(ctx context.Context) (*ClientConn, error) {
 	var err error
 	if wrapper.ClientConn == nil {
 		wrapper.ClientConn, err = p.factory(ctx)
+		//if err != nil || wrapper.ClientConn == nil {
+		//	// If there was an error, we want to put back a placeholder
+		//	// client in the channel
+		//	clients <- ClientConn{
+		//		pool: p,
+		//	}
+		//}
 		if err != nil || wrapper.ClientConn == nil {
-			// If there was an error, we want to put back a placeholder
-			// client in the channel
-			clients <- ClientConn{
-				pool: p,
-			}
+			log.Printf("grpc_pool: factory error: %v", err)
+			return nil, fmt.Errorf("create grpc client failed: %w", err) // 直接返回错误，不再放回通道
 		}
 		// This is a new connection, reset its initiated time
 		wrapper.timeInitiated = time.Now()
