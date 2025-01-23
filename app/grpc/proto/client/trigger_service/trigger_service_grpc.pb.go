@@ -23,6 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 
 const (
 	TriggerInstance_StartInstance_FullMethodName = "/grpc_service.TriggerInstance/StartInstance"
+	TriggerInstance_StopInstance_FullMethodName  = "/grpc_service.TriggerInstance/StopInstance"
 	TriggerInstance_ListInstances_FullMethodName = "/grpc_service.TriggerInstance/ListInstances"
 	TriggerInstance_CheckApiKey_FullMethodName   = "/grpc_service.TriggerInstance/CheckApiKey"
 )
@@ -34,9 +35,7 @@ type TriggerInstanceClient interface {
 	// 开启实例
 	StartInstance(ctx context.Context, in *StartTriggerRequest, opts ...grpc.CallOption) (*StartTriggerResponse, error)
 	// 暂停实例
-	//
-	//	rpc StopInstance (StopInstanceRequest) returns (google.protobuf.Empty);
-	//
+	StopInstance(ctx context.Context, in *StopTriggerRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// 查看所有启动的实例ids
 	ListInstances(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*TriggerListResponse, error)
 	// 检查apikey连通性
@@ -54,6 +53,15 @@ func NewTriggerInstanceClient(cc grpc.ClientConnInterface) TriggerInstanceClient
 func (c *triggerInstanceClient) StartInstance(ctx context.Context, in *StartTriggerRequest, opts ...grpc.CallOption) (*StartTriggerResponse, error) {
 	out := new(StartTriggerResponse)
 	err := c.cc.Invoke(ctx, TriggerInstance_StartInstance_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *triggerInstanceClient) StopInstance(ctx context.Context, in *StopTriggerRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, TriggerInstance_StopInstance_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -85,9 +93,7 @@ type TriggerInstanceServer interface {
 	// 开启实例
 	StartInstance(context.Context, *StartTriggerRequest) (*StartTriggerResponse, error)
 	// 暂停实例
-	//
-	//	rpc StopInstance (StopInstanceRequest) returns (google.protobuf.Empty);
-	//
+	StopInstance(context.Context, *StopTriggerRequest) (*emptypb.Empty, error)
 	// 查看所有启动的实例ids
 	ListInstances(context.Context, *emptypb.Empty) (*TriggerListResponse, error)
 	// 检查apikey连通性
@@ -101,6 +107,9 @@ type UnimplementedTriggerInstanceServer struct {
 
 func (UnimplementedTriggerInstanceServer) StartInstance(context.Context, *StartTriggerRequest) (*StartTriggerResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StartInstance not implemented")
+}
+func (UnimplementedTriggerInstanceServer) StopInstance(context.Context, *StopTriggerRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StopInstance not implemented")
 }
 func (UnimplementedTriggerInstanceServer) ListInstances(context.Context, *emptypb.Empty) (*TriggerListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListInstances not implemented")
@@ -135,6 +144,24 @@ func _TriggerInstance_StartInstance_Handler(srv interface{}, ctx context.Context
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(TriggerInstanceServer).StartInstance(ctx, req.(*StartTriggerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TriggerInstance_StopInstance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StopTriggerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TriggerInstanceServer).StopInstance(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TriggerInstance_StopInstance_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TriggerInstanceServer).StopInstance(ctx, req.(*StopTriggerRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -185,6 +212,10 @@ var TriggerInstance_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "StartInstance",
 			Handler:    _TriggerInstance_StartInstance_Handler,
+		},
+		{
+			MethodName: "StopInstance",
+			Handler:    _TriggerInstance_StopInstance_Handler,
 		},
 		{
 			MethodName: "ListInstances",

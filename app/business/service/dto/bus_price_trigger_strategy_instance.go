@@ -71,6 +71,10 @@ type BusPriceTriggerStrategyInstanceInsertReq struct {
 	common.ControlBy
 }
 
+type StopTriggerInstanceRequest struct {
+	InstanceId string `json:"-" comment:""`
+}
+
 func (s *BusPriceTriggerStrategyInstanceInsertReq) Generate(model *models.BusPriceTriggerStrategyInstance) {
 	if s.Id == 0 {
 		model.Model = common.Model{Id: s.Id}

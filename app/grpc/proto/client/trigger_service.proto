@@ -11,7 +11,7 @@ service TriggerInstance {
   // 开启实例
   rpc StartInstance (StartTriggerRequest) returns (StartTriggerResponse);
   // 暂停实例
-//  rpc StopInstance (StopInstanceRequest) returns (google.protobuf.Empty);
+  rpc StopInstance (StopTriggerRequest) returns (google.protobuf.Empty);
   // 查看所有启动的实例ids
   rpc ListInstances (google.protobuf.Empty) returns (TriggerListResponse);
   // 检查apikey连通性
