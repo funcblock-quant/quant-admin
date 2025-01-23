@@ -177,11 +177,12 @@ func (t PriceTriggerExpireInspection) Exec(arg interface{}) error {
 		}
 	}
 	fmt.Println("过期任务id：", expiredIds)
-	err = service.ExpireInstanceWithIds(expiredIds)
-	if err != nil {
-		fmt.Printf("关停过期下单实例失败, 异常信息：%v\n", err.Error())
+	if len(expiredIds) > 0 {
+		err = service.ExpireInstanceWithIds(expiredIds)
+		if err != nil {
+			fmt.Printf("关停过期下单实例失败, 异常信息：%v\n", err.Error())
+		}
 	}
-
 	fmt.Printf(str)
 	return nil
 }
