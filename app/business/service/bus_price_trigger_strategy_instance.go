@@ -174,15 +174,18 @@ func (e *BusPriceTriggerStrategyInstance) StopInstance(req *dto.StopTriggerInsta
 	}
 
 	e.Log.Infof("stop instance id : %d\r\n", data.Id)
-	request := trigger_service.StopTriggerRequest{}
+	request := trigger_service.StopTriggerRequest{
+		InstanceId: strconv.Itoa(data.Id),
+	}
 	err = client.StopTriggerInstance(&request)
+	err = nil
 	if err != nil {
 		e.Log.Errorf("Service StopInstance throw grpc error:%s \r\n", err)
 		return err
 	}
 	err = e.Orm.Model(&data).
-		Where("id = ?", req.InstanceId).
-		Update("status", "stopped").Error
+		Update("status", "stopped").
+		Error
 
 	if err != nil {
 		e.Log.Errorf("Service StopInstance throw db error:%s \r\n", err)
