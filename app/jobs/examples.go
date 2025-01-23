@@ -134,7 +134,7 @@ func (t PriceTriggerInspection) Exec(arg interface{}) error {
 				ApiConfig:  &apiConfigReq,
 			}
 
-			_, err = client.StartInstance(request)
+			_, err = client.StartTriggerInstance(request)
 			if err != nil {
 				fmt.Errorf("Service grpc start error:%s \r\n", err)
 				continue
