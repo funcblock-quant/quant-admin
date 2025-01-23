@@ -217,7 +217,7 @@ func (e BusPriceTriggerStrategyInstance) StopInstance(c *gin.Context) {
 		e.Error(500, err, err.Error())
 		return
 	}
-
+	e.Logger.Infof("req:%#v", req)
 	err = s.StopInstance(&req)
 	if err != nil {
 		e.Error(500, err, fmt.Sprintf("暂停实例失败，\r\n失败信息 %s", err.Error()))

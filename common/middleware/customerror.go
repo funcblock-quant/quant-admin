@@ -2,8 +2,10 @@ package middleware
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"runtime"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"time"
@@ -15,8 +17,8 @@ func CustomError(c *gin.Context) {
 	defer func() {
 		fmt.Printf("CustomError middleware\n")
 		if err := recover(); err != nil {
-			//log.Printf("Panic recovered: %v\n", err)
-			//debug.PrintStack() // 打印堆栈
+			log.Printf("Panic recovered: %v\n", err)
+			debug.PrintStack() // 打印堆栈
 			if c.IsAborted() {
 				c.Status(200)
 			}

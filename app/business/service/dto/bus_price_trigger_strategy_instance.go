@@ -72,7 +72,7 @@ type BusPriceTriggerStrategyInstanceInsertReq struct {
 }
 
 type StopTriggerInstanceRequest struct {
-	InstanceId string `json:"-" comment:""`
+	InstanceId string `json:"id" comment:""`
 }
 
 func (s *BusPriceTriggerStrategyInstanceInsertReq) Generate(model *models.BusPriceTriggerStrategyInstance) {
