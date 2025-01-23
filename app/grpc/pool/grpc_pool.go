@@ -165,6 +165,7 @@ func (p *Pool) Get(ctx context.Context) (*ClientConn, error) {
 	case wrapper = <-clients:
 		// All good
 	case <-ctx.Done():
+		fmt.Printf("grpc_pool ctx done")
 		return nil, ErrTimeout // it would better returns ctx.Err()
 	}
 
