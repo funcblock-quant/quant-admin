@@ -193,3 +193,36 @@ func (e BusPriceTriggerStrategyInstance) Delete(c *gin.Context) {
 	}
 	e.OK(req.GetId(), "删除成功")
 }
+
+// StopInstance 暂停策略
+// @Summary 暂停策略
+// @Description 暂停策略
+// @Tags 暂停策略
+// @Accept application/json
+// @Product application/json
+// @Param data body dto.BusPriceTriggerStrategyInstanceInsertReq true "data"
+// @Success 200 {object} response.Response	"{"code": 200, "message": "添加成功"}"
+// @Router /api/v1/stopTriggerInstance [post]
+// @Security Bearer
+func (e BusPriceTriggerStrategyInstance) StopInstance(c *gin.Context) {
+	req := dto.StopTriggerInstanceRequest{}
+	s := service.BusPriceTriggerStrategyInstance{}
+	err := e.MakeContext(c).
+		MakeOrm().
+		Bind(&req).
+		MakeService(&s.Service).
+		Errors
+	if err != nil {
+		e.Logger.Error(err)
+		e.Error(500, err, err.Error())
+		return
+	}
+	e.Logger.Infof("req:%#v", req)
+	err = s.StopInstance(&req)
+	if err != nil {
+		e.Error(500, err, fmt.Sprintf("暂停实例失败，\r\n失败信息 %s", err.Error()))
+		return
+	}
+
+	e.OK("", "暂停实例成功")
+}

@@ -109,8 +109,7 @@ func (t PriceTriggerInspection) Exec(arg interface{}) error {
 	}
 
 	for _, instance := range instances {
-		fmt.Printf("check instance:%+v\n", instance)
-		if instance.Status == "started" && !contains(instanceIds, strconv.Itoa(instance.Id)) && instance.CloseTime.Before(time.Now()) {
+		if instance.Status == "started" && !contains(instanceIds, strconv.Itoa(instance.Id)) && instance.CloseTime.After(time.Now()) {
 			//中台状态为started，但是策略端没有，则需要重启
 			apiConfig := models.BusPriceTriggerStrategyApikeyConfig{}
 			err := apiConfigService.GetApiConfigById(instance.ApiConfig, &apiConfig)
@@ -135,7 +134,7 @@ func (t PriceTriggerInspection) Exec(arg interface{}) error {
 				ApiConfig:  &apiConfigReq,
 			}
 
-			_, err = client.StartInstance(request)
+			_, err = client.StartTriggerInstance(request)
 			if err != nil {
 				fmt.Errorf("Service grpc start error:%s \r\n", err)
 				continue
@@ -178,11 +177,12 @@ func (t PriceTriggerExpireInspection) Exec(arg interface{}) error {
 		}
 	}
 	fmt.Println("过期任务id：", expiredIds)
-	err = service.ExpireInstanceWithIds(expiredIds)
-	if err != nil {
-		fmt.Printf("关停过期下单实例失败, 异常信息：%v\n", err.Error())
+	if len(expiredIds) > 0 {
+		err = service.ExpireInstanceWithIds(expiredIds)
+		if err != nil {
+			fmt.Printf("关停过期下单实例失败, 异常信息：%v\n", err.Error())
+		}
 	}
-
 	fmt.Printf(str)
 	return nil
 }

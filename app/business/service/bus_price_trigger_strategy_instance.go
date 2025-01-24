@@ -134,7 +134,7 @@ func (e *BusPriceTriggerStrategyInstance) Insert(c *dto.BusPriceTriggerStrategyI
 		StopTime:   strconv.FormatInt(c.CloseTime.UnixMilli(), 10),
 		ApiConfig:  &apiConfigReq,
 	}
-	_, err = client.StartInstance(request)
+	_, err = client.StartTriggerInstance(request)
 	if err != nil {
 		tx.Rollback()
 		e.Log.Errorf("Service grpc start error:%s \r\n", err)
@@ -150,6 +150,47 @@ func (e *BusPriceTriggerStrategyInstance) Insert(c *dto.BusPriceTriggerStrategyI
 		return err
 	}
 
+	return nil
+}
+
+// StopInstance
+// @Summary 暂停实例
+// @Description 获取JSON
+// @Tags 用户
+// @Accept  application/json
+// @Product application/json
+// @Param
+// @Success 200 {object} response.Response "{"code": 200, "data": [...]}"
+// @Router /api/v1/stopInstance [post]
+// @Security Bearer
+func (e *BusPriceTriggerStrategyInstance) StopInstance(req *dto.StopTriggerInstanceRequest) error {
+	var err error
+	data := models.BusPriceTriggerStrategyInstance{}
+
+	err = e.Orm.Model(&data).First(&data, req.InstanceId).Error
+	if err != nil {
+		e.Log.Errorf("Service StopInstance error:%s \r\n", err)
+		return err
+	}
+
+	e.Log.Infof("stop instance id : %d\r\n", data.Id)
+	request := trigger_service.StopTriggerRequest{
+		InstanceId: strconv.Itoa(data.Id),
+	}
+	err = client.StopTriggerInstance(&request)
+	err = nil
+	if err != nil {
+		e.Log.Errorf("Service StopInstance throw grpc error:%s \r\n", err)
+		return err
+	}
+	err = e.Orm.Model(&data).
+		Update("status", "stopped").
+		Error
+
+	if err != nil {
+		e.Log.Errorf("Service StopInstance throw db error:%s \r\n", err)
+		return err
+	}
 	return nil
 }
 
