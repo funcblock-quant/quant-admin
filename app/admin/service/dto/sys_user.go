@@ -119,6 +119,19 @@ func (s *SysUserInsertReq) GetId() interface{} {
 	return s.UserId
 }
 
+type GetTwoFaCodeResp struct {
+	TwoFaSecret  string `json:"twoFaSecret" comment:"2fa密钥"`
+	TwoFaCodeUrl string `json:"twoFaCodeUrl" comment:"2fa二维码"`
+}
+
+type BindTwoFaVerifyRequest struct {
+	TwoFaCode string `json:"twoFaCode" comment:"2fa验证码"`
+}
+
+type UnBindTwoFaVerifyRequest struct {
+	TwoFaCode string `json:"twoFaCode" comment:"2fa验证码"`
+}
+
 type SysUserUpdateReq struct {
 	UserId   int    `json:"userId" comment:"用户ID"` // 用户ID
 	Username string `json:"username" comment:"用户名" vd:"len($)>0"`
