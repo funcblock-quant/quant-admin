@@ -21,16 +21,50 @@ func (e *GatemtMakerOrders) GetPage(c *dto.GatemtMakerOrdersGetPageReq, p *actio
 	var err error
 	var data models.GatemtMakerOrders
 
-	err = e.Orm.Model(&data).
+	//err = e.Orm.Model(&data).
+	//	Scopes(
+	//		cDto.MakeCondition(c.GetNeedSearch()),
+	//		cDto.Paginate(c.GetPageSize(), c.GetPageIndex()),
+	//		actions.Permission(data.TableName(), p),
+	//	).
+	//	Find(list).Limit(-1).Offset(-1).
+	//	Count(count).Error
+	//if err != nil {
+	//	e.Log.Errorf("GatemtMakerOrdersService GetPage error:%s \r\n", err)
+	//	return err
+	//}
+	//return nil
+
+	orderIDField := "client_order_id"
+	tradeOrderIDField := "client_order_id"
+
+	subQuery := e.Orm.Table("gatemt_maker_trades").Select(tradeOrderIDField)
+
+	var total int64
+	countDB := e.Orm.Model(&data).
+		Joins("INNER JOIN (?) AS t ON gatemt_maker_orders."+orderIDField+" = t."+tradeOrderIDField, subQuery).
 		Scopes(
 			cDto.MakeCondition(c.GetNeedSearch()),
-			cDto.Paginate(c.GetPageSize(), c.GetPageIndex()),
 			actions.Permission(data.TableName(), p),
-		).
-		Find(list).Limit(-1).Offset(-1).
-		Count(count).Error
+		)
+	err = countDB.Count(&total).Error
 	if err != nil {
-		e.Log.Errorf("GatemtMakerOrdersService GetPage error:%s \r\n", err)
+		e.Log.Errorf("GatemtMakerOrdersService GetPage Count error:%s \r\n", err)
+		return err
+	}
+	*count = total
+
+	findDB := e.Orm.Model(&data).
+		Joins("INNER JOIN (?) AS t ON gatemt_maker_orders."+orderIDField+" = t."+tradeOrderIDField, subQuery).
+		Scopes(
+			cDto.MakeCondition(c.GetNeedSearch()),
+			actions.Permission(data.TableName(), p),
+			cDto.Paginate(c.GetPageSize(), c.GetPageIndex()),
+		)
+
+	err = findDB.Find(list).Error
+	if err != nil {
+		e.Log.Errorf("GatemtMakerOrdersService GetPage Find error:%s \r\n", err)
 		return err
 	}
 	return nil

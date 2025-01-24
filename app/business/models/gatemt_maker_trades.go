@@ -16,12 +16,14 @@ type GatemtMakerTrades struct {
 	BinanceLimitClientOrderId                  string `json:"binanceLimitClientOrderId" gorm:"type:varchar(50);comment:BinanceLimitClientOrderId"`
 	BinanceLimitOrderAmount                    string `json:"binanceLimitOrderAmount" gorm:"type:decimal(28,10);comment:BinanceLimitOrderAmount"`
 	BinanceLimitOrderId                        string `json:"binanceLimitOrderId" gorm:"type:bigint;comment:BinanceLimitOrderId"`
+	BinanceLimitOrderErr                       string `json:"binanceLimitOrderErr" gorm:"type:text;comment:BinanceLimitOrderErr"`
 	BinanceMarketClientOrderId                 string `json:"binanceMarketClientOrderId" gorm:"type:varchar(50);comment:BinanceMarketClientOrderId"`
 	BinanceMarketOrderAmount                   string `json:"binanceMarketOrderAmount" gorm:"type:decimal(28,10);comment:BinanceMarketOrderAmount"`
 	BinanceMarketOrderId                       string `json:"binanceMarketOrderId" gorm:"type:bigint;comment:BinanceMarketOrderId"`
 	BinanceMarketOrderStatus                   string `json:"binanceMarketOrderStatus" gorm:"type:varchar(20);comment:BinanceMarketOrderStatus"`
 	BinanceMarketOrderExecutedQuantity         string `json:"binanceMarketOrderExecutedQuantity" gorm:"type:decimal(28,10);comment:BinanceMarketOrderExecutedQuantity"`
 	BinanceMarketOrderCummulativeQuoteQuantity string `json:"binanceMarketOrderCummulativeQuoteQuantity" gorm:"type:decimal(28,10);comment:BinanceMarketOrderCummulativeQuoteQuantity"`
+	BinanceMarketOrderErr                      string `json:"binanceMarketOrderErr" gorm:"type:text;comment:BinanceMarketOrderErr"`
 	Data                                       string `json:"data" gorm:"type:json;comment:Data"`
 }
 

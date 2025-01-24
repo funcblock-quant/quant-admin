@@ -16,8 +16,6 @@ type GatemtMakerOrders struct {
 	LocalCreatedAt   string `json:"localCreatedAt" gorm:"type:bigint;comment:gatemt order created at"`
 	ExchangeOrderId  string `json:"exchangeOrderId" gorm:"type:varchar(50);comment:ExchangeOrderId"`
 	Data             string `json:"data" gorm:"type:json;comment:Data"`
-	CreatedAt        int    `json:"createdAt" gorm:"comment:创建时间"`
-	UpdatedAt        int    `json:"updatedAt" gorm:"comment:最后更新时间"`
 }
 
 func (GatemtMakerOrders) TableName() string {
