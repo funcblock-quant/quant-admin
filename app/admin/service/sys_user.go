@@ -2,8 +2,10 @@ package service
 
 import (
 	"errors"
+	"github.com/pquerna/otp/totp"
 	"quanta-admin/app/admin/models"
 	"quanta-admin/app/admin/service/dto"
+	"quanta-admin/common/utils"
 
 	log "github.com/go-admin-team/go-admin-core/logger"
 	"github.com/go-admin-team/go-admin-core/sdk/pkg"
@@ -56,6 +58,143 @@ func (e *SysUser) Get(d *dto.SysUserById, p *actions.DataPermission, model *mode
 		e.Log.Errorf("db error: %s", err)
 		return err
 	}
+	return nil
+}
+
+// Get2FACode 为sysuser生成2fa绑定的二维码
+func (e *SysUser) Get2FACode(userId *int, resp *dto.GetTwoFaCodeResp) error {
+	data := models.SysUser{}
+
+	err := e.Orm.Model(&data).Debug().
+		First(&data, userId).Error
+	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+		err = errors.New("查看对象不存在或无权查看")
+		e.Log.Errorf("db error: %s", err)
+		return err
+	}
+	if err != nil {
+		e.Log.Errorf("db error: %s", err)
+		return err
+	}
+	if data.ActiveTwoFa {
+		err := errors.New("当前用户已启用2fa")
+		e.Log.Errorf("当前用户已经启用2fa: %s", err)
+		return err
+	}
+
+	faSecret, faCode, err := utils.Generate2FA(data.Username)
+	if err != nil {
+		e.Log.Errorf("生成2fa密钥失败: %s", err)
+		return err
+	}
+
+	hashedSecret, err := utils.Encrypt(faSecret)
+	if err != nil {
+		e.Log.Errorf("2fa密钥加密失败: %s", err)
+		return err
+	}
+	err = e.Orm.Model(&data).Update("two_fa_secret", hashedSecret).Error
+	if err != nil {
+		e.Log.Errorf("db error: %s", err)
+		return err
+	}
+	resp.TwoFaSecret = faSecret
+	resp.TwoFaCodeUrl = faCode
+
+	return nil
+}
+
+// Verify2FACode 为sysuser绑定2fa验证code
+func (e *SysUser) Verify2FACode(userId *int, req *dto.BindTwoFaVerifyRequest) error {
+	data := models.SysUser{}
+	e.Log.Infof("userId:%d, req:%+v", userId, req)
+	err := e.Orm.Model(&data).Debug().
+		First(&data, userId).Error
+	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+		err = errors.New("查看对象不存在或无权查看")
+		e.Log.Errorf("db error: %s", err)
+		return err
+	}
+	if err != nil {
+		e.Log.Errorf("db error: %s", err)
+		return err
+	}
+	if data.ActiveTwoFa {
+		err := errors.New("当前用户已启用2fa，不能重复绑定")
+		e.Log.Errorf("当前用户已经启用2fa: %s", err)
+		return err
+	}
+
+	// 从数据库中获取哈希后的密钥
+	encryptSecret := data.TwoFaSecret
+	decryptSecret, err := utils.Decrypt(encryptSecret)
+	if err != nil {
+		e.Log.Errorf("2fa密钥解密失败: %s", err)
+		return err
+	}
+	valid := totp.Validate(req.TwoFaCode, decryptSecret)
+	if !valid {
+		e.Log.Errorf("2fa验证失败")
+		err = errors.New("2fa验证失败")
+		return err
+	}
+	e.Log.Info("2fa验证结果", valid)
+
+	err = e.Orm.Model(&data).Debug().
+		Where("user_id = ?", userId).
+		Update("active_two_fa", true).Error
+	if err != nil {
+		e.Log.Errorf("db error: %s", err)
+		return err
+	}
+
+	return nil
+}
+
+// Unbind2FACode 为SysUser解绑2fa验证code
+func (e *SysUser) Unbind2FACode(userId *int, req *dto.UnBindTwoFaVerifyRequest) error {
+	data := models.SysUser{}
+	err := e.Orm.Model(&data).Debug().
+		First(&data, userId).Error
+	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+		err = errors.New("查看对象不存在或无权查看")
+		e.Log.Errorf("db error: %s", err)
+		return err
+	}
+	if err != nil {
+		e.Log.Errorf("db error: %s", err)
+		return err
+	}
+	if !data.ActiveTwoFa {
+		err := errors.New("当前用户未绑定2fa")
+		e.Log.Errorf("当前用户未绑定2fa: %s", err)
+		return err
+	}
+
+	// 从数据库中获取哈希后的密钥
+	encryptSecret := data.TwoFaSecret
+	decryptSecret, err := utils.Decrypt(encryptSecret)
+	if err != nil {
+		e.Log.Errorf("2fa密钥解密失败: %s", err)
+		return err
+	}
+	valid := totp.Validate(req.TwoFaCode, decryptSecret)
+	if !valid {
+		e.Log.Errorf("2fa验证失败")
+		err = errors.New("2fa验证失败")
+		return err
+	}
+	e.Log.Info("2fa验证结果", valid)
+
+	err = e.Orm.Model(&data).Debug().
+		Where("user_id = ?", userId).
+		Update("active_two_fa", false).
+		Update("two_fa_secret", "").Error
+	if err != nil {
+		e.Log.Errorf("db error: %s", err)
+		return err
+	}
+
 	return nil
 }
 

@@ -69,6 +69,7 @@ func sysCheckRoleRouterInit(r *gin.RouterGroup, authMiddleware *jwt.GinJWTMiddle
 	v1 := r.Group("/api/v1")
 	{
 		v1.POST("/login", authMiddleware.LoginHandler)
+		v1.POST("/login2FAVerify", authMiddleware.Login2FAHandler)
 		// Refresh time can be longer than token timeout
 		v1.GET("/refresh_token", authMiddleware.RefreshHandler)
 	}

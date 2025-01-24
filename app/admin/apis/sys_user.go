@@ -1,16 +1,15 @@
 package apis
 
 import (
-	"github.com/gin-gonic/gin/binding"
-	"golang.org/x/crypto/bcrypt"
-	"net/http"
-	"quanta-admin/app/admin/models"
-
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"github.com/go-admin-team/go-admin-core/sdk/api"
 	"github.com/go-admin-team/go-admin-core/sdk/pkg/jwtauth/user"
 	_ "github.com/go-admin-team/go-admin-core/sdk/pkg/response"
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
+	"net/http"
+	"quanta-admin/app/admin/models"
 
 	"quanta-admin/app/admin/service"
 	"quanta-admin/app/admin/service/dto"
@@ -88,6 +87,89 @@ func (e SysUser) Get(c *gin.Context) {
 		return
 	}
 	e.OK(object, "查询成功")
+}
+
+// Get2FACode
+// @Summary 用户获取绑定2FA的二维码
+// @Description 获取JSON
+// @Tags 用户
+// @Success 200 {object} response.Response "{"code": 200, "data": [...]}"
+// @Security Bearer
+func (e SysUser) Get2FACode(c *gin.Context) {
+	s := service.SysUser{}
+	err := e.MakeContext(c).
+		MakeOrm().
+		MakeService(&s.Service).
+		Errors
+	if err != nil {
+		e.Logger.Error(err)
+		e.Error(500, err, err.Error())
+		return
+	}
+	object := dto.GetTwoFaCodeResp{}
+	userId := user.GetUserId(c)
+	err = s.Get2FACode(&userId, &object)
+	if err != nil {
+		e.Error(http.StatusUnprocessableEntity, err, "获取2fa验证码失败")
+		return
+	}
+	e.OK(object, "获取2fa验证码成功")
+}
+
+// Verify2FACode
+// @Summary 用户绑定2FA
+// @Description 获取JSON
+// @Tags 用户
+// @Success 200 {object} response.Response "{"code": 200, "data": [...]}"
+// @Security Bearer
+func (e SysUser) Verify2FACode(c *gin.Context) {
+	s := service.SysUser{}
+	req := dto.BindTwoFaVerifyRequest{}
+	err := e.MakeContext(c).
+		MakeOrm().
+		Bind(&req).
+		MakeService(&s.Service).
+		Errors
+	if err != nil {
+		e.Logger.Error(err)
+		e.Error(500, err, err.Error())
+		return
+	}
+	userId := user.GetUserId(c)
+	err = s.Verify2FACode(&userId, &req)
+	if err != nil {
+		e.Error(500, err, "校验2fa验证码失败")
+		return
+	}
+	e.OK("", "校验2fa验证码成功")
+}
+
+// Unbind2FACode
+// @Summary 用户解绑2FA
+// @Description 获取JSON
+// @Tags 用户
+// @Success 200 {object} response.Response "{"code": 200, "data": [...]}"
+// @Security Bearer
+func (e SysUser) Unbind2FACode(c *gin.Context) {
+	s := service.SysUser{}
+	req := dto.UnBindTwoFaVerifyRequest{}
+	err := e.MakeContext(c).
+		MakeOrm().
+		Bind(&req).
+		MakeService(&s.Service).
+		Errors
+	if err != nil {
+		e.Logger.Error(err)
+		e.Error(500, err, err.Error())
+		return
+	}
+	userId := user.GetUserId(c)
+	err = s.Unbind2FACode(&userId, &req)
+	if err != nil {
+		e.Error(500, err, "校验2fa验证码失败")
+		return
+	}
+	e.OK("", "校验2fa验证码成功")
 }
 
 // Insert

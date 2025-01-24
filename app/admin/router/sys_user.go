@@ -31,6 +31,9 @@ func registerSysUserRouter(v1 *gin.RouterGroup, authMiddleware *jwt.GinJWTMiddle
 		user.PUT("/pwd/set", api.UpdatePwd)
 		user.PUT("/pwd/reset", api.ResetPwd)
 		user.PUT("/status", api.UpdateStatus)
+		user.GET("/2fa/code", api.Get2FACode)
+		user.POST("/2fa/verify", api.Verify2FACode)
+		user.POST("/2fa/unbind", api.Unbind2FACode)
 	}
 	v1auth := v1.Group("").Use(authMiddleware.MiddlewareFunc())
 	{

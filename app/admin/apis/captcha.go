@@ -22,7 +22,7 @@ func (e System) GenerateCaptchaHandler(c *gin.Context) {
 		e.Error(500, err, "服务初始化失败！")
 		return
 	}
-	id, b64s, err := captcha.DriverDigitFunc()
+	id, b64s, _, err := captcha.DriverDigitFunc()
 	if err != nil {
 		e.Logger.Errorf("DriverDigitFunc error, %s", err.Error())
 		e.Error(500, err, "验证码获取失败")
