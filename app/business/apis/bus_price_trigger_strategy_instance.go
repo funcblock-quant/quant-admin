@@ -45,7 +45,8 @@ func (e BusPriceTriggerStrategyInstance) GetPage(c *gin.Context) {
 	}
 	userId := user.GetUserId(c)
 	roleName := user.GetRoleName(c)
-	if roleName != "系统管理员" {
+	e.Logger.Infof("roleName: %s", roleName)
+	if roleName != "admin" {
 		//如果不是管理员，只能自己看自己添加的下单规则
 		req.UserId = strconv.Itoa(userId)
 	}

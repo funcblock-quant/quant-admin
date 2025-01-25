@@ -22,14 +22,16 @@ func (e *BusPriceTriggerStrategyApikeyConfig) GetPage(c *dto.BusPriceTriggerStra
 	var err error
 	var data models.BusPriceTriggerStrategyApikeyConfig
 
-	err = e.Orm.Model(&data).
+	tx := e.Orm.Model(&data).
 		Scopes(
 			cDto.MakeCondition(c.GetNeedSearch()),
 			cDto.Paginate(c.GetPageSize(), c.GetPageIndex()),
 			actions.Permission(data.TableName(), p),
-		).
-		Where("user_id = ?", userId).
-		Find(list).Limit(-1).Offset(-1).
+		)
+	if userId != nil && *userId > 0 {
+		tx.Where("user_id = ?", userId)
+	}
+	err = tx.Find(list).Limit(-1).Offset(-1).
 		Count(count).Error
 	if err != nil {
 		e.Log.Errorf("BusPriceTriggerStrategyApikeyConfigService GetPage error:%s \r\n", err)

@@ -41,11 +41,16 @@ func (e BusPriceTriggerStrategyApikeyConfig) GetPage(c *gin.Context) {
 		e.Error(500, err, err.Error())
 		return
 	}
-
+	roleName := user.GetRoleName(c)
+	var userId int
+	if roleName != "admin" {
+		e.Logger.Debugf("admin user id is: %d", userId)
+		userId = user.GetUserId(c)
+	}
 	p := actions.GetPermissionFromContext(c)
 	list := make([]models.BusPriceTriggerStrategyApikeyConfig, 0)
 	var count int64
-	userId := user.GetUserId(c)
+
 	err = s.GetPage(&req, p, &list, &count, &userId)
 	if err != nil {
 		e.Error(500, err, fmt.Sprintf("获取价格触发下单策略实例amber配置信息失败，\r\n失败信息 %s", err.Error()))
