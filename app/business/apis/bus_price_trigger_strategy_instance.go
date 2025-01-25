@@ -44,7 +44,11 @@ func (e BusPriceTriggerStrategyInstance) GetPage(c *gin.Context) {
 		return
 	}
 	userId := user.GetUserId(c)
-	req.UserId = strconv.Itoa(userId)
+	roleName := user.GetRoleName(c)
+	if roleName != "系统管理员" {
+		//如果不是管理员，只能自己看自己添加的下单规则
+		req.UserId = strconv.Itoa(userId)
+	}
 	p := actions.GetPermissionFromContext(c)
 	list := make([]dto.BusPriceTriggerStrategyResp, 0)
 	var count int64
