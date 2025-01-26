@@ -16,7 +16,7 @@ service Observer {
 // Message definitions
 message StartRequest {
   required AmberConfig amber_config = 1;
-  required AmmDexConfig amm_dex_config = 2;
+  required DexConfig dex_config = 2;
   required ArbitrageConfig arbitrage_config = 3;
 }
 
@@ -33,7 +33,7 @@ message ListRequest {
 }
 
 message ListResponse {
-  repeated string instance_ids = 1;
+  repeated ObserverInfo observers = 1;
 }
 
 message GetStateRequest {
@@ -42,8 +42,8 @@ message GetStateRequest {
 
 message GetStateResponse {
   required int64 timestamp = 1;
-  required double base_profit = 2;
-  required double quote_profit = 3;
+  required double profit_of_buy_on_dex = 2;
+  required double profit_of_sell_on_dex = 3;
 }
 
 message AmberConfig {
@@ -53,21 +53,30 @@ message AmberConfig {
   required double taker_fee = 4; // 0.00023
 }
 
-message AmmDexConfig {
-  required string amm_pool = 1; // 4AZRPNEfCJ7iw28rJu5aUyeQhYcvdcNm8cswyL51AY9i
-  required string base_token_mint = 2; // 2qEHjDLDLbuBgRYvsxhc5D6uDWAivNFZGan56P1tpump
-  required string quote_token_mint = 3; // So11111111111111111111111111111111111111112
-  required uint32 base_token_decimals = 4; // 6
-  required uint32 quote_token_decimals = 5; // 9
-  required uint64 slippage_bps = 6; // 100
+message DexConfig {
+  required DexType dex_type = 1;
+  required string amm_pool = 2;
+  required string token_mint = 3;
+  required uint64 slippage_bps = 4;
+  optional uint32 max_array_size = 5;
 }
 
 message ArbitrageConfig {
-  required double volumn = 1; // 100.0
+  required double quote_amount = 1; // 1.0
 }
 
 message AmberOrderBookConfig {
   required string symbol = 1; // PNUT/USDT
   optional int32 ask_depth = 2 [default = 20];
   optional int32 bid_depth = 3 [default = 20];
+}
+
+message ObserverInfo {
+  required string instance_id = 1;
+  required DexType dex_type = 2;
+}
+
+enum DexType {
+  RAY_AMM = 0;
+  RAY_CLMM = 1;
 }
