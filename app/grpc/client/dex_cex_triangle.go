@@ -3,16 +3,20 @@ package client
 import (
 	"context"
 	"fmt"
+	"google.golang.org/protobuf/types/known/emptypb"
 	"quanta-admin/app/grpc/pool"
 	"quanta-admin/app/grpc/proto/client/observe_service"
 	"time"
 )
 
-func StartNewObserver(amberConfig *observe_service.AmberConfig, ammDexConfig *observe_service.AmmDexConfig, arbitrageConfig *observe_service.ArbitrageConfig) (string, error) {
+func StartNewObserver(amberConfig *observe_service.AmberConfig, ammDexConfig *observe_service.DexConfig, arbitrageConfig *observe_service.ArbitrageConfig) (string, error) {
 	// 获取 gRPC 客户端连接
 	clientConn, err := pool.GetGrpcClient("solana-observer")
 	if err != nil {
 		return "", fmt.Errorf("获取grpc客户端失败: %w", err)
+	}
+	if clientConn == nil || clientConn.ClientConn == nil { // 再次检查 clientConn 是否为 nil
+		return "", fmt.Errorf("grpc客户端连接为空")
 	}
 	defer clientConn.Close() // 确保连接在使用后返回连接池
 
@@ -26,7 +30,7 @@ func StartNewObserver(amberConfig *observe_service.AmberConfig, ammDexConfig *ob
 	// 构造请求消息
 	req := &observe_service.StartRequest{
 		AmberConfig:     amberConfig,
-		AmmDexConfig:    ammDexConfig,
+		DexConfig:       ammDexConfig,
 		ArbitrageConfig: arbitrageConfig,
 	}
 
@@ -47,6 +51,9 @@ func StopObserver(observerID string) (err error) {
 	clientConn, err := pool.GetGrpcClient("solana-observer")
 	if err != nil {
 		return fmt.Errorf("获取grpc客户端失败: %w", err)
+	}
+	if clientConn == nil || clientConn.ClientConn == nil { // 再次检查 clientConn 是否为 nil
+		return fmt.Errorf("grpc客户端连接为空")
 	}
 	defer clientConn.Close() // 确保连接在使用后返回连接池
 
@@ -72,7 +79,29 @@ func StopObserver(observerID string) (err error) {
 	return nil
 }
 
-func ListObservers() {
+func ListObservers() (observerList []*observe_service.ObserverInfo, err error) {
+	// 获取 gRPC 客户端连接
+	clientConn, err := pool.GetGrpcClient("solana-observer")
+	if err != nil {
+		return nil, fmt.Errorf("获取grpc客户端失败: %w", err)
+	}
+	if clientConn == nil || clientConn.ClientConn == nil { // 再次检查 clientConn 是否为 nil
+		return nil, fmt.Errorf("grpc客户端连接为空")
+	}
+	defer clientConn.Close() // 确保连接在使用后返回连接池
+
+	// 创建 gRPC 客户端实例
+	c := observe_service.NewObserverClient(clientConn)
+
+	// 设置超时 Context
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	resp, err := c.ListObservers(ctx, &emptypb.Empty{})
+	if err != nil {
+		return nil, fmt.Errorf("获取 observer列表失败: %w", err)
+	}
+	return resp.Observers, nil
 
 }
 
@@ -81,6 +110,9 @@ func GetObserverState(observerId string) (*observe_service.GetStateResponse, err
 	clientConn, err := pool.GetGrpcClient("solana-observer")
 	if err != nil {
 		return nil, fmt.Errorf("获取grpc客户端失败: %w", err)
+	}
+	if clientConn == nil || clientConn.ClientConn == nil { // 再次检查 clientConn 是否为 nil
+		return nil, fmt.Errorf("grpc客户端连接为空")
 	}
 	defer clientConn.Close() // 确保连接在使用后返回连接池
 

@@ -4,7 +4,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             v3.20.3
-// source: observe_service.proto
+// source: observer_service.proto
 
 package observe_service
 
@@ -219,5 +219,5 @@ var Observer_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "observe_service.proto",
+	Metadata: "observer_service.proto",
 }

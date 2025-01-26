@@ -44,9 +44,9 @@ func (e *BusDexCexTriangularObserver) GetPage(c *dto.BusDexCexTriangularObserver
 			e.Log.Errorf("grpc实时获取观察状态失败， error:%s \r\n", err)
 			continue
 		}
-		e.Log.Infof("成功获取监视器state， state:%v [baseProfit- %f, quoteProfit %f] \r\n", *state, *state.BaseProfit, *state.QuoteProfit)
-		(*list)[i].BaseProfit = strconv.FormatFloat(*state.BaseProfit, 'f', 6, 64)   // 修改原始元素
-		(*list)[i].QuoteProfit = strconv.FormatFloat(*state.QuoteProfit, 'f', 6, 64) // 修改原始元素
+		e.Log.Infof("成功获取监视器state， state:%v [ProfitOfBuyOnDex- %f, ProfitOfSellOnDex %f] \r\n", *state, *state.ProfitOfBuyOnDex, *state.ProfitOfSellOnDex)
+		(*list)[i].ProfitOfBuyOnDex = strconv.FormatFloat(*state.ProfitOfBuyOnDex, 'f', 6, 64)   // 修改原始元素
+		(*list)[i].ProfitOfSellOnDex = strconv.FormatFloat(*state.ProfitOfSellOnDex, 'f', 6, 64) // 修改原始元素
 	}
 
 	return nil
@@ -117,10 +117,11 @@ func (e *BusDexCexTriangularObserver) BatchInsert(c *dto.BusDexCexTriangularObse
 		return errors.New("empty symbols")
 	}
 
+	var successStartedCount int
 	for _, symbol := range symbols {
 		//循环创建监听
 
-		var ammConfig = pb.AmmDexConfig{}
+		var ammConfig = pb.DexConfig{}
 		var amberConfig = pb.AmberConfig{}
 		var arbitrageConfig = pb.ArbitrageConfig{}
 		c.GenerateAmmConfig(&ammConfig)
@@ -136,9 +137,13 @@ func (e *BusDexCexTriangularObserver) BatchInsert(c *dto.BusDexCexTriangularObse
 		err = e.Orm.Create(&data).Error
 		if err != nil {
 			e.Log.Errorf("BusDexCexTriangularObserverService Insert error:%s \r\n", err)
-			return err
+			continue
 		}
+		successStartedCount += 1
+	}
 
+	if successStartedCount == 0 {
+		return errors.New("创建失败")
 	}
 	return nil
 }

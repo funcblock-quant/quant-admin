@@ -36,8 +36,8 @@ func (m *BusDexCexTriangularObserverGetPageReq) GetNeedSearch() interface{} {
 
 type BusDexCexTriangularObserverGetPageResp struct {
 	models.BusDexCexTriangularObserver
-	BaseProfit  string `json:"baseProfit" gorm:"-"`
-	QuoteProfit string `json:"quoteProfit" gorm:"-"`
+	ProfitOfBuyOnDex  string `json:"profitOfBuyOnDex" gorm:"-"`
+	ProfitOfSellOnDex string `json:"profitOfSellOnDex" gorm:"-"`
 }
 
 type BusDexCexTriangularObserverInsertReq struct {
@@ -45,13 +45,13 @@ type BusDexCexTriangularObserverInsertReq struct {
 	StrategyInstanceId string   `json:"strategyInstanceId" comment:"策略id"`
 	ObserverId         string   `json:"observerId" comment:"观察器id"`
 	Symbol             string   `json:"symbol" comment:"观察币种"`
-	ExchangeType       string   `json:"exchange_type"`
+	ExchangeType       string   `json:"exchangeType"`
+	DexType            string   `json:"dexType"`
 	Volume             *float32 `json:"volume"`
-	TakerFee           *float32 `json:"taker_fee"`
-	BaseTokenMint      *string  `json:"base_token_mint"`
-	QuoteTokenMint     *string  `json:"quote_token_mint"`
-	AmmPoolId          *string  `json:"amm_pool_id"`
-	SlippageBps        *float32 `json:"slippage_bps"`
+	TakerFee           *float32 `json:"takerFee"`
+	TokenMint          *string  `json:"tokenMint"`
+	AmmPoolId          *string  `json:"ammPool"`
+	SlippageBps        *float32 `json:"slippage"`
 	Depth              string   `json:"depth"`
 	Status             string   `json:"status" comment:"状态"`
 	common.ControlBy
@@ -62,13 +62,11 @@ type BusDexCexTriangularObserverBatchInsertReq struct {
 	ObserverId         string   `json:"observerId" comment:"观察器id"`
 	Symbols            []string `json:"symbolsArray" comment:"观察币种"`
 	ExchangeType       string   `json:"exchangeType"`
+	DexType            string   `json:"dexType"`
 	Volume             *float64 `json:"volume"`
 	TakerFee           *float64 `json:"takerFee"`
 	AmmPoolId          *string  `json:"ammPool"`
-	BaseTokenMint      *string  `json:"baseTokenMint"`
-	BaseTokenDecimal   *string  `json:"baseTokenDecimals"`
-	QuoteTokenMint     *string  `json:"quoteTokenMint"`
-	QuoteTokenDecimal  *string  `json:"quoteTokenDecimals"`
+	TokenMint          *string  `json:"tokenMint"`
 	SlippageBps        *string  `json:"slippage"`
 	Depth              string   `json:"depth"`
 	Status             string   `json:"status" comment:"状态"`
@@ -80,10 +78,11 @@ func (s *BusDexCexTriangularObserverBatchInsertReq) Generate(model *models.BusDe
 	model.ObserverId = observerId
 	model.Symbol = symbol
 	model.ExchangeType = s.ExchangeType
+	model.DexType = s.DexType
+	model.MaxArraySize = 5
 	model.Volume = s.Volume
 	model.TakerFee = s.TakerFee
-	model.BaseTokenMint = s.BaseTokenMint
-	model.QuoteTokenMint = s.QuoteTokenMint
+	model.TokenMint = s.TokenMint
 	model.AmmPoolId = s.AmmPoolId
 	model.SlippageBps = *s.SlippageBps
 	model.Depth = s.Depth
@@ -91,20 +90,9 @@ func (s *BusDexCexTriangularObserverBatchInsertReq) Generate(model *models.BusDe
 	model.CreateBy = s.CreateBy // 添加这而，需要记录是被谁创建的
 }
 
-func (s *BusDexCexTriangularObserverBatchInsertReq) GenerateAmmConfig(ammConfig *pb.AmmDexConfig) error {
+func (s *BusDexCexTriangularObserverBatchInsertReq) GenerateAmmConfig(ammConfig *pb.DexConfig) error {
 	ammConfig.AmmPool = s.AmmPoolId
-	ammConfig.BaseTokenMint = s.BaseTokenMint
-	baseTokenDecimalInt, err := strconv.ParseUint(*s.BaseTokenDecimal, 10, 32)
-	if err != nil {
-		return errors.New("error base_token_decimal")
-	}
-	ammConfig.BaseTokenDecimals = proto.Uint32(uint32(baseTokenDecimalInt))
-	ammConfig.QuoteTokenMint = s.QuoteTokenMint
-	quoteTokenDecimalInt, err := strconv.ParseUint(*s.QuoteTokenDecimal, 10, 32)
-	if err != nil {
-		return errors.New("error quote_token_decimal")
-	}
-	ammConfig.QuoteTokenDecimals = proto.Uint32(uint32(quoteTokenDecimalInt))
+	ammConfig.TokenMint = s.TokenMint
 	slippageBpsUint, err := strconv.ParseUint(*s.SlippageBps, 10, 32)
 	if err != nil {
 		log.Errorf("slippageBps: %v\n", slippageBpsUint)
@@ -112,6 +100,16 @@ func (s *BusDexCexTriangularObserverBatchInsertReq) GenerateAmmConfig(ammConfig 
 	}
 	log.Infof("slippageBps: %v\n", slippageBpsUint)
 	ammConfig.SlippageBps = proto.Uint64(slippageBpsUint)
+	maxArraySize := new(uint32)
+	*maxArraySize = 5 //默认5， clmm使用参数
+	ammConfig.MaxArraySize = maxArraySize
+	if s.DexType == "RAY_AMM" {
+		dexType := pb.DexType_RAY_AMM
+		ammConfig.DexType = &dexType
+	} else if s.DexType == "RAY_CLMM" {
+		dexType := pb.DexType_RAY_CLMM
+		ammConfig.DexType = &dexType
+	}
 	return nil
 }
 
@@ -147,7 +145,7 @@ func (s *BusDexCexTriangularObserverBatchInsertReq) GenerateAmberConfig(amberCon
 }
 
 func (s *BusDexCexTriangularObserverBatchInsertReq) GenerateArbitrageConfig(arbitrageConfig *pb.ArbitrageConfig) error {
-	arbitrageConfig.Volumn = proto.Float64(*s.Volume)
+	arbitrageConfig.QuoteAmount = proto.Float64(*s.Volume)
 	return nil
 }
 
