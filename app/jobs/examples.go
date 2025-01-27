@@ -161,6 +161,15 @@ func contains(instanceIds []string, target string) bool {
 	return false
 }
 
+func containsObserver(observerInfos []*pb.ObserverInfo, target string) bool {
+	for _, info := range observerInfos {
+		if *info.InstanceId == target {
+			return true
+		}
+	}
+	return false
+}
+
 type PriceTriggerExpireInspection struct{}
 
 func (t PriceTriggerExpireInspection) Exec(arg interface{}) error {
@@ -203,8 +212,10 @@ func (t DexCexObserverInspection) Exec(arg interface{}) error {
 		Db: sdk.Runtime.GetDbByKey("*"),
 	}
 
+	observerInfos, err := client.ListObservers()
+
 	observers := make([]models.BusDexCexTriangularObserver, 0)
-	err := service.GetObserverList(&observers)
+	err = service.GetObserverList(&observers)
 	if err != nil {
 		fmt.Printf(err.Error())
 		return err
@@ -213,6 +224,11 @@ func (t DexCexObserverInspection) Exec(arg interface{}) error {
 	for _, observer := range observers {
 		if observer.Status == "2" {
 			//已停止的直接跳过
+			continue
+		}
+
+		if containsObserver(observerInfos, observer.ObserverId) {
+			// 服务端已经存在的，直接跳过
 			continue
 		}
 
