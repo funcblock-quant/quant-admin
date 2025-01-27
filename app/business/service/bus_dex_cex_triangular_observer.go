@@ -4,7 +4,7 @@ import (
 	"errors"
 	"github.com/go-admin-team/go-admin-core/sdk/service"
 	"gorm.io/gorm"
-	pb "quanta-admin/app/grpc/proto/client/observe_service"
+	pb "quanta-admin/app/grpc/proto/client/observer_service"
 	"strconv"
 
 	"quanta-admin/app/business/models"

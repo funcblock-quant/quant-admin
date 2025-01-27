@@ -6,7 +6,7 @@
 // - protoc             v3.20.3
 // source: observer_service.proto
 
-package observe_service
+package observer_service
 
 import (
 	context "context"

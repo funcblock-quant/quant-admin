@@ -3,13 +3,15 @@ package client
 import (
 	"context"
 	"fmt"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
+	"log"
 	"quanta-admin/app/grpc/pool"
-	"quanta-admin/app/grpc/proto/client/observe_service"
+	"quanta-admin/app/grpc/proto/client/observer_service"
 	"time"
 )
 
-func StartNewObserver(amberConfig *observe_service.AmberConfig, ammDexConfig *observe_service.DexConfig, arbitrageConfig *observe_service.ArbitrageConfig) (string, error) {
+func StartNewObserver(amberConfig *observer_service.AmberConfig, ammDexConfig *observer_service.DexConfig, arbitrageConfig *observer_service.ArbitrageConfig) (string, error) {
 	// 获取 gRPC 客户端连接
 	clientConn, err := pool.GetGrpcClient("solana-observer")
 	if err != nil {
@@ -21,14 +23,14 @@ func StartNewObserver(amberConfig *observe_service.AmberConfig, ammDexConfig *ob
 	defer clientConn.Close() // 确保连接在使用后返回连接池
 
 	// 创建 gRPC 客户端实例
-	c := observe_service.NewObserverClient(clientConn)
+	c := observer_service.NewObserverClient(clientConn)
 
 	// 设置超时 Context
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	// 构造请求消息
-	req := &observe_service.StartRequest{
+	req := &observer_service.StartRequest{
 		AmberConfig:     amberConfig,
 		DexConfig:       ammDexConfig,
 		ArbitrageConfig: arbitrageConfig,
@@ -59,14 +61,14 @@ func StopObserver(observerID string) (err error) {
 	defer clientConn.Close() // 确保连接在使用后返回连接池
 
 	// 创建 gRPC 客户端实例
-	c := observe_service.NewObserverClient(clientConn)
+	c := observer_service.NewObserverClient(clientConn)
 
 	// 设置超时 Context
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	// 构造请求消息
-	req := &observe_service.StopRequest{
+	req := &observer_service.StopRequest{
 		InstanceId: &observerID,
 	}
 
@@ -80,7 +82,7 @@ func StopObserver(observerID string) (err error) {
 	return nil
 }
 
-func ListObservers() (observerList []*observe_service.ObserverInfo, err error) {
+func ListObservers() (observerList []*observer_service.ObserverInfo, err error) {
 	// 获取 gRPC 客户端连接
 	clientConn, err := pool.GetGrpcClient("solana-observer")
 	if err != nil {
@@ -92,7 +94,7 @@ func ListObservers() (observerList []*observe_service.ObserverInfo, err error) {
 	defer clientConn.Close() // 确保连接在使用后返回连接池
 
 	// 创建 gRPC 客户端实例
-	c := observe_service.NewObserverClient(clientConn)
+	c := observer_service.NewObserverClient(clientConn)
 
 	// 设置超时 Context
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -106,7 +108,7 @@ func ListObservers() (observerList []*observe_service.ObserverInfo, err error) {
 
 }
 
-func GetObserverState(observerId string) (*observe_service.GetStateResponse, error) {
+func GetObserverState(observerId string) (*observer_service.GetStateResponse, error) {
 	// 获取 gRPC 客户端连接
 	clientConn, err := pool.GetGrpcClient("solana-observer")
 	if err != nil {
@@ -118,13 +120,13 @@ func GetObserverState(observerId string) (*observe_service.GetStateResponse, err
 	defer clientConn.Close() // 确保连接在使用后返回连接池
 
 	// 创建 gRPC 客户端实例
-	c := observe_service.NewObserverClient(clientConn)
+	c := observer_service.NewObserverClient(clientConn)
 
 	// 设置超时 Context
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	req := &observe_service.GetStateRequest{
+	req := &observer_service.GetStateRequest{
 		InstanceId: &observerId,
 	}
 	resp, err := c.GetObserverState(ctx, req)
