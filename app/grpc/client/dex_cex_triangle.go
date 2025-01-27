@@ -33,6 +33,7 @@ func StartNewObserver(amberConfig *observe_service.AmberConfig, ammDexConfig *ob
 		DexConfig:       ammDexConfig,
 		ArbitrageConfig: arbitrageConfig,
 	}
+	fmt.Printf("start observer req:%+v\n", req)
 
 	// 发送 gRPC 请求
 	resp, err := c.StartObserver(ctx, req)
