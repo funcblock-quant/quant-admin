@@ -3,9 +3,7 @@ package client
 import (
 	"context"
 	"fmt"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
-	"log"
 	"quanta-admin/app/grpc/pool"
 	"quanta-admin/app/grpc/proto/client/observer_service"
 	"time"
