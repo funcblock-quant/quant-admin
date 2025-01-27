@@ -37,6 +37,9 @@ func (e *BusDexCexTriangularObserver) GetPage(c *dto.BusDexCexTriangularObserver
 		return err
 	}
 
+	if len(*list) == 0 {
+		return nil
+	}
 	for i := range *list { // 使用索引 i
 		observerId := (*list)[i].ObserverId // 使用 (*list)[i] 访问原始元素
 		state, err := client.GetObserverState(observerId)
@@ -127,7 +130,7 @@ func (e *BusDexCexTriangularObserver) BatchInsert(c *dto.BusDexCexTriangularObse
 		c.GenerateAmmConfig(&ammConfig)
 		c.GenerateAmberConfig(&amberConfig, symbol)
 		c.GenerateArbitrageConfig(&arbitrageConfig)
-
+		e.Log.Infof("e[BatchInsert], symbol: %s, ammConfig: %+v", symbol, ammConfig)
 		observerId, err := client.StartNewObserver(&amberConfig, &ammConfig, &arbitrageConfig)
 		if err != nil {
 			e.Log.Errorf("Service BatchInsert error:%s \r\n", err)
