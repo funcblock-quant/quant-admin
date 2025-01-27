@@ -2,12 +2,14 @@ package dto
 
 import (
 	"errors"
+	"fmt"
 	log "github.com/go-admin-team/go-admin-core/logger"
 	"google.golang.org/protobuf/proto"
 	"quanta-admin/app/business/models"
 	pb "quanta-admin/app/grpc/proto/client/observe_service"
 	"quanta-admin/common/dto"
 	common "quanta-admin/common/models"
+	"regexp"
 	"strconv"
 )
 
@@ -110,6 +112,7 @@ func (s *BusDexCexTriangularObserverBatchInsertReq) GenerateAmmConfig(ammConfig 
 		dexType := pb.DexType_RAY_CLMM
 		ammConfig.DexType = &dexType
 	}
+	fmt.Printf("ammConfig: %v\n", *ammConfig)
 	return nil
 }
 
@@ -117,35 +120,39 @@ func (s *BusDexCexTriangularObserverBatchInsertReq) GenerateAmberConfig(amberCon
 	amberConfig.ExchangeType = &s.ExchangeType
 	amberConfig.TakerFee = proto.Float64(*s.TakerFee)
 
-	baseTokenOrderBook := pb.AmberOrderBookConfig{}
-	baseTokenOrderBook.Symbol = &symbol
-	baseTokenOrderBook.BidDepth = proto.Int32(20)
-	baseTokenOrderBook.AskDepth = proto.Int32(20)
+	orderBook := pb.AmberOrderBookConfig{}
+	//symbol格式：TRUMP/USDT, 分成三份，TRUMP是baseToken。/是symbol_connector, USDT是quote_token
+	// 使用正则表达式检测 baseToken、symbolConnector 和 quoteToken
+	re := regexp.MustCompile(`^([a-zA-Z0-9]+)([^a-zA-Z0-9])([a-zA-Z0-9]+)$`)
+	matches := re.FindStringSubmatch(symbol)
+	if len(matches) != 4 {
+		return errors.New("invalid symbol format")
+	}
 
-	quoteTokenOrderBook := pb.AmberOrderBookConfig{}
-	quotoToken := "SOL/USDT"
-	quoteTokenOrderBook.Symbol = &quotoToken
-	quoteTokenOrderBook.BidDepth = proto.Int32(20)
-	quoteTokenOrderBook.AskDepth = proto.Int32(20)
+	baseToken := matches[1]
+	symbolConnector := matches[2]
+	quoteToken := matches[3]
+	orderBook.BaseToken = &baseToken
+	orderBook.QuoteToken = &quoteToken
+	orderBook.SymbolConnector = &symbolConnector
+
+	orderBook.BidDepth = proto.Int32(20)
+	orderBook.AskDepth = proto.Int32(20)
 
 	if s.Depth != "" {
 		depthInt, err := strconv.Atoi(s.Depth)
 		if err != nil {
 			depthInt = 20 //默认20档
 		}
-		baseTokenOrderBook.BidDepth = proto.Int32(int32(depthInt))
-		baseTokenOrderBook.AskDepth = proto.Int32(int32(depthInt))
-
-		quoteTokenOrderBook.BidDepth = proto.Int32(int32(depthInt))
-		quoteTokenOrderBook.AskDepth = proto.Int32(int32(depthInt))
+		orderBook.BidDepth = proto.Int32(int32(depthInt))
+		orderBook.AskDepth = proto.Int32(int32(depthInt))
 	}
-	amberConfig.BaseTokenOrderbook = &baseTokenOrderBook
-	amberConfig.QuoteTokenOrderbook = &quoteTokenOrderBook
+	amberConfig.Orderbook = &orderBook
 	return nil
 }
 
 func (s *BusDexCexTriangularObserverBatchInsertReq) GenerateArbitrageConfig(arbitrageConfig *pb.ArbitrageConfig) error {
-	arbitrageConfig.QuoteAmount = proto.Float64(*s.Volume)
+	arbitrageConfig.SolAmount = proto.Float64(*s.Volume)
 	return nil
 }
 

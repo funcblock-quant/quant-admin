@@ -48,9 +48,8 @@ message GetStateResponse {
 
 message AmberConfig {
   required string exchange_type = 1; // Binance
-  required AmberOrderBookConfig base_token_orderbook = 2;
-  required AmberOrderBookConfig quote_token_orderbook = 3;
-  required double taker_fee = 4; // 0.00023
+  required AmberOrderBookConfig orderbook = 2;
+  required double taker_fee = 3; // 0.00023
 }
 
 message DexConfig {
@@ -62,13 +61,15 @@ message DexConfig {
 }
 
 message ArbitrageConfig {
-  required double quote_amount = 1; // 1.0
+  required double sol_amount = 1; // 1.0
 }
 
 message AmberOrderBookConfig {
-  required string symbol = 1; // PNUT/USDT
-  optional int32 ask_depth = 2 [default = 20];
-  optional int32 bid_depth = 3 [default = 20];
+  required string base_token = 1; // TRUMP
+  required string quote_token = 2; // USDT
+  optional string symbol_connector = 3; // '/'
+  optional int32 ask_depth = 4;
+  optional int32 bid_depth = 5;
 }
 
 message ObserverInfo {

@@ -42,6 +42,15 @@ func (e *BusPriceTriggerStrategyInstance) GetPage(c *dto.BusPriceTriggerStrategy
 			e.Log.Errorf("BusPriceTriggerStrategyInstanceService Get details error:%s \r\n", err)
 			return err
 		}
+
+		var apiConfig models.BusPriceTriggerStrategyApikeyConfig
+		err = e.Orm.Model(&apiConfig).Where("id = ?", strategy.ApiConfig).First(&apiConfig).Error
+		if err != nil {
+			e.Log.Errorf("BusPriceTriggerStrategyInstanceService Get apiConfig error:%s \r\n", err)
+			return err
+		}
+		(*list)[index].ApiConfigData = apiConfig
+
 		totalOrderNum := len(details)
 		totalPnl := decimal.NewFromFloat(0)
 		for _, d := range details {
