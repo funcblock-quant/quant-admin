@@ -1,7 +1,6 @@
 package jobs
 
 import (
-	"errors"
 	"fmt"
 	log "github.com/go-admin-team/go-admin-core/logger"
 	"github.com/go-admin-team/go-admin-core/sdk"
@@ -12,7 +11,6 @@ import (
 	pb "quanta-admin/app/grpc/proto/client/observer_service"
 	"quanta-admin/app/grpc/proto/client/trigger_service"
 	"quanta-admin/notification/lark"
-	"regexp"
 	"strconv"
 	"time"
 )
@@ -281,20 +279,9 @@ func GenerateAmberConfig(observer *models.BusDexCexTriangularObserver, amberConf
 	amberConfig.TakerFee = proto.Float64(*observer.TakerFee)
 
 	orderBook := pb.AmberOrderBookConfig{}
-	//symbol格式：TRUMP/USDT, 分成三份，TRUMP是baseToken。/是symbol_connector, USDT是quote_token
-	// 使用正则表达式检测 baseToken、symbolConnector 和 quoteToken
-	re := regexp.MustCompile(`^([a-zA-Z0-9]+)([^a-zA-Z0-9])([a-zA-Z0-9]+)$`)
-	matches := re.FindStringSubmatch(observer.Symbol)
-	if len(matches) != 4 {
-		return errors.New("invalid symbol format")
-	}
-
-	baseToken := matches[1]
-	symbolConnector := matches[2]
-	quoteToken := matches[3]
-	orderBook.BaseToken = &baseToken
-	orderBook.QuoteToken = &quoteToken
-	orderBook.SymbolConnector = &symbolConnector
+	orderBook.BaseToken = &observer.BaseToken
+	orderBook.QuoteToken = &observer.QuoteToken
+	orderBook.SymbolConnector = &observer.SymbolConnector
 
 	orderBook.BidDepth = proto.Int32(20)
 	orderBook.AskDepth = proto.Int32(20)

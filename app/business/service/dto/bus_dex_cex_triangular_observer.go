@@ -9,7 +9,6 @@ import (
 	pb "quanta-admin/app/grpc/proto/client/observer_service"
 	"quanta-admin/common/dto"
 	common "quanta-admin/common/models"
-	"regexp"
 	"strconv"
 )
 
@@ -47,6 +46,9 @@ type BusDexCexTriangularObserverInsertReq struct {
 	StrategyInstanceId string   `json:"strategyInstanceId" comment:"策略id"`
 	ObserverId         string   `json:"observerId" comment:"观察器id"`
 	Symbol             string   `json:"symbol" comment:"观察币种"`
+	BaseToken          string   `json:"baseToken"`
+	QuoteToken         string   `json:"quoteToken"`
+	SymbolConnector    string   `json:"-"`
 	ExchangeType       string   `json:"exchangeType"`
 	DexType            string   `json:"dexType"`
 	Volume             *float32 `json:"volume"`
@@ -62,7 +64,9 @@ type BusDexCexTriangularObserverInsertReq struct {
 type BusDexCexTriangularObserverBatchInsertReq struct {
 	StrategyInstanceId string   `json:"strategyInstanceId" comment:"策略id"`
 	ObserverId         string   `json:"observerId" comment:"观察器id"`
-	Symbols            []string `json:"symbolsArray" comment:"观察币种"`
+	BaseToken          []string `json:"baseToken"`
+	QuoteToken         string   `json:"quoteToken"`
+	SymbolConnector    string   `json:"-"`
 	ExchangeType       string   `json:"exchangeType"`
 	DexType            string   `json:"dexType"`
 	Volume             *float64 `json:"volume"`
@@ -75,10 +79,13 @@ type BusDexCexTriangularObserverBatchInsertReq struct {
 	common.ControlBy
 }
 
-func (s *BusDexCexTriangularObserverBatchInsertReq) Generate(model *models.BusDexCexTriangularObserver, symbol string, observerId string) {
+func (s *BusDexCexTriangularObserverBatchInsertReq) Generate(model *models.BusDexCexTriangularObserver, baseToken string, observerId string) {
 	model.StrategyInstanceId = "1" //default 1
 	model.ObserverId = observerId
-	model.Symbol = symbol
+	model.Symbol = baseToken + "/" + s.QuoteToken
+	model.BaseToken = s.BaseToken[0] //目前就支持单个添加
+	model.QuoteToken = s.QuoteToken
+	model.SymbolConnector = "/" //之前沟通默认amber全部是/连接的
 	model.ExchangeType = s.ExchangeType
 	model.DexType = s.DexType
 	model.MaxArraySize = 5
@@ -116,24 +123,15 @@ func (s *BusDexCexTriangularObserverBatchInsertReq) GenerateAmmConfig(ammConfig 
 	return nil
 }
 
-func (s *BusDexCexTriangularObserverBatchInsertReq) GenerateAmberConfig(amberConfig *pb.AmberConfig, symbol string) error {
+func (s *BusDexCexTriangularObserverBatchInsertReq) GenerateAmberConfig(amberConfig *pb.AmberConfig) error {
 	amberConfig.ExchangeType = &s.ExchangeType
 	amberConfig.TakerFee = proto.Float64(*s.TakerFee)
 
 	orderBook := pb.AmberOrderBookConfig{}
-	//symbol格式：TRUMP/USDT, 分成三份，TRUMP是baseToken。/是symbol_connector, USDT是quote_token
-	// 使用正则表达式检测 baseToken、symbolConnector 和 quoteToken
-	re := regexp.MustCompile(`^([a-zA-Z0-9]+)([^a-zA-Z0-9])([a-zA-Z0-9]+)$`)
-	matches := re.FindStringSubmatch(symbol)
-	if len(matches) != 4 {
-		return errors.New("invalid symbol format")
-	}
 
-	baseToken := matches[1]
-	symbolConnector := matches[2]
-	quoteToken := matches[3]
-	orderBook.BaseToken = &baseToken
-	orderBook.QuoteToken = &quoteToken
+	orderBook.BaseToken = &s.BaseToken[0]
+	orderBook.QuoteToken = &s.QuoteToken
+	symbolConnector := "/"
 	orderBook.SymbolConnector = &symbolConnector
 
 	orderBook.BidDepth = proto.Int32(20)

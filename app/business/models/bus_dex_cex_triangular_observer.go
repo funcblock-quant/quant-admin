@@ -10,6 +10,9 @@ type BusDexCexTriangularObserver struct {
 	StrategyInstanceId string   `gorm:"not null;comment:策略id" json:"strategyInstanceId"`
 	ObserverId         string   `gorm:"not null;comment:观察器id" json:"observerId"`
 	Symbol             string   `gorm:"not null;comment:观察币种" json:"symbol"`
+	BaseToken          string   `gorm:"not null" json:"baseToken"`
+	QuoteToken         string   `gorm:"not null" json:"quoteToken"`
+	SymbolConnector    string   `gorm:"not null" json:"symbolConnector"`
 	ExchangeType       string   `gorm:"not null;comment:交易所类型" json:"exchangeType"`
 	DexType            string   `json:"dexType"`
 	MaxArraySize       int      `gorm:"null;default:5" json:"maxArraySize"`
