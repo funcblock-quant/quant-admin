@@ -4,14 +4,13 @@ import (
 	"errors"
 	"github.com/go-admin-team/go-admin-core/sdk/service"
 	"gorm.io/gorm"
-	pb "quanta-admin/app/grpc/proto/client/observer_service"
-	"strconv"
-
 	"quanta-admin/app/business/models"
 	"quanta-admin/app/business/service/dto"
 	"quanta-admin/app/grpc/client"
+	pb "quanta-admin/app/grpc/proto/client/observer_service"
 	"quanta-admin/common/actions"
 	cDto "quanta-admin/common/dto"
+	"strconv"
 )
 
 type BusDexCexTriangularObserver struct {
@@ -115,28 +114,28 @@ func (e *BusDexCexTriangularObserver) BatchInsert(c *dto.BusDexCexTriangularObse
 	var data models.BusDexCexTriangularObserver
 	e.Log.Infof("e[BatchInsert], data: %+v", c)
 	e.Log.Infof("e[SlippageBps], data: %s", *c.SlippageBps)
-	symbols := c.Symbols
-	if len(symbols) == 0 {
-		return errors.New("empty symbols")
+	baseTokens := c.BaseToken
+	if len(baseTokens) == 0 {
+		return errors.New("empty baseTokens")
 	}
 
 	var successStartedCount int
-	for _, symbol := range symbols {
+	for _, baseToken := range baseTokens {
 		//循环创建监听
 
 		var ammConfig = pb.DexConfig{}
 		var amberConfig = pb.AmberConfig{}
 		var arbitrageConfig = pb.ArbitrageConfig{}
 		c.GenerateAmmConfig(&ammConfig)
-		c.GenerateAmberConfig(&amberConfig, symbol)
+		c.GenerateAmberConfig(&amberConfig)
 		c.GenerateArbitrageConfig(&arbitrageConfig)
-		e.Log.Infof("e[BatchInsert], symbol: %s, ammConfig: %+v", symbol, ammConfig)
+		e.Log.Infof("e[BatchInsert], baseToken: %s, ammConfig: %+v", baseToken, ammConfig)
 		observerId, err := client.StartNewObserver(&amberConfig, &ammConfig, &arbitrageConfig)
 		if err != nil {
 			e.Log.Errorf("Service BatchInsert error:%s \r\n", err)
 			continue
 		}
-		c.Generate(&data, symbol, observerId)
+		c.Generate(&data, baseToken, observerId)
 		err = e.Orm.Create(&data).Error
 		if err != nil {
 			e.Log.Errorf("BusDexCexTriangularObserverService Insert error:%s \r\n", err)

@@ -2,10 +2,13 @@ package jobs
 
 import (
 	"fmt"
+	log "github.com/go-admin-team/go-admin-core/logger"
 	"github.com/go-admin-team/go-admin-core/sdk"
+	"google.golang.org/protobuf/proto"
 	"quanta-admin/app/business/daos"
 	"quanta-admin/app/business/models"
 	"quanta-admin/app/grpc/client"
+	pb "quanta-admin/app/grpc/proto/client/observer_service"
 	"quanta-admin/app/grpc/proto/client/trigger_service"
 	"quanta-admin/notification/lark"
 	"strconv"
@@ -22,6 +25,7 @@ func InitJob() {
 		"InstanceInspection":           InstanceInspection{},
 		"PriceTriggerInspection":       PriceTriggerInspection{},
 		"PriceTriggerExpireInspection": PriceTriggerExpireInspection{},
+		"DexCexObserverInspection":     DexCexObserverInspection{},
 		// ...
 	}
 }
@@ -73,6 +77,7 @@ type InstanceInspection struct{}
 
 func (t InstanceInspection) Exec(arg interface{}) error {
 	str := time.Now().Format(timeFormat) + " [INFO] JobCore InstanceInspection exec success"
+	// 获取所有instance对应的grpc server
 	instance, err := client.ListInstance("market-making")
 	if err != nil {
 		fmt.Printf(err.Error())
@@ -154,6 +159,15 @@ func contains(instanceIds []string, target string) bool {
 	return false
 }
 
+func containsObserver(observerInfos []*pb.ObserverInfo, target string) bool {
+	for _, info := range observerInfos {
+		if *info.InstanceId == target {
+			return true
+		}
+	}
+	return false
+}
+
 type PriceTriggerExpireInspection struct{}
 
 func (t PriceTriggerExpireInspection) Exec(arg interface{}) error {
@@ -184,5 +198,102 @@ func (t PriceTriggerExpireInspection) Exec(arg interface{}) error {
 		}
 	}
 	fmt.Printf(str)
+	return nil
+}
+
+type DexCexObserverInspection struct{}
+
+func (t DexCexObserverInspection) Exec(arg interface{}) error {
+	str := time.Now().Format(timeFormat) + " [INFO] JobCore DexCexObserverInspection exec success"
+	fmt.Println("开始执行dex-cex 检查任务")
+	service := daos.BusDexCexTriangularObserverDAO{
+		Db: sdk.Runtime.GetDbByKey("*"),
+	}
+
+	observerInfos, err := client.ListObservers()
+
+	observers := make([]models.BusDexCexTriangularObserver, 0)
+	err = service.GetObserverList(&observers)
+	if err != nil {
+		fmt.Printf(err.Error())
+		return err
+	}
+
+	for _, observer := range observers {
+		if observer.Status == "2" {
+			//已停止的直接跳过
+			continue
+		}
+
+		if containsObserver(observerInfos, observer.ObserverId) {
+			// 服务端已经存在的，直接跳过
+			continue
+		}
+
+		slippageBpsUint, err := strconv.ParseUint(observer.SlippageBps, 10, 32)
+		if err != nil {
+			log.Errorf("slippageBps: %v\n", slippageBpsUint)
+			continue
+		}
+
+		var DexType *pb.DexType
+		if observer.DexType == "RAY_AMM" {
+			dexType := pb.DexType_RAY_AMM
+			DexType = &dexType
+		} else if observer.DexType == "RAY_CLMM" {
+			dexType := pb.DexType_RAY_CLMM
+			DexType = &dexType
+		}
+
+		maxArraySize := new(uint32)
+		*maxArraySize = 5 //默认5， clmm使用参数
+
+		dexConfig := &pb.DexConfig{
+			AmmPool:      observer.AmmPoolId,
+			TokenMint:    observer.TokenMint,
+			SlippageBps:  proto.Uint64(slippageBpsUint),
+			MaxArraySize: maxArraySize,
+			DexType:      DexType,
+		}
+
+		arbitrageConfig := &pb.ArbitrageConfig{
+			SolAmount: observer.Volume,
+		}
+
+		amberConfig := &pb.AmberConfig{}
+		GenerateAmberConfig(&observer, amberConfig)
+
+		newObserver, err := client.StartNewObserver(amberConfig, dexConfig, arbitrageConfig)
+		if err != nil {
+			continue
+		}
+		fmt.Printf("restart observer success:%+v\n", newObserver)
+	}
+
+	fmt.Printf(str)
+	return nil
+}
+
+func GenerateAmberConfig(observer *models.BusDexCexTriangularObserver, amberConfig *pb.AmberConfig) error {
+	amberConfig.ExchangeType = &observer.ExchangeType
+	amberConfig.TakerFee = proto.Float64(*observer.TakerFee)
+
+	orderBook := pb.AmberOrderBookConfig{}
+	orderBook.BaseToken = &observer.BaseToken
+	orderBook.QuoteToken = &observer.QuoteToken
+	orderBook.SymbolConnector = &observer.SymbolConnector
+
+	orderBook.BidDepth = proto.Int32(20)
+	orderBook.AskDepth = proto.Int32(20)
+
+	if observer.Depth != "" {
+		depthInt, err := strconv.Atoi(observer.Depth)
+		if err != nil {
+			depthInt = 20 //默认20档
+		}
+		orderBook.BidDepth = proto.Int32(int32(depthInt))
+		orderBook.AskDepth = proto.Int32(int32(depthInt))
+	}
+	amberConfig.Orderbook = &orderBook
 	return nil
 }
