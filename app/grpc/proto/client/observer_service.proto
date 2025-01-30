@@ -42,8 +42,8 @@ message GetStateRequest {
 
 message GetStateResponse {
   required int64 timestamp = 1;
-  required double profit_of_buy_on_dex = 2;
-  required double profit_of_sell_on_dex = 3;
+  required ArbitrageState buy_on_dex = 2;
+  required ArbitrageState sell_on_dex = 3;
 }
 
 message AmberConfig {
@@ -75,6 +75,16 @@ message AmberOrderBookConfig {
 message ObserverInfo {
   required string instance_id = 1;
   required DexType dex_type = 2;
+}
+
+message ArbitrageState {
+  required double cex_base_quantity = 1;
+  required double cex_base_fiat_amount = 2;
+  required double cex_sol_quantity = 3;
+  required double cex_sol_fiat_amount = 4;
+  required double dex_base_amount = 5;
+  required double dex_sol_amount = 6;
+  required double profit_fiat_amount = 7;
 }
 
 enum DexType {
