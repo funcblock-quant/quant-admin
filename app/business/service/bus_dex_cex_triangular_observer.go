@@ -67,8 +67,8 @@ func (e *BusDexCexTriangularObserver) GetPage(c *dto.BusDexCexTriangularObserver
 }
 
 func (e *BusDexCexTriangularObserver) calculate_dex_cex_price(priceState *pb.ArbitrageState) (float64, float64) {
-	var cexPrice float64      // TRUMP/SOL
-	var dexPrice float64      //TRUMP/WSOL
+	var cexPrice float64      // TRUMP/USDT
+	var dexPrice float64      //TRUMP/USDT
 	var cexQuotePrice float64 // 例如：TRUMP/USDT
 	if priceState.CexBaseQuantity != nil && priceState.CexBaseFiatAmount != nil && *priceState.CexBaseQuantity != 0 {
 		cexQuotePrice = *priceState.CexBaseFiatAmount / *priceState.CexBaseQuantity
@@ -85,19 +85,28 @@ func (e *BusDexCexTriangularObserver) calculate_dex_cex_price(priceState *pb.Arb
 		cexSolPrice = 0
 	}
 
-	if cexQuotePrice != 0 && cexSolPrice != 0 {
-		cexPrice = cexQuotePrice / cexSolPrice
-	} else {
-		// 处理除数为0的情况，避免panic
-		cexPrice = 0
-	}
+	//if cexQuotePrice != 0 && cexSolPrice != 0 {
+	//	cexPrice = cexQuotePrice / cexSolPrice
+	//} else {
+	//	// 处理除数为0的情况，避免panic
+	//	cexPrice = 0
+	//}
+	cexPrice = cexQuotePrice
 
+	var dexSolPrice float64 //TRUMP/WSOL
 	if priceState.DexSolAmount != nil && priceState.DexBaseAmount != nil && *priceState.CexSolQuantity != 0 {
-		dexPrice = *priceState.DexSolAmount / *priceState.DexBaseAmount
+		dexSolPrice = *priceState.DexSolAmount / *priceState.DexBaseAmount
 	} else {
 		// 处理 nil 或除数为 0 的情况，避免 panic
+		dexSolPrice = 0
+	}
+
+	if cexSolPrice != 0 && dexSolPrice != 0 {
+		dexPrice = dexSolPrice * cexSolPrice
+	} else {
 		dexPrice = 0
 	}
+
 	return cexPrice, dexPrice
 }
 
