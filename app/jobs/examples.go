@@ -211,6 +211,7 @@ func (t DexCexObserverInspection) Exec(arg interface{}) error {
 	}
 
 	observerInfos, err := client.ListObservers()
+	fmt.Printf("observerInfos:%+v\n", observerInfos)
 
 	observers := make([]models.BusDexCexTriangularObserver, 0)
 	err = service.GetObserverList(&observers)
@@ -220,6 +221,7 @@ func (t DexCexObserverInspection) Exec(arg interface{}) error {
 	}
 
 	for _, observer := range observers {
+		fmt.Printf("observer:%+v\n", observer)
 		if observer.Status == "2" {
 			//已停止的直接跳过
 			continue
@@ -263,11 +265,11 @@ func (t DexCexObserverInspection) Exec(arg interface{}) error {
 		amberConfig := &pb.AmberConfig{}
 		GenerateAmberConfig(&observer, amberConfig)
 
-		newObserver, err := client.StartNewObserver(amberConfig, dexConfig, arbitrageConfig)
-		if err != nil {
-			continue
-		}
-		fmt.Printf("restart observer success:%+v\n", newObserver)
+		//newObserver, err := client.StartNewObserver(amberConfig, dexConfig, arbitrageConfig)
+		//if err != nil {
+		//	continue
+		//}
+		fmt.Printf("restart observer success with params: dexConfig: %+v\n, arbitrageConfig: %+v\n", dexConfig, arbitrageConfig)
 	}
 
 	fmt.Printf(str)
