@@ -39,7 +39,7 @@ func (e *BusDexCexTriangularObserver) GetPage(c *dto.BusDexCexTriangularObserver
 	if len(*list) == 0 {
 		return nil
 	}
-	for i := range *list { // 使用索引 i
+	for i := range *list {
 		observerId := (*list)[i].ObserverId // 使用 (*list)[i] 访问原始元素
 		state, err := client.GetObserverState(observerId)
 		if err != nil {
@@ -48,40 +48,57 @@ func (e *BusDexCexTriangularObserver) GetPage(c *dto.BusDexCexTriangularObserver
 		}
 		e.Log.Infof("get state for observerId:%d \r\n state: %+v \r\n", observerId, state)
 		buyOnDex := state.GetBuyOnDex()
-		var cexPrice float64 // 例如：TRUMP/USDT
-		if buyOnDex.CexBaseQuantity != nil && buyOnDex.CexBaseFiatAmount != nil && *buyOnDex.CexBaseQuantity != 0 {
-			cexPrice = *buyOnDex.CexBaseFiatAmount / *buyOnDex.CexBaseQuantity
-		} else {
-			// 处理 nil 或除数为 0 的情况，避免 panic
-			cexPrice = 0
-		}
-
-		var cexSolPrice float64 //SOL/USDT
-		if buyOnDex.CexSolQuantity != nil && buyOnDex.CexSolFiatAmount != nil && *buyOnDex.CexSolQuantity != 0 {
-			cexSolPrice = *buyOnDex.CexSolFiatAmount / *buyOnDex.CexSolQuantity
-		} else {
-			// 处理 nil 或除数为 0 的情况，避免 panic
-			cexSolPrice = 0
-		}
-
-		var dexPrice float64 //TRUMP/SOL
-		if buyOnDex.DexSolAmount != nil && buyOnDex.DexBaseAmount != nil && *buyOnDex.CexSolQuantity != 0 {
-			cexSolPrice = *buyOnDex.DexSolAmount / *buyOnDex.DexBaseAmount
-		} else {
-			// 处理 nil 或除数为 0 的情况，避免 panic
-			cexSolPrice = 0
-		}
-
-		e.Log.Infof("[buy on dex price details]: cexPrice: %+v ,cexSolPrice: %+v dexPrice: %+v ", cexPrice, cexSolPrice, dexPrice)
+		cexSellPrice, dexBuyPrice := e.calculate_dex_cex_price(buyOnDex)
+		e.Log.Infof("[buy on dex price details]: cexPrice: %+v , dexPrice: %+v \r\n", cexSellPrice, dexBuyPrice)
 
 		sellOnDex := state.GetSellOnDex()
+		cexBuyPrice, dexSellPrice := e.calculate_dex_cex_price(sellOnDex)
+		e.Log.Infof("[sell on dex price details]: cexPrice: %+v , dexPrice: %+v \r\n", cexBuyPrice, dexSellPrice)
 
-		e.Log.Infof("成功获取监视器state， state:%v  \r\n", *state)
 		(*list)[i].ProfitOfBuyOnDex = strconv.FormatFloat(*buyOnDex.ProfitFiatAmount, 'f', 6, 64)
 		(*list)[i].ProfitOfSellOnDex = strconv.FormatFloat(*sellOnDex.ProfitFiatAmount, 'f', 6, 64)
+		(*list)[i].CexSellPrice = strconv.FormatFloat(cexSellPrice, 'f', 6, 64)
+		(*list)[i].DexBuyPrice = strconv.FormatFloat(dexBuyPrice, 'f', 6, 64)
+		(*list)[i].CexBuyPrice = strconv.FormatFloat(cexBuyPrice, 'f', 6, 64)
+		(*list)[i].DexSellPrice = strconv.FormatFloat(dexSellPrice, 'f', 6, 64)
 	}
 
 	return nil
+}
+
+func (e *BusDexCexTriangularObserver) calculate_dex_cex_price(priceState *pb.ArbitrageState) (float64, float64) {
+	var cexPrice float64      // TRUMP/SOL
+	var dexPrice float64      //TRUMP/WSOL
+	var cexQuotePrice float64 // 例如：TRUMP/USDT
+	if priceState.CexBaseQuantity != nil && priceState.CexBaseFiatAmount != nil && *priceState.CexBaseQuantity != 0 {
+		cexQuotePrice = *priceState.CexBaseFiatAmount / *priceState.CexBaseQuantity
+	} else {
+		// 处理 nil 或除数为 0 的情况，避免 panic
+		cexQuotePrice = 0
+	}
+
+	var cexSolPrice float64 //SOL/USDT
+	if priceState.CexSolQuantity != nil && priceState.CexSolFiatAmount != nil && *priceState.CexSolQuantity != 0 {
+		cexSolPrice = *priceState.CexSolFiatAmount / *priceState.CexSolQuantity
+	} else {
+		// 处理 nil 或除数为 0 的情况，避免 panic
+		cexSolPrice = 0
+	}
+
+	if cexQuotePrice != 0 && cexSolPrice != 0 {
+		cexPrice = cexQuotePrice / cexSolPrice
+	} else {
+		// 处理除数为0的情况，避免panic
+		cexPrice = 0
+	}
+
+	if priceState.DexSolAmount != nil && priceState.DexBaseAmount != nil && *priceState.CexSolQuantity != 0 {
+		dexPrice = *priceState.DexSolAmount / *priceState.DexBaseAmount
+	} else {
+		// 处理 nil 或除数为 0 的情况，避免 panic
+		dexPrice = 0
+	}
+	return cexPrice, dexPrice
 }
 
 // Get 获取BusDexCexTriangularObserver对象

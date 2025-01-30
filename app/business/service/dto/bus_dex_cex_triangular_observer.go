@@ -37,7 +37,19 @@ func (m *BusDexCexTriangularObserverGetPageReq) GetNeedSearch() interface{} {
 
 type BusDexCexTriangularObserverGetPageResp struct {
 	models.BusDexCexTriangularObserver
-	ProfitOfBuyOnDex  string `json:"profitOfBuyOnDex" gorm:"-"`
+	ProfitOfBuyOnDexResp
+	ProfitOfSellOnDexResp
+}
+
+type ProfitOfBuyOnDexResp struct {
+	CexSellPrice     string `json:"cexSellPrice" gorm:"-"`
+	DexBuyPrice      string `json:"dexBuyPrice" gorm:"-"`
+	ProfitOfBuyOnDex string `json:"profitOfBuyOnDex" gorm:"-"`
+}
+
+type ProfitOfSellOnDexResp struct {
+	CexBuyPrice       string `json:"cexBuyPrice" gorm:"-"`
+	DexSellPrice      string `json:"dexSellPrice" gorm:"-"`
 	ProfitOfSellOnDex string `json:"profitOfSellOnDex" gorm:"-"`
 }
 
