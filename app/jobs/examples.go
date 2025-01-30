@@ -224,11 +224,13 @@ func (t DexCexObserverInspection) Exec(arg interface{}) error {
 		fmt.Printf("observer:%+v\n", observer)
 		if observer.Status == "2" {
 			//已停止的直接跳过
+			fmt.Printf("observer: %+v\n status is stopped, skip:", observer)
 			continue
 		}
 
 		if containsObserver(observerInfos, observer.ObserverId) {
 			// 服务端已经存在的，直接跳过
+			fmt.Printf("observer: %+v\n is running, skip:", observer)
 			continue
 		}
 
