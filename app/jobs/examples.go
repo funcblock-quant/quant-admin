@@ -267,10 +267,12 @@ func (t DexCexObserverInspection) Exec(arg interface{}) error {
 		amberConfig := &pb.AmberConfig{}
 		GenerateAmberConfig(&observer, amberConfig)
 
-		_, err = client.StartNewObserver(amberConfig, dexConfig, arbitrageConfig)
+		newObserverId, err := client.StartNewObserver(amberConfig, dexConfig, arbitrageConfig)
 		if err != nil {
 			continue
 		}
+		service.UpdateObserverWithNewId(newObserverId, observer.Id)
+
 		fmt.Printf("restart observer success with params: dexConfig: %+v\n, arbitrageConfig: %+v\n", dexConfig, arbitrageConfig)
 	}
 
