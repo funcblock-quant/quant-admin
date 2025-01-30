@@ -224,13 +224,13 @@ func (t DexCexObserverInspection) Exec(arg interface{}) error {
 		fmt.Printf("observer:%+v\n", observer)
 		if observer.Status == "2" {
 			//已停止的直接跳过
-			fmt.Printf("observer: %+v\n status is stopped, skip:", observer)
+			fmt.Printf("observer: %s\n status is stopped, skip \r\n", observer.ObserverId)
 			continue
 		}
 
 		if containsObserver(observerInfos, observer.ObserverId) {
 			// 服务端已经存在的，直接跳过
-			fmt.Printf("observer: %+v\n is running, skip:", observer)
+			fmt.Printf("observer: %s\n is running, skip \r\n", observer.ObserverId)
 			continue
 		}
 
@@ -267,10 +267,10 @@ func (t DexCexObserverInspection) Exec(arg interface{}) error {
 		amberConfig := &pb.AmberConfig{}
 		GenerateAmberConfig(&observer, amberConfig)
 
-		//newObserver, err := client.StartNewObserver(amberConfig, dexConfig, arbitrageConfig)
-		//if err != nil {
-		//	continue
-		//}
+		_, err = client.StartNewObserver(amberConfig, dexConfig, arbitrageConfig)
+		if err != nil {
+			continue
+		}
 		fmt.Printf("restart observer success with params: dexConfig: %+v\n, arbitrageConfig: %+v\n", dexConfig, arbitrageConfig)
 	}
 
