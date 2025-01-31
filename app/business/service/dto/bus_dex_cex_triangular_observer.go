@@ -44,12 +44,14 @@ type BusDexCexTriangularObserverGetPageResp struct {
 type ProfitOfBuyOnDexResp struct {
 	CexSellPrice     string `json:"cexSellPrice" gorm:"-"`
 	DexBuyPrice      string `json:"dexBuyPrice" gorm:"-"`
+	DexBuyDiffPrice  string `json:"dexBuyDiffPrice" gorm:"-"`
 	ProfitOfBuyOnDex string `json:"profitOfBuyOnDex" gorm:"-"`
 }
 
 type ProfitOfSellOnDexResp struct {
 	CexBuyPrice       string `json:"cexBuyPrice" gorm:"-"`
 	DexSellPrice      string `json:"dexSellPrice" gorm:"-"`
+	DexSellDiffPrice  string `json:"dexSellDiffPrice" gorm:"-"`
 	ProfitOfSellOnDex string `json:"profitOfSellOnDex" gorm:"-"`
 }
 
