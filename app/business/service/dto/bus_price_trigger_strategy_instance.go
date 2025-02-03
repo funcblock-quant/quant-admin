@@ -37,6 +37,10 @@ func (m *BusPriceTriggerStrategyInstanceGetPageReq) GetNeedSearch() interface{} 
 	return *m
 }
 
+type TriggerStrategyInstanceGetUserListReq struct {
+	UserId string `form:"userId"  search:"type:exact;column:create_by;table:bus_price_trigger_strategy_instance" comment:"创建人"`
+}
+
 type BusPriceTriggerStrategyResp struct {
 	Id            string                                     `json:"id"`
 	OpenPrice     string                                     `json:"openPrice"`
@@ -57,8 +61,8 @@ type BusPriceTriggerStrategyResp struct {
 // UserInfo 价格触发下单的用户信息
 type UserInfo struct {
 	Username string `json:"username"`
-	Nickname string `json:"nickname"`
-	UserId   string `json:"userId"`
+	Nickname string `json:"nickname" gorm:"column:nick_name"`
+	UserId   string `json:"userId" gorm:"column:user_id"`
 }
 
 // BusPriceTriggerStrategyStatistical 价格触发下单的统计数据

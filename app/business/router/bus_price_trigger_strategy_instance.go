@@ -25,5 +25,6 @@ func registerBusPriceTriggerStrategyInstanceRouter(v1 *gin.RouterGroup, authMidd
 		r.DELETE("", api.Delete)
 	}
 	r = v1.POST("/stopTriggerInstance", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.StopInstance)
+	r = v1.GET("/getTriggerUserList", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.GetUserList)
 
 }

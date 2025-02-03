@@ -90,6 +90,38 @@ func (e *BusPriceTriggerStrategyInstance) GetPage(c *dto.BusPriceTriggerStrategy
 	return nil
 }
 
+// GetTriggerUserList 获取BusPriceTriggerStrategyInstance 创建用户列表
+func (e *BusPriceTriggerStrategyInstance) GetTriggerUserList(c *dto.TriggerStrategyInstanceGetUserListReq, p *actions.DataPermission, list *[]dto.UserInfo) error {
+	var err error
+	var data models.BusPriceTriggerStrategyInstance
+	var createBys []string
+	if len(c.UserId) == 0 {
+		// 未传userId,则查所有的userlist
+		err = e.Orm.Model(&data).
+			Select("create_by").
+			Group("create_by").
+			Pluck("create_by", &createBys).Error
+		if err != nil {
+			e.Log.Errorf("BusPriceTriggerStrategyInstanceService GetTriggerUserList error:%s \r\n", err)
+			return err
+		}
+	} else {
+		//传入了userId,则只查传入的userId
+		createBys = append(createBys, c.UserId)
+	}
+
+	var user models2.SysUser
+	err = e.Orm.Model(&user).
+		Where("user_id IN ?", createBys).
+		Find(list).Error
+
+	if err != nil {
+		e.Log.Errorf("BusPriceTriggerStrategyInstanceService GetTriggerUserList error:%s \r\n", err)
+		return err
+	}
+	return nil
+}
+
 // Get 获取BusPriceTriggerStrategyInstance对象
 func (e *BusPriceTriggerStrategyInstance) Get(d *dto.BusPriceTriggerStrategyInstanceGetReq, p *actions.DataPermission, model *models.BusPriceTriggerStrategyInstance) error {
 	var data models.BusPriceTriggerStrategyInstance
