@@ -28,6 +28,7 @@ message StartTriggerRequest {
   string        symbol = 6; // 交易对
   string        stop_time = 7; //停止时间
   APIConfig     api_config = 8; //Apikey相关
+  string        user_id = 9; // 实例启动中台user_id
 }
 
 message CheckApiKeyHealthyRequest {

@@ -47,10 +47,18 @@ type BusPriceTriggerStrategyResp struct {
 	CloseTime     time.Time                                  `json:"closeTime"`
 	Status        string                                     `json:"status"`
 	ApiConfig     string                                     `json:"apiConfig"`
-	ApiConfigData models.BusPriceTriggerStrategyApikeyConfig `json:"apiConfigData"`
+	ApiConfigData models.BusPriceTriggerStrategyApikeyConfig `json:"apiConfigData" gorm:"-"`
 	CreatedAt     time.Time                                  `json:"createdAt"`
 	Details       []models.BusPriceMonitorForOptionHedging   `json:"details" gorm:"-"`
 	Statistical   BusPriceTriggerStrategyStatistical         `json:"statistical" gorm:"-"`
+	UserInfo      UserInfo                                   `json:"userInfo" gorm:"-"`
+}
+
+// UserInfo 价格触发下单的用户信息
+type UserInfo struct {
+	Username string `json:"username"`
+	Nickname string `json:"nickname"`
+	UserId   string `json:"userId"`
 }
 
 // BusPriceTriggerStrategyStatistical 价格触发下单的统计数据
