@@ -37,7 +37,6 @@ func (e *BusPriceTriggerStrategyInstance) GetPage(c *dto.BusPriceTriggerStrategy
 
 	for index, strategy := range *list {
 		statistical := dto.BusPriceTriggerStrategyStatistical{}
-		userInfo := dto.UserInfo{}
 		details := make([]models.BusPriceMonitorForOptionHedging, 0)
 		err := e.Orm.Model(&detail).Where("strategy_instance_id = ?", strategy.Id).Order("id desc").Find(&details).Error
 		if err != nil {
@@ -57,9 +56,6 @@ func (e *BusPriceTriggerStrategyInstance) GetPage(c *dto.BusPriceTriggerStrategy
 			e.Log.Errorf("BusPriceTriggerStrategyInstanceService Get sysUser error:%s \r\n", err)
 			return err
 		}
-		userInfo.UserId = apiConfig.UserId
-		userInfo.Username = sysUser.Username
-		userInfo.Nickname = sysUser.NickName
 
 		(*list)[index].ApiConfigData = apiConfig
 
@@ -80,7 +76,6 @@ func (e *BusPriceTriggerStrategyInstance) GetPage(c *dto.BusPriceTriggerStrategy
 		statistical.OrderNum = totalOrderNum
 		statistical.TotalPnl = totalPnl.StringFixed(8)
 		(*list)[index].Statistical = statistical
-		(*list)[index].UserInfo = userInfo
 		(*list)[index].Details = details
 	}
 	if err != nil {
@@ -155,7 +150,7 @@ func (e *BusPriceTriggerStrategyInstance) Insert(c *dto.BusPriceTriggerStrategyI
 		Symbol:     c.Symbol,
 		StopTime:   strconv.FormatInt(c.CloseTime.UnixMilli(), 10),
 		ApiConfig:  &apiConfigReq,
-		UserId:     apiKeyConfig.UserId,
+		UserId:     c.ExchangeUserId,
 	}
 	_, err = client.StartTriggerInstance(request)
 	if err != nil {

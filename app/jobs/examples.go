@@ -137,7 +137,7 @@ func (t PriceTriggerInspection) Exec(arg interface{}) error {
 				Symbol:     instance.Symbol,
 				StopTime:   strconv.FormatInt(instance.CloseTime.UnixMilli(), 10),
 				ApiConfig:  &apiConfigReq,
-				UserId:     apiConfig.UserId,
+				UserId:     instance.ExchangeUserId,
 			}
 
 			_, err = client.StartTriggerInstance(request)
