@@ -37,7 +37,6 @@ func (e *BusPriceTriggerStrategyInstance) GetPage(c *dto.BusPriceTriggerStrategy
 
 	for index, strategy := range *list {
 		statistical := dto.BusPriceTriggerStrategyStatistical{}
-		userInfo := dto.UserInfo{}
 		details := make([]models.BusPriceMonitorForOptionHedging, 0)
 		err := e.Orm.Model(&detail).Where("strategy_instance_id = ?", strategy.Id).Order("id desc").Find(&details).Error
 		if err != nil {
@@ -57,9 +56,6 @@ func (e *BusPriceTriggerStrategyInstance) GetPage(c *dto.BusPriceTriggerStrategy
 			e.Log.Errorf("BusPriceTriggerStrategyInstanceService Get sysUser error:%s \r\n", err)
 			return err
 		}
-		userInfo.UserId = apiConfig.UserId
-		userInfo.Username = sysUser.Username
-		userInfo.Nickname = sysUser.NickName
 
 		(*list)[index].ApiConfigData = apiConfig
 
@@ -80,43 +76,10 @@ func (e *BusPriceTriggerStrategyInstance) GetPage(c *dto.BusPriceTriggerStrategy
 		statistical.OrderNum = totalOrderNum
 		statistical.TotalPnl = totalPnl.StringFixed(8)
 		(*list)[index].Statistical = statistical
-		(*list)[index].UserInfo = userInfo
 		(*list)[index].Details = details
 	}
 	if err != nil {
 		e.Log.Errorf("BusPriceTriggerStrategyInstanceService GetPage error:%s \r\n", err)
-		return err
-	}
-	return nil
-}
-
-// GetTriggerUserList 获取BusPriceTriggerStrategyInstance 创建用户列表
-func (e *BusPriceTriggerStrategyInstance) GetTriggerUserList(c *dto.TriggerStrategyInstanceGetUserListReq, p *actions.DataPermission, list *[]dto.UserInfo) error {
-	var err error
-	var data models.BusPriceTriggerStrategyInstance
-	var createBys []string
-	if len(c.UserId) == 0 {
-		// 未传userId,则查所有的userlist
-		err = e.Orm.Model(&data).
-			Select("create_by").
-			Group("create_by").
-			Pluck("create_by", &createBys).Error
-		if err != nil {
-			e.Log.Errorf("BusPriceTriggerStrategyInstanceService GetTriggerUserList error:%s \r\n", err)
-			return err
-		}
-	} else {
-		//传入了userId,则只查传入的userId
-		createBys = append(createBys, c.UserId)
-	}
-
-	var user models2.SysUser
-	err = e.Orm.Model(&user).
-		Where("user_id IN ?", createBys).
-		Find(list).Error
-
-	if err != nil {
-		e.Log.Errorf("BusPriceTriggerStrategyInstanceService GetTriggerUserList error:%s \r\n", err)
 		return err
 	}
 	return nil
@@ -187,7 +150,7 @@ func (e *BusPriceTriggerStrategyInstance) Insert(c *dto.BusPriceTriggerStrategyI
 		Symbol:     c.Symbol,
 		StopTime:   strconv.FormatInt(c.CloseTime.UnixMilli(), 10),
 		ApiConfig:  &apiConfigReq,
-		UserId:     apiKeyConfig.UserId,
+		UserId:     c.ExchangeUserId,
 	}
 	_, err = client.StartTriggerInstance(request)
 	if err != nil {

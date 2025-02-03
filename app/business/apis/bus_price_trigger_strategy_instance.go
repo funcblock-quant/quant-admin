@@ -63,39 +63,6 @@ func (e BusPriceTriggerStrategyInstance) GetPage(c *gin.Context) {
 	e.PageOK(list, int(count), req.GetPageIndex(), req.GetPageSize(), "查询成功")
 }
 
-// GetUserList 获取价格触发下单策略用户列表
-// @Description 获取价格触发下单策略用户列表
-func (e BusPriceTriggerStrategyInstance) GetUserList(c *gin.Context) {
-	req := dto.TriggerStrategyInstanceGetUserListReq{}
-	s := service.BusPriceTriggerStrategyInstance{}
-	err := e.MakeContext(c).
-		MakeOrm().
-		Bind(&req).
-		MakeService(&s.Service).
-		Errors
-	if err != nil {
-		e.Logger.Error(err)
-		e.Error(500, err, err.Error())
-		return
-	}
-	userId := user.GetUserId(c)
-	roleName := user.GetRoleName(c)
-	e.Logger.Infof("roleName: %s", roleName)
-	if roleName != "admin" {
-		//如果不是管理员，只能自己看自己添加的下单规则数据
-		req.UserId = strconv.Itoa(userId)
-	}
-	p := actions.GetPermissionFromContext(c)
-	list := make([]dto.UserInfo, 0)
-	err = s.GetTriggerUserList(&req, p, &list)
-	if err != nil {
-		e.Error(500, err, fmt.Sprintf("获取价格触发下单策略失败，\r\n失败信息 %s", err.Error()))
-		return
-	}
-
-	e.OK(list, "查询成功")
-}
-
 // Get 获取价格触发下单策略
 // @Summary 获取价格触发下单策略
 // @Description 获取价格触发下单策略

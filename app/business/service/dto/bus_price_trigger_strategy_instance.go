@@ -12,6 +12,7 @@ type BusPriceTriggerStrategyInstanceGetPageReq struct {
 	dto.Pagination `search:"-"`
 	CloseTime      time.Time `form:"closeTime"  search:"type:exact;column:close_time;table:bus_price_trigger_strategy_instance" comment:"停止时间"`
 	Status         string    `form:"status"  search:"type:exact;column:status;table:bus_price_trigger_strategy_instance" comment:"状态，created, started, stopped, closed"`
+	ExchangeUserId string    `form:"exchangeUserId"  search:"type:exact;column:exchange_user_id;table:bus_price_trigger_strategy_instance" comment:"交易所userId"`
 	UserId         string    `form:"createBy"  search:"type:exact;column:create_by;table:bus_price_trigger_strategy_instance" comment:"创建人"`
 	ApiConfig      int       `form:"apiConfig" search:"type:exact;column:api_config;table:bus_price_trigger_strategy_instance" comment:"api配置id"`
 	BusPriceTriggerStrategyInstanceOrder
@@ -42,27 +43,20 @@ type TriggerStrategyInstanceGetUserListReq struct {
 }
 
 type BusPriceTriggerStrategyResp struct {
-	Id            string                                     `json:"id"`
-	OpenPrice     string                                     `json:"openPrice"`
-	ClosePrice    string                                     `json:"closePrice"`
-	Amount        string                                     `json:"amount"`
-	Side          string                                     `json:"side"`
-	Symbol        string                                     `json:"symbol"`
-	CloseTime     time.Time                                  `json:"closeTime"`
-	Status        string                                     `json:"status"`
-	ApiConfig     string                                     `json:"apiConfig"`
-	ApiConfigData models.BusPriceTriggerStrategyApikeyConfig `json:"apiConfigData" gorm:"-"`
-	CreatedAt     time.Time                                  `json:"createdAt"`
-	Details       []models.BusPriceMonitorForOptionHedging   `json:"details" gorm:"-"`
-	Statistical   BusPriceTriggerStrategyStatistical         `json:"statistical" gorm:"-"`
-	UserInfo      UserInfo                                   `json:"userInfo" gorm:"-"`
-}
-
-// UserInfo 价格触发下单的用户信息
-type UserInfo struct {
-	Username string `json:"username"`
-	Nickname string `json:"nickname" gorm:"column:nick_name"`
-	UserId   string `json:"userId" gorm:"column:user_id"`
+	Id             string                                     `json:"id"`
+	OpenPrice      string                                     `json:"openPrice"`
+	ClosePrice     string                                     `json:"closePrice"`
+	Amount         string                                     `json:"amount"`
+	Side           string                                     `json:"side"`
+	Symbol         string                                     `json:"symbol"`
+	CloseTime      time.Time                                  `json:"closeTime"`
+	Status         string                                     `json:"status"`
+	ApiConfig      string                                     `json:"apiConfig"`
+	ApiConfigData  models.BusPriceTriggerStrategyApikeyConfig `json:"apiConfigData" gorm:"-"`
+	CreatedAt      time.Time                                  `json:"createdAt"`
+	Details        []models.BusPriceMonitorForOptionHedging   `json:"details" gorm:"-"`
+	Statistical    BusPriceTriggerStrategyStatistical         `json:"statistical" gorm:"-"`
+	ExchangeUserId string                                     `json:"exchangeUserId"`
 }
 
 // BusPriceTriggerStrategyStatistical 价格触发下单的统计数据
@@ -72,15 +66,16 @@ type BusPriceTriggerStrategyStatistical struct {
 }
 
 type BusPriceTriggerStrategyInstanceInsertReq struct {
-	Id         int       `json:"-" comment:""` //
-	OpenPrice  string    `json:"openPrice" comment:"开仓价格"`
-	ClosePrice string    `json:"closePrice" comment:"平仓价格"`
-	Amount     string    `json:"amount" comment:"开仓数量"`
-	Side       string    `json:"side" comment:"买卖方向"`
-	Symbol     string    `json:"symbol" comment:"交易币种"`
-	CloseTime  time.Time `json:"closeTime" comment:"停止时间"`
-	ApiConfig  int       `json:"apiConfig" comment:"api配置id"`
-	Status     string    `json:"status" comment:"状态，created, started, stopped, closed"`
+	Id             int       `json:"-" comment:""` //
+	OpenPrice      string    `json:"openPrice" comment:"开仓价格"`
+	ClosePrice     string    `json:"closePrice" comment:"平仓价格"`
+	Amount         string    `json:"amount" comment:"开仓数量"`
+	Side           string    `json:"side" comment:"买卖方向"`
+	Symbol         string    `json:"symbol" comment:"交易币种"`
+	CloseTime      time.Time `json:"closeTime" comment:"停止时间"`
+	ApiConfig      int       `json:"apiConfig" comment:"api配置id"`
+	Status         string    `json:"status" comment:"状态，created, started, stopped, closed"`
+	ExchangeUserId string    `json:"exchangeUserId"`
 	common.ControlBy
 }
 
@@ -101,6 +96,7 @@ func (s *BusPriceTriggerStrategyInstanceInsertReq) Generate(model *models.BusPri
 	model.Status = s.Status
 	model.ApiConfig = s.ApiConfig
 	model.CreateBy = s.CreateBy // 添加这而，需要记录是被谁创建的
+	model.ExchangeUserId = s.ExchangeUserId
 }
 
 func (s *BusPriceTriggerStrategyInstanceInsertReq) GetId() interface{} {
