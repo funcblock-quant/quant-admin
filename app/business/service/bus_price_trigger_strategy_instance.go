@@ -5,6 +5,7 @@ import (
 	"github.com/go-admin-team/go-admin-core/sdk/service"
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
+	models2 "quanta-admin/app/admin/models"
 	"quanta-admin/app/grpc/client"
 	"quanta-admin/app/grpc/proto/client/trigger_service"
 	"strconv"
@@ -36,6 +37,7 @@ func (e *BusPriceTriggerStrategyInstance) GetPage(c *dto.BusPriceTriggerStrategy
 
 	for index, strategy := range *list {
 		statistical := dto.BusPriceTriggerStrategyStatistical{}
+		userInfo := dto.UserInfo{}
 		details := make([]models.BusPriceMonitorForOptionHedging, 0)
 		err := e.Orm.Model(&detail).Where("strategy_instance_id = ?", strategy.Id).Order("id desc").Find(&details).Error
 		if err != nil {
@@ -44,11 +46,21 @@ func (e *BusPriceTriggerStrategyInstance) GetPage(c *dto.BusPriceTriggerStrategy
 		}
 
 		var apiConfig models.BusPriceTriggerStrategyApikeyConfig
-		err = e.Orm.Model(&apiConfig).Where("id = ?", strategy.ApiConfig).First(&apiConfig).Error
+		err = e.Orm.Unscoped().Model(&apiConfig).Where("id = ?", strategy.ApiConfig).First(&apiConfig).Error
 		if err != nil {
 			e.Log.Errorf("BusPriceTriggerStrategyInstanceService Get apiConfig error:%s \r\n", err)
 			return err
 		}
+		sysUser := models2.SysUser{}
+		err = e.Orm.Unscoped().Model(&sysUser).Where("user_id = ?", apiConfig.UserId).First(&sysUser).Error
+		if err != nil {
+			e.Log.Errorf("BusPriceTriggerStrategyInstanceService Get sysUser error:%s \r\n", err)
+			return err
+		}
+		userInfo.UserId = apiConfig.UserId
+		userInfo.Username = sysUser.Username
+		userInfo.Nickname = sysUser.NickName
+
 		(*list)[index].ApiConfigData = apiConfig
 
 		totalOrderNum := len(details)
@@ -68,6 +80,7 @@ func (e *BusPriceTriggerStrategyInstance) GetPage(c *dto.BusPriceTriggerStrategy
 		statistical.OrderNum = totalOrderNum
 		statistical.TotalPnl = totalPnl.StringFixed(8)
 		(*list)[index].Statistical = statistical
+		(*list)[index].UserInfo = userInfo
 		(*list)[index].Details = details
 	}
 	if err != nil {
@@ -142,6 +155,7 @@ func (e *BusPriceTriggerStrategyInstance) Insert(c *dto.BusPriceTriggerStrategyI
 		Symbol:     c.Symbol,
 		StopTime:   strconv.FormatInt(c.CloseTime.UnixMilli(), 10),
 		ApiConfig:  &apiConfigReq,
+		UserId:     apiKeyConfig.UserId,
 	}
 	_, err = client.StartTriggerInstance(request)
 	if err != nil {
