@@ -154,7 +154,7 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 		e.Orm.Create(&spreadData)
 
 		// 获取最新的dex买的价差统计信息
-		var dexBuyData models.BusDexCexPriceSpreadStatistics
+		dexBuyData := models.BusDexCexPriceSpreadStatistics{}
 		err = e.Orm.Model(&dexBuyData).Where("observer_id = ? and spread_type = ? and end_time is null", observerId, 1).Order("created_at desc").First(&dexBuyData).Limit(1).Error
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -192,10 +192,14 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 				dexBuyData.MinPriceDifference = strconv.FormatFloat(dexBuySpreadf, 'f', 0, 64)
 			}
 		} else {
-			//如果价差变成负的了，则需要更新价差结束时间
-			dexBuyData.EndTime = &currentTime
-			//startTime := dexBuyData.StartTime
-			//dexBuyData.Duration = strconv.FormatFloat(currentTime.Sub(*startTime).Seconds(), 'f', 0, 64)
+			if dexBuyData.Id != 0 {
+				//如果价差变成负的了，则需要更新价差结束时间
+				dexBuyData.EndTime = &currentTime
+				//startTime := dexBuyData.StartTime
+				//dexBuyData.Duration = strconv.FormatFloat(currentTime.Sub(*startTime).Seconds(), 'f', 0, 64)
+			} else {
+				continue
+			}
 		}
 		err = e.Orm.Save(&dexBuyData).Error
 		if err != nil {
@@ -204,7 +208,7 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 		}
 
 		// 获取最新的dex卖的价差统计信息
-		var dexSellData models.BusDexCexPriceSpreadStatistics
+		dexSellData := models.BusDexCexPriceSpreadStatistics{}
 		err = e.Orm.Model(&dexSellData).Where("observer_id = ? and spread_type = ? and end_time is null", observerId, 2).Order("created_at desc").First(&dexSellData).Limit(1).Error
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -242,11 +246,14 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 				dexBuyData.MinPriceDifference = strconv.FormatFloat(dexSellSpreadf, 'f', 0, 64)
 			}
 		} else {
-			//如果价差变成负的了，则需要更新价差结束时间
-
-			dexBuyData.EndTime = &currentTime
-			//startTime := dexBuyData.StartTime
-			//dexBuyData.Duration = strconv.FormatFloat(currentTime.Sub(*startTime).Seconds(), 'f', 0, 64)
+			if dexSellData.Id != 0 {
+				//如果价差变成负的了，则需要更新价差结束时间
+				dexBuyData.EndTime = &currentTime
+				//startTime := dexBuyData.StartTime
+				//dexBuyData.Duration = strconv.FormatFloat(currentTime.Sub(*startTime).Seconds(), 'f', 0, 64)
+			} else {
+				continue
+			}
 		}
 		err = e.Orm.Save(&dexBuyData).Error
 		if err != nil {
