@@ -156,6 +156,10 @@ func run() error {
 		}
 	}()
 
+	go func() {
+		jobs.InitSimpleJob()
+	}()
+
 	fmt.Println(pkg.Red(string(global.LogoContent)))
 	tip()
 	fmt.Println(pkg.Green("Server run at:"))
