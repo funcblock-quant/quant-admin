@@ -178,7 +178,7 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 			}
 		}
 
-		e.Log.Infof("observer spread statistics info:%v \r\n", dexBuyData)
+		e.Log.Infof("observer spread statistics info:%+v \r\n", dexBuyData)
 		if cexSellPrice-dexBuyPrice > 0 {
 			//如果有正向价差，需要更新下最大最小价差
 			//startTime := dexBuyData.StartTime
@@ -192,20 +192,24 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 			if dexBuySpreadf < minPriceDifference {
 				dexBuyData.MinPriceDifference = strconv.FormatFloat(dexBuySpreadf, 'f', 0, 64)
 			}
+			err = e.Orm.Save(&dexBuyData).Error
+			if err != nil {
+				e.Log.Errorf("save observer spread statistics error:%s \r\n", err)
+				continue
+			}
 		} else {
 			if dexBuyData.Id != 0 {
 				//如果价差变成负的了，则需要更新价差结束时间
 				dexBuyData.EndTime = &currentTime
 				//startTime := dexBuyData.StartTime
 				//dexBuyData.Duration = strconv.FormatFloat(currentTime.Sub(*startTime).Seconds(), 'f', 0, 64)
-			} else {
-				continue
+				err = e.Orm.Save(&dexBuyData).Error
+				if err != nil {
+					e.Log.Errorf("save observer spread statistics error:%s \r\n", err)
+					continue
+				}
 			}
-		}
-		err = e.Orm.Save(&dexBuyData).Error
-		if err != nil {
-			e.Log.Errorf("save observer spread statistics error:%s \r\n", err)
-			continue
+
 		}
 
 		// 获取最新的dex卖的价差统计信息
@@ -233,7 +237,7 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 			}
 		}
 
-		e.Log.Infof("observer spread statistics info:%v \r\n", dexSellData)
+		e.Log.Infof("observer spread statistics info:%+v \r\n", dexSellData)
 		if dexSellPrice-cexBuyPrice > 0 {
 			//如果有正向价差，需要更新下最大最小价差
 			//startTime := dexSellData.StartTime
@@ -242,26 +246,30 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 			minPriceDifference, _ := strconv.ParseFloat(dexSellData.MinPriceDifference, 64)
 			dexSellSpreadf, _ := strconv.ParseFloat(spreadData.DexSellSpread, 64)
 			if dexSellSpreadf > maxPriceDifference {
-				dexBuyData.MaxPriceDifference = strconv.FormatFloat(dexSellSpreadf, 'f', 0, 64)
+				dexSellData.MaxPriceDifference = strconv.FormatFloat(dexSellSpreadf, 'f', 0, 64)
 			}
 			if dexSellSpreadf < minPriceDifference {
-				dexBuyData.MinPriceDifference = strconv.FormatFloat(dexSellSpreadf, 'f', 0, 64)
+				dexSellData.MinPriceDifference = strconv.FormatFloat(dexSellSpreadf, 'f', 0, 64)
+			}
+			err = e.Orm.Save(&dexSellData).Error
+			if err != nil {
+				e.Log.Errorf("get observer spread statistics error:%s \r\n", err)
+				continue
 			}
 		} else {
 			if dexSellData.Id != 0 {
 				//如果价差变成负的了，则需要更新价差结束时间
-				dexBuyData.EndTime = &currentTime
+				dexSellData.EndTime = &currentTime
 				//startTime := dexBuyData.StartTime
-				//dexBuyData.Duration = strconv.FormatFloat(currentTime.Sub(*startTime).Seconds(), 'f', 0, 64)
-			} else {
-				continue
+				//dexSellData.Duration = strconv.FormatFloat(currentTime.Sub(*startTime).Seconds(), 'f', 0, 64)
+				err = e.Orm.Save(&dexSellData).Error
+				if err != nil {
+					e.Log.Errorf("get observer spread statistics error:%s \r\n", err)
+					continue
+				}
 			}
 		}
-		err = e.Orm.Save(&dexBuyData).Error
-		if err != nil {
-			e.Log.Errorf("get observer spread statistics error:%s \r\n", err)
-			continue
-		}
+
 	}
 	return nil
 }
