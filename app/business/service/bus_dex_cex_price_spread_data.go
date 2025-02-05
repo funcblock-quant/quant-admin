@@ -156,7 +156,7 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 		var dexBuyData models.BusDexCexPriceSpreadStatistics
 		err = e.Orm.Model(&dexBuyData).Where("observer_id = ? and spread_type = ? and end_time is null", observerId, 1).Order("created_at desc").First(&dexBuyData).Limit(1).Error
 		if err != nil {
-			if err == gorm.ErrRecordNotFound {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
 				// 如果查询不到最新的价差统计信息，则需根据是否出现价差，判断要不要新建一条记录
 				if cexSellPrice-dexBuyPrice > 0 {
 					// dex买cex卖出现正向价差
@@ -171,9 +171,10 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 					}
 					e.Orm.Create(&dexBuyStatistic)
 				}
+			} else {
+				e.Log.Errorf("get observer spread statistics error:%s \r\n", err)
+				continue
 			}
-			e.Log.Errorf("get observer spread statistics error:%s \r\n", err)
-			continue
 		}
 
 		if cexSellPrice-dexBuyPrice > 0 {
@@ -205,7 +206,7 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 		var dexSellData models.BusDexCexPriceSpreadStatistics
 		err = e.Orm.Model(&dexSellData).Where("observer_id = ? and spread_type = ? and end_time is null", observerId, 2).Order("created_at desc").First(&dexSellData).Limit(1).Error
 		if err != nil {
-			if err == gorm.ErrRecordNotFound {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
 				// 如果查询不到最新的价差统计信息，则需根据是否出现价差，判断要不要新建一条记录
 				if dexSellPrice-cexBuyPrice > 0 {
 					// dex卖cex买出现正向价差
@@ -220,9 +221,10 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 					}
 					e.Orm.Create(&dexSellStatistic)
 				}
+			} else {
+				e.Log.Errorf("get observer spread statistics error:%s \r\n", err)
+				continue
 			}
-			e.Log.Errorf("get observer spread statistics error:%s \r\n", err)
-			continue
 		}
 
 		if dexSellPrice-cexBuyPrice > 0 {
