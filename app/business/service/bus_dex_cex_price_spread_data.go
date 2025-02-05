@@ -182,12 +182,13 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 		e.Log.Infof("observer spread statistics info:%+v \r\n", dexBuyData)
 		if cexSellPrice-dexBuyPrice > 0 {
 			//如果有正向价差，需要更新下最大最小价差
-			//startTime := dexBuyData.StartTime
-			//dexBuyData.Duration = strconv.FormatFloat(currentTime.Sub(*startTime).Seconds(), 'f', 0, 64)
+			startTime := dexBuyData.StartTime
+			if startTime != nil {
+				dexBuyData.Duration = strconv.FormatFloat(currentTime.Sub(*startTime).Seconds(), 'f', 0, 64)
+			}
 			maxPriceDifference, _ := strconv.ParseFloat(dexBuyData.MaxPriceDifference, 64)
 			minPriceDifference, _ := strconv.ParseFloat(dexBuyData.MinPriceDifference, 64)
 			dexBuySpreadf, _ := strconv.ParseFloat(spreadData.DexBuySpread, 64)
-			e.Log.Infof("maxPriceSpread: %f, minPriceSpread: %f, dexBuySpreadf : %f", maxPriceDifference, minPriceDifference, dexBuySpreadf)
 			if dexBuySpreadf >= maxPriceDifference {
 				dexBuyData.MaxPriceDifference = strconv.FormatFloat(dexBuySpreadf, 'f', 6, 64)
 			}
@@ -203,8 +204,10 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 			if dexBuyData.Id != 0 {
 				//如果价差变成负的了，则需要更新价差结束时间
 				dexBuyData.EndTime = &currentTime
-				//startTime := dexBuyData.StartTime
-				//dexBuyData.Duration = strconv.FormatFloat(currentTime.Sub(*startTime).Seconds(), 'f', 0, 64)
+				startTime := dexBuyData.StartTime
+				if startTime != nil {
+					dexBuyData.Duration = strconv.FormatFloat(currentTime.Sub(*startTime).Seconds(), 'f', 0, 64)
+				}
 				err = e.Orm.Save(&dexBuyData).Error
 				if err != nil {
 					e.Log.Errorf("save observer spread statistics error:%s \r\n", err)
@@ -241,15 +244,14 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 
 		e.Log.Infof("observer spread statistics info:%+v \r\n", dexSellData)
 		if dexSellPrice-cexBuyPrice > 0 {
-			e.Log.Infof("dex 卖出存在正向价差")
 			//如果有正向价差，需要更新下最大最小价差
 			startTime := dexSellData.StartTime
-			e.Log.Infof("start time:%v \r\n", startTime)
-			//dexSellData.Duration = strconv.FormatFloat(currentTime.Sub(*startTime).Seconds(), 'f', 0, 64)
+			if startTime != nil {
+				dexSellData.Duration = strconv.FormatFloat(currentTime.Sub(*startTime).Seconds(), 'f', 0, 64)
+			}
 			maxPriceDifference, _ := strconv.ParseFloat(dexSellData.MaxPriceDifference, 64)
 			minPriceDifference, _ := strconv.ParseFloat(dexSellData.MinPriceDifference, 64)
 			dexSellSpreadf, _ := strconv.ParseFloat(spreadData.DexSellSpread, 64)
-			e.Log.Infof("maxPriceSpread: %f, minPriceSpread: %f, dexSellSpread : %f", maxPriceDifference, minPriceDifference, dexSellSpreadf)
 			if dexSellSpreadf >= maxPriceDifference {
 				dexSellData.MaxPriceDifference = strconv.FormatFloat(dexSellSpreadf, 'f', 6, 64)
 			}
@@ -265,8 +267,10 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 			if dexSellData.Id != 0 {
 				//如果价差变成负的了，则需要更新价差结束时间
 				dexSellData.EndTime = &currentTime
-				//startTime := dexBuyData.StartTime
-				//dexSellData.Duration = strconv.FormatFloat(currentTime.Sub(*startTime).Seconds(), 'f', 0, 64)
+				startTime := dexBuyData.StartTime
+				if startTime != nil {
+					dexSellData.Duration = strconv.FormatFloat(currentTime.Sub(*startTime).Seconds(), 'f', 0, 64)
+				}
 				err = e.Orm.Save(&dexSellData).Error
 				if err != nil {
 					e.Log.Errorf("get observer spread statistics error:%s \r\n", err)
