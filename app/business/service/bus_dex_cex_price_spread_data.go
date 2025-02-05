@@ -161,7 +161,7 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 				// 如果查询不到最新的价差统计信息，则需根据是否出现价差，判断要不要新建一条记录
 				if cexSellPrice-dexBuyPrice > 0 {
 					// dex买cex卖出现正向价差
-					dexBuyData := models.BusDexCexPriceSpreadStatistics{
+					dexBuyData = models.BusDexCexPriceSpreadStatistics{
 						ObserverId:         observerId,
 						SpreadType:         "1", //dex买cex卖即为1
 						Symbol:             observer.Symbol,
@@ -216,7 +216,7 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 				// 如果查询不到最新的价差统计信息，则需根据是否出现价差，判断要不要新建一条记录
 				if dexSellPrice-cexBuyPrice > 0 {
 					// dex卖cex买出现正向价差
-					dexSellData := models.BusDexCexPriceSpreadStatistics{
+					dexSellData = models.BusDexCexPriceSpreadStatistics{
 						ObserverId:         observerId,
 						SpreadType:         "2", //dex卖cex买即为2
 						Symbol:             observer.Symbol,
