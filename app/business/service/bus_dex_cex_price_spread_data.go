@@ -180,9 +180,8 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 
 		if cexSellPrice-dexBuyPrice > 0 {
 			//如果有正向价差，需要更新下最大最小价差
-			currentTime := time.Now()
-			startTime := dexBuyData.StartTime
-			dexBuyData.Duration = strconv.FormatFloat(currentTime.Sub(*startTime).Seconds(), 'f', 0, 64)
+			//startTime := dexBuyData.StartTime
+			//dexBuyData.Duration = strconv.FormatFloat(currentTime.Sub(*startTime).Seconds(), 'f', 0, 64)
 			maxPriceDifference, _ := strconv.ParseFloat(dexBuyData.MaxPriceDifference, 64)
 			minPriceDifference, _ := strconv.ParseFloat(dexBuyData.MinPriceDifference, 64)
 			dexBuySpreadf, _ := strconv.ParseFloat(spreadData.DexBuySpread, 64)
@@ -195,8 +194,8 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 		} else {
 			//如果价差变成负的了，则需要更新价差结束时间
 			dexBuyData.EndTime = &currentTime
-			startTime := dexBuyData.StartTime
-			dexBuyData.Duration = strconv.FormatFloat(currentTime.Sub(*startTime).Seconds(), 'f', 0, 64)
+			//startTime := dexBuyData.StartTime
+			//dexBuyData.Duration = strconv.FormatFloat(currentTime.Sub(*startTime).Seconds(), 'f', 0, 64)
 		}
 		err = e.Orm.Save(&dexBuyData).Error
 		if err != nil {
@@ -231,9 +230,8 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 
 		if dexSellPrice-cexBuyPrice > 0 {
 			//如果有正向价差，需要更新下最大最小价差
-			currentTime := time.Now()
-			startTime := dexSellData.StartTime
-			dexSellData.Duration = strconv.FormatFloat(currentTime.Sub(*startTime).Seconds(), 'f', 0, 64)
+			//startTime := dexSellData.StartTime
+			//dexSellData.Duration = strconv.FormatFloat(currentTime.Sub(*startTime).Seconds(), 'f', 0, 64)
 			maxPriceDifference, _ := strconv.ParseFloat(dexSellData.MaxPriceDifference, 64)
 			minPriceDifference, _ := strconv.ParseFloat(dexSellData.MinPriceDifference, 64)
 			dexSellSpreadf, _ := strconv.ParseFloat(spreadData.DexSellSpread, 64)
@@ -247,8 +245,8 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 			//如果价差变成负的了，则需要更新价差结束时间
 
 			dexBuyData.EndTime = &currentTime
-			startTime := dexBuyData.StartTime
-			dexBuyData.Duration = strconv.FormatFloat(currentTime.Sub(*startTime).Seconds(), 'f', 0, 64)
+			//startTime := dexBuyData.StartTime
+			//dexBuyData.Duration = strconv.FormatFloat(currentTime.Sub(*startTime).Seconds(), 'f', 0, 64)
 		}
 		err = e.Orm.Save(&dexBuyData).Error
 		if err != nil {
