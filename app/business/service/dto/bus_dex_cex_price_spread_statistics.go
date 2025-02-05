@@ -49,8 +49,8 @@ func (s *BusDexCexPriceSpreadStatisticsInsertReq) Generate(model *models.BusDexC
 	model.ObserverId = s.ObserverId
 	model.SpreadType = s.SpreadType
 	model.Symbol = s.Symbol
-	model.StartTime = s.StartTime
-	model.EndTime = s.EndTime
+	model.StartTime = &s.StartTime
+	model.EndTime = &s.EndTime
 	model.Duration = s.Duration
 	model.MaxPriceDifference = s.MaxPriceDifference
 	model.MinPriceDifference = s.MinPriceDifference
@@ -80,8 +80,8 @@ func (s *BusDexCexPriceSpreadStatisticsUpdateReq) Generate(model *models.BusDexC
 	model.ObserverId = s.ObserverId
 	model.SpreadType = s.SpreadType
 	model.Symbol = s.Symbol
-	model.StartTime = s.StartTime
-	model.EndTime = s.EndTime
+	model.StartTime = &s.StartTime
+	model.EndTime = &s.EndTime
 	model.Duration = s.Duration
 	model.MaxPriceDifference = s.MaxPriceDifference
 	model.MinPriceDifference = s.MinPriceDifference
