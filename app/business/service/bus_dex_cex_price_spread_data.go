@@ -189,10 +189,10 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 			dexBuySpreadf, _ := strconv.ParseFloat(spreadData.DexBuySpread, 64)
 			e.Log.Infof("maxPriceSpread: %f, minPriceSpread: %f, dexBuySpreadf : %f", maxPriceDifference, minPriceDifference, dexBuySpreadf)
 			if dexBuySpreadf >= maxPriceDifference {
-				dexBuyData.MaxPriceDifference = strconv.FormatFloat(dexBuySpreadf, 'f', 0, 64)
+				dexBuyData.MaxPriceDifference = strconv.FormatFloat(dexBuySpreadf, 'f', 6, 64)
 			}
 			if dexBuySpreadf <= minPriceDifference {
-				dexBuyData.MinPriceDifference = strconv.FormatFloat(dexBuySpreadf, 'f', 0, 64)
+				dexBuyData.MinPriceDifference = strconv.FormatFloat(dexBuySpreadf, 'f', 6, 64)
 			}
 			err = e.Orm.Save(&dexBuyData).Error
 			if err != nil {
@@ -243,17 +243,18 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 		if dexSellPrice-cexBuyPrice > 0 {
 			e.Log.Infof("dex 卖出存在正向价差")
 			//如果有正向价差，需要更新下最大最小价差
-			//startTime := dexSellData.StartTime
+			startTime := dexSellData.StartTime
+			e.Log.Infof("start time:%v \r\n", startTime)
 			//dexSellData.Duration = strconv.FormatFloat(currentTime.Sub(*startTime).Seconds(), 'f', 0, 64)
 			maxPriceDifference, _ := strconv.ParseFloat(dexSellData.MaxPriceDifference, 64)
 			minPriceDifference, _ := strconv.ParseFloat(dexSellData.MinPriceDifference, 64)
 			dexSellSpreadf, _ := strconv.ParseFloat(spreadData.DexSellSpread, 64)
 			e.Log.Infof("maxPriceSpread: %f, minPriceSpread: %f, dexSellSpread : %f", maxPriceDifference, minPriceDifference, dexSellSpreadf)
 			if dexSellSpreadf >= maxPriceDifference {
-				dexSellData.MaxPriceDifference = strconv.FormatFloat(dexSellSpreadf, 'f', 0, 64)
+				dexSellData.MaxPriceDifference = strconv.FormatFloat(dexSellSpreadf, 'f', 6, 64)
 			}
 			if dexSellSpreadf <= minPriceDifference {
-				dexSellData.MinPriceDifference = strconv.FormatFloat(dexSellSpreadf, 'f', 0, 64)
+				dexSellData.MinPriceDifference = strconv.FormatFloat(dexSellSpreadf, 'f', 6, 64)
 			}
 			err = e.Orm.Save(&dexSellData).Error
 			if err != nil {
