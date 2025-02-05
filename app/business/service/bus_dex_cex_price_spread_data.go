@@ -178,6 +178,7 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 			}
 		}
 
+		e.Log.Infof("observer spread statistics info:%v \r\n", dexBuyData)
 		if cexSellPrice-dexBuyPrice > 0 {
 			//如果有正向价差，需要更新下最大最小价差
 			//startTime := dexBuyData.StartTime
@@ -232,6 +233,7 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 			}
 		}
 
+		e.Log.Infof("observer spread statistics info:%v \r\n", dexSellData)
 		if dexSellPrice-cexBuyPrice > 0 {
 			//如果有正向价差，需要更新下最大最小价差
 			//startTime := dexSellData.StartTime
