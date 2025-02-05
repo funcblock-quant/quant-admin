@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"math"
 	"quanta-admin/app/grpc/client"
 	pb "quanta-admin/app/grpc/proto/client/observer_service"
 	"strconv"
@@ -146,9 +147,9 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 			DexSellPrice:         strconv.FormatFloat(dexSellPrice, 'f', 6, 64),
 			CexBuyPrice:          strconv.FormatFloat(cexBuyPrice, 'f', 6, 64),
 			DexBuySpread:         strconv.FormatFloat(cexSellPrice-dexBuyPrice, 'f', 6, 64),
-			DexBuySpreadPercent:  strconv.FormatFloat((cexSellPrice-dexBuyPrice)/dexBuyPrice, 'f', 6, 64),
+			DexBuySpreadPercent:  strconv.FormatFloat(math.Abs((cexSellPrice-dexBuyPrice)/dexBuyPrice), 'f', 6, 64),
 			DexSellSpread:        strconv.FormatFloat(dexSellPrice-cexBuyPrice, 'f', 6, 64),
-			DexSellSpreadPercent: strconv.FormatFloat((dexSellPrice-cexBuyPrice)/cexBuyPrice, 'f', 6, 64),
+			DexSellSpreadPercent: strconv.FormatFloat(math.Abs((dexSellPrice-cexBuyPrice)/cexBuyPrice), 'f', 6, 64),
 			SnapshotTime:         time.Now(),
 		}
 		e.Orm.Create(&spreadData)
@@ -186,10 +187,11 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 			maxPriceDifference, _ := strconv.ParseFloat(dexBuyData.MaxPriceDifference, 64)
 			minPriceDifference, _ := strconv.ParseFloat(dexBuyData.MinPriceDifference, 64)
 			dexBuySpreadf, _ := strconv.ParseFloat(spreadData.DexBuySpread, 64)
-			if dexBuySpreadf > maxPriceDifference {
+			e.Log.Infof("maxPriceSpread: %f, minPriceSpread: %f, dexBuySpreadf : %f", maxPriceDifference, minPriceDifference, dexBuySpreadf)
+			if dexBuySpreadf >= maxPriceDifference {
 				dexBuyData.MaxPriceDifference = strconv.FormatFloat(dexBuySpreadf, 'f', 0, 64)
 			}
-			if dexBuySpreadf < minPriceDifference {
+			if dexBuySpreadf <= minPriceDifference {
 				dexBuyData.MinPriceDifference = strconv.FormatFloat(dexBuySpreadf, 'f', 0, 64)
 			}
 			err = e.Orm.Save(&dexBuyData).Error
@@ -226,8 +228,8 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 						Symbol:             observer.Symbol,
 						StartTime:          &currentTime,
 						Duration:           "0",
-						MaxPriceDifference: spreadData.DexBuySpread,
-						MinPriceDifference: spreadData.DexBuySpread,
+						MaxPriceDifference: spreadData.DexSellSpread,
+						MinPriceDifference: spreadData.DexSellSpread,
 					}
 					e.Orm.Create(&dexSellData)
 				}
@@ -239,16 +241,18 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 
 		e.Log.Infof("observer spread statistics info:%+v \r\n", dexSellData)
 		if dexSellPrice-cexBuyPrice > 0 {
+			e.Log.Infof("dex 卖出存在正向价差")
 			//如果有正向价差，需要更新下最大最小价差
 			//startTime := dexSellData.StartTime
 			//dexSellData.Duration = strconv.FormatFloat(currentTime.Sub(*startTime).Seconds(), 'f', 0, 64)
 			maxPriceDifference, _ := strconv.ParseFloat(dexSellData.MaxPriceDifference, 64)
 			minPriceDifference, _ := strconv.ParseFloat(dexSellData.MinPriceDifference, 64)
 			dexSellSpreadf, _ := strconv.ParseFloat(spreadData.DexSellSpread, 64)
-			if dexSellSpreadf > maxPriceDifference {
+			e.Log.Infof("maxPriceSpread: %f, minPriceSpread: %f, dexSellSpread : %f", maxPriceDifference, minPriceDifference, dexSellSpreadf)
+			if dexSellSpreadf >= maxPriceDifference {
 				dexSellData.MaxPriceDifference = strconv.FormatFloat(dexSellSpreadf, 'f', 0, 64)
 			}
-			if dexSellSpreadf < minPriceDifference {
+			if dexSellSpreadf <= minPriceDifference {
 				dexSellData.MinPriceDifference = strconv.FormatFloat(dexSellSpreadf, 'f', 0, 64)
 			}
 			err = e.Orm.Save(&dexSellData).Error
