@@ -93,7 +93,6 @@ type BusDexCexPriceSpreadDataGetReq struct {
 	Id int `uri:"id"`
 }
 
-func (s *BusDexCexPriceSpreadDataGetReq) GetId() interface{} 
 func (s *BusDexCexPriceSpreadDataGetReq) GetId() interface{} {
 	return s.Id
 }
