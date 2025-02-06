@@ -42,17 +42,41 @@ type BusDexCexTriangularObserverGetPageResp struct {
 }
 
 type ProfitOfBuyOnDexResp struct {
-	CexSellPrice     string `json:"cexSellPrice" gorm:"-"`
-	DexBuyPrice      string `json:"dexBuyPrice" gorm:"-"`
-	DexBuyDiffPrice  string `json:"dexBuyDiffPrice" gorm:"-"`
-	ProfitOfBuyOnDex string `json:"profitOfBuyOnDex" gorm:"-"`
+	CexSellPrice       string `json:"cexSellPrice" gorm:"-"`
+	DexBuyPrice        string `json:"dexBuyPrice" gorm:"-"`
+	DexBuyDiffPrice    string `json:"dexBuyDiffPrice" gorm:"-"`
+	DexBuyDiffPercent  string `json:"dexBuyDiffPercent" gorm:"-"`
+	DexBuyDiffDuration string `json:"dexBuyDiffDuration" gorm:"-"`
+	ProfitOfBuyOnDex   string `json:"profitOfBuyOnDex" gorm:"-"`
 }
 
 type ProfitOfSellOnDexResp struct {
-	CexBuyPrice       string `json:"cexBuyPrice" gorm:"-"`
-	DexSellPrice      string `json:"dexSellPrice" gorm:"-"`
-	DexSellDiffPrice  string `json:"dexSellDiffPrice" gorm:"-"`
-	ProfitOfSellOnDex string `json:"profitOfSellOnDex" gorm:"-"`
+	CexBuyPrice         string `json:"cexBuyPrice" gorm:"-"`
+	DexSellPrice        string `json:"dexSellPrice" gorm:"-"`
+	DexSellDiffPrice    string `json:"dexSellDiffPrice" gorm:"-"`
+	DexSellDiffPercent  string `json:"dexSellDiffPercent" gorm:"-"`
+	DexSellDiffDuration string `json:"dexSellDiffDuration" gorm:"-"`
+	ProfitOfSellOnDex   string `json:"profitOfSellOnDex" gorm:"-"`
+}
+
+type BusDexCexTriangularObserverDetailResp struct {
+	models.BusDexCexTriangularObserver
+	ProfitOfBuyOnDexResp  //最新dex buy 价差
+	ProfitOfSellOnDexResp //最新dex sell 价差
+}
+
+type BusDexCexTriangularSpreadHistory struct {
+	CexSellPriceChartPoints       PriceChartPoint `json:"cexSellPriceChartPoints" gorm:"-"`
+	DexBuyPriceChartPoints        PriceChartPoint `json:"dexBuyPriceChartPoints" gorm:"-"`
+	DexBuyPriceSpreadChartPoints  PriceChartPoint `json:"dexBuyPriceSpreadChartPoints" gorm:"-"`
+	DexSellPriceChartPoints       PriceChartPoint `json:"dexSellPriceChartPoints" gorm:"-"`
+	CexBuyPriceChartPoints        PriceChartPoint `json:"cexBuyPriceChartPoints" gorm:"-"`
+	DexSellPriceSpreadChartPoints PriceChartPoint `json:"dexSellPriceSpreadChartPoints" gorm:"-"`
+}
+
+type PriceChartPoint struct {
+	XAxis string `json:"xAxis"` //横坐标
+	YAxis string `json:"yAxis"` //纵坐标
 }
 
 type BusDexCexTriangularObserverInsertReq struct {
