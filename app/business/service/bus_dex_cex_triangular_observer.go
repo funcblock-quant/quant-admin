@@ -55,6 +55,31 @@ func (e *BusDexCexTriangularObserver) GetPage(c *dto.BusDexCexTriangularObserver
 		cexBuyPrice, dexSellPrice := e.calculate_dex_cex_price(sellOnDex)
 		e.Log.Infof("[sell on dex price details]: cexPrice: %+v , dexPrice: %+v \r\n", cexBuyPrice, dexSellPrice)
 
+		if cexSellPrice-dexBuyPrice > 0 {
+			//获取最新的价差记录统计信息，设置价差持续时间
+			dexBuyData := models.BusDexCexPriceSpreadStatistics{}
+			err = e.Orm.Model(&dexBuyData).Where("observer_id = ? and spread_type = ? and end_time is null", observerId, 1).Order("created_at desc").First(&dexBuyData).Limit(1).Error
+			if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+				(*list)[i].DexBuyDiffDuration = "0"
+			}
+			if err != nil {
+				e.Log.Errorf("db error:%s", err)
+				return err
+			}
+			(*list)[i].DexBuyDiffDuration = dexBuyData.Duration
+		}
+		if dexSellPrice-cexBuyPrice > 0 {
+			dexSellData := models.BusDexCexPriceSpreadStatistics{}
+			err = e.Orm.Model(&dexSellData).Where("observer_id = ? and spread_type = ? and end_time is null", observerId, 2).Order("created_at desc").First(&dexSellData).Limit(1).Error
+			if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+				(*list)[i].DexBuyDiffDuration = "0"
+			}
+			if err != nil {
+				e.Log.Errorf("db error:%s", err)
+				return err
+			}
+			(*list)[i].DexSellDiffDuration = dexSellData.Duration
+		}
 		(*list)[i].ProfitOfBuyOnDex = strconv.FormatFloat(*buyOnDex.ProfitFiatAmount, 'f', 6, 64)
 		(*list)[i].ProfitOfSellOnDex = strconv.FormatFloat(*sellOnDex.ProfitFiatAmount, 'f', 6, 64)
 		(*list)[i].CexSellPrice = strconv.FormatFloat(cexSellPrice, 'f', 6, 64)
@@ -113,7 +138,7 @@ func (e *BusDexCexTriangularObserver) calculate_dex_cex_price(priceState *pb.Arb
 }
 
 // Get 获取BusDexCexTriangularObserver对象
-func (e *BusDexCexTriangularObserver) Get(d *dto.BusDexCexTriangularObserverGetReq, p *actions.DataPermission, model *models.BusDexCexTriangularObserver) error {
+func (e *BusDexCexTriangularObserver) Get(d *dto.BusDexCexTriangularObserverGetReq, p *actions.DataPermission, model *dto.BusDexCexTriangularObserverDetailResp) error {
 	var data models.BusDexCexTriangularObserver
 
 	err := e.Orm.Model(&data).
@@ -130,6 +155,56 @@ func (e *BusDexCexTriangularObserver) Get(d *dto.BusDexCexTriangularObserverGetR
 		e.Log.Errorf("db error:%s", err)
 		return err
 	}
+	// 获取最新价差数据
+	observerId := model.ObserverId
+	state, err := client.GetObserverState(observerId)
+	if err != nil {
+		e.Log.Errorf("grpc实时获取观察状态失败， error:%s \r\n", err)
+		return nil
+	}
+	e.Log.Infof("get state for observerId:%d \r\n state: %+v \r\n", observerId, state)
+	buyOnDex := state.GetBuyOnDex()
+	cexSellPrice, dexBuyPrice := e.calculate_dex_cex_price(buyOnDex)
+	e.Log.Infof("[buy on dex price details]: cexPrice: %+v , dexPrice: %+v \r\n", cexSellPrice, dexBuyPrice)
+
+	sellOnDex := state.GetSellOnDex()
+	cexBuyPrice, dexSellPrice := e.calculate_dex_cex_price(sellOnDex)
+	e.Log.Infof("[sell on dex price details]: cexPrice: %+v , dexPrice: %+v \r\n", cexBuyPrice, dexSellPrice)
+
+	model.ProfitOfBuyOnDex = strconv.FormatFloat(*buyOnDex.ProfitFiatAmount, 'f', 6, 64)
+	model.ProfitOfSellOnDex = strconv.FormatFloat(*sellOnDex.ProfitFiatAmount, 'f', 6, 64)
+	model.CexSellPrice = strconv.FormatFloat(cexSellPrice, 'f', 6, 64)
+	model.DexBuyPrice = strconv.FormatFloat(dexBuyPrice, 'f', 6, 64)
+	model.DexBuyDiffPrice = strconv.FormatFloat(cexSellPrice-dexBuyPrice, 'f', 6, 64)
+	if cexSellPrice-dexBuyPrice > 0 {
+		//获取最新的价差记录统计信息，设置价差持续时间
+		dexBuyData := models.BusDexCexPriceSpreadStatistics{}
+		err = e.Orm.Model(&dexBuyData).Where("observer_id = ? and spread_type = ? and end_time is null", observerId, 1).Order("created_at desc").First(&dexBuyData).Limit(1).Error
+		if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+			model.DexBuyDiffDuration = "0"
+		}
+		if err != nil {
+			e.Log.Errorf("db error:%s", err)
+			return err
+		}
+		model.DexBuyDiffDuration = dexBuyData.Duration
+	}
+	if dexSellPrice-cexBuyPrice > 0 {
+		dexSellData := models.BusDexCexPriceSpreadStatistics{}
+		err = e.Orm.Model(&dexSellData).Where("observer_id = ? and spread_type = ? and end_time is null", observerId, 2).Order("created_at desc").First(&dexSellData).Limit(1).Error
+		if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+			model.DexBuyDiffDuration = "0"
+		}
+		if err != nil {
+			e.Log.Errorf("db error:%s", err)
+			return err
+		}
+		model.DexSellDiffDuration = dexSellData.Duration
+	}
+	model.CexBuyPrice = strconv.FormatFloat(cexBuyPrice, 'f', 6, 64)
+	model.DexSellPrice = strconv.FormatFloat(dexSellPrice, 'f', 6, 64)
+	model.DexSellDiffPrice = strconv.FormatFloat(dexSellPrice-cexBuyPrice, 'f', 6, 64)
+
 	return nil
 }
 
