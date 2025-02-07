@@ -48,6 +48,8 @@ func (e *BusDexCexPriceSpreadData) GetDexCexHistoryChart(c *dto.BusDexCexPriceSp
 	var err error
 	var data models.BusDexCexPriceSpreadData
 
+	e.Log.Infof("req data:%v", c)
+
 	// 按照当前的时间，获取指定间隔的数据点
 	currentTime := time.Now()
 	// 将当前时间截断到整分
