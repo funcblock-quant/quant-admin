@@ -24,4 +24,6 @@ func registerBusDexCexPriceSpreadDataRouter(v1 *gin.RouterGroup, authMiddleware 
 		r.PUT("/:id", actions.PermissionAction(), api.Update)
 		r.DELETE("", api.Delete)
 	}
+	v1.POST("/getDexCexHistoryChart", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.GetDexCexHistoryChart)
+
 }

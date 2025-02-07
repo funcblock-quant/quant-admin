@@ -30,6 +30,11 @@ func (m *BusDexCexPriceSpreadDataGetPageReq) GetNeedSearch() interface{} {
 	return *m
 }
 
+type BusDexCexPriceSpreadDataHistoryChartReq struct {
+	ObserverId string `form:"observerId" comment:"监视器id"`
+	Interval   string `form:"interval" comment:"数据时间间隔,单位：s"`
+}
+
 type BusDexCexPriceSpreadDataInsertReq struct {
 	Id           int       `json:"-" comment:""` //
 	ObserverId   string    `json:"observerId" comment:"观察器id"`
