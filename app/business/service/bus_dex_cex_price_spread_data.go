@@ -118,14 +118,14 @@ func (e *BusDexCexPriceSpreadData) GetDexCexHistoryChart(c *dto.BusDexCexPriceSp
 		}
 		cexSellPriceChartPoints = append(cexSellPriceChartPoints, cexSellPriceChartPoint)
 		dexBuyPriceChartPoints = append(dexBuyPriceChartPoints, dexBuyPriceChartPoint)
-		dexBuyPriceSpreadChartPoints = append(dexBuyPriceSpreadChartPoints, dexSellPriceSpreadChartPoint)
+		dexBuyPriceSpreadChartPoints = append(dexBuyPriceSpreadChartPoints, dexBuyPriceSpreadChartPoint)
 
 		dexSellPriceChartPoints = append(dexSellPriceChartPoints, dexSellPriceChartPoint)
 		cexBuyPriceChartPoints = append(cexBuyPriceChartPoints, cexBuyPriceChartPoint)
 		dexSellPriceSpreadChartPoints = append(dexSellPriceSpreadChartPoints, dexSellPriceSpreadChartPoint)
 	}
 	chart.CexBuyPriceChartPoints = cexBuyPriceChartPoints
-	chart.CexSellPriceChartPoints = dexSellPriceChartPoints
+	chart.CexSellPriceChartPoints = cexSellPriceChartPoints
 	chart.DexBuyPriceChartPoints = dexBuyPriceChartPoints
 	chart.DexSellPriceChartPoints = dexSellPriceChartPoints
 	chart.DexBuyPriceSpreadChartPoints = dexBuyPriceSpreadChartPoints
