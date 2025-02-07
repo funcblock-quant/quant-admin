@@ -73,6 +73,7 @@ func (e *BusDexCexPriceSpreadData) GetDexCexHistoryChart(c *dto.BusDexCexPriceSp
 	var cexSellPriceChartPoints, dexBuyPriceChartPoints, dexBuyPriceSpreadChartPoints []dto.PriceChartPoint
 	var dexSellPriceChartPoints, cexBuyPriceChartPoints, dexSellPriceSpreadChartPoints []dto.PriceChartPoint
 	// 当前默认展示1小时数据，间隔为分钟，也就是60个数据点
+	e.Log.Infof("获取到历史记录 %d 条 \r\n", len(priceDataList))
 	for _, timeData := range timeList {
 		cexSellPriceChartPoint := dto.PriceChartPoint{}
 		dexBuyPriceChartPoint := dto.PriceChartPoint{}
@@ -85,6 +86,7 @@ func (e *BusDexCexPriceSpreadData) GetDexCexHistoryChart(c *dto.BusDexCexPriceSp
 		nearestData := findNearestDataWithinMinute(priceDataList, timeData)
 		//查询时间点附近的数据
 		if nearestData == nil {
+			e.Log.Infof("未获取到历史价格记录，使用默认值 \r\n")
 			// 时间点附近无数据，则认为数据缺失，使用0值
 			cexSellPriceChartPoint.XAxis = timeData.Unix() // 秒级时间戳
 			cexSellPriceChartPoint.YAxis = "0"
