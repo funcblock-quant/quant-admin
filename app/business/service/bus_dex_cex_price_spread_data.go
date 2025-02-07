@@ -55,7 +55,7 @@ func (e *BusDexCexPriceSpreadData) GetDexCexHistoryChart(c *dto.BusDexCexPriceSp
 	// 将当前时间截断到整分
 	currentTime = currentTime.Truncate(time.Minute)
 	fmt.Println("当前时间：", currentTime)
-	oneHourAgo := currentTime.Add(-time.Hour).Add(time.Minute) //这里需要多拿一分钟，要不然第一分钟的数据点会为0值
+	oneHourAgo := currentTime.Add(-time.Hour).Add(-time.Minute) //这里需要多拿一分钟，要不然第一分钟的数据点会为0值
 	fmt.Println("一小时前的时间：", oneHourAgo)
 	pointCount := 60
 	timeList := generateTimeList(time.Minute, pointCount)
