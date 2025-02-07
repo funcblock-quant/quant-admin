@@ -5,7 +5,6 @@ import (
 	"github.com/go-admin-team/go-admin-core/sdk/service"
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
-	models2 "quanta-admin/app/admin/models"
 	"quanta-admin/app/grpc/client"
 	"quanta-admin/app/grpc/proto/client/trigger_service"
 	"strconv"
@@ -48,12 +47,6 @@ func (e *BusPriceTriggerStrategyInstance) GetPage(c *dto.BusPriceTriggerStrategy
 		err = e.Orm.Unscoped().Model(&apiConfig).Where("id = ?", strategy.ApiConfig).First(&apiConfig).Error
 		if err != nil {
 			e.Log.Errorf("BusPriceTriggerStrategyInstanceService Get apiConfig error:%s \r\n", err)
-			return err
-		}
-		sysUser := models2.SysUser{}
-		err = e.Orm.Unscoped().Model(&sysUser).Where("user_id = ?", apiConfig.UserId).First(&sysUser).Error
-		if err != nil {
-			e.Log.Errorf("BusPriceTriggerStrategyInstanceService Get sysUser error:%s \r\n", err)
 			return err
 		}
 
