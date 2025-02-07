@@ -55,6 +55,38 @@ func (e BusDexCexPriceSpreadData) GetPage(c *gin.Context) {
 	e.PageOK(list, int(count), req.GetPageIndex(), req.GetPageSize(), "查询成功")
 }
 
+// GetDexCexHistoryChart 获取dex-cex价差历史数据-图表形式
+// @Summary 获取dex-cex价差历史数据-图表形式
+// @Description 获取dex-cex价差历史数据-图表形式
+// @Tags dex-cex价差图表数据
+// @Success 200 {object} response.Response{data=response.Page{list=[]dto.BusDexCexTriangularSpreadHistory}} "{"code": 200, "data": [...]}"
+// @Router /api/v1/getDexCexHistoryChart [get]
+// @Security Bearer
+func (e BusDexCexPriceSpreadData) GetDexCexHistoryChart(c *gin.Context) {
+	req := dto.BusDexCexPriceSpreadDataHistoryChartReq{}
+	s := service.BusDexCexPriceSpreadData{}
+	err := e.MakeContext(c).
+		MakeOrm().
+		Bind(&req).
+		MakeService(&s.Service).
+		Errors
+	if err != nil {
+		e.Logger.Error(err)
+		e.Error(500, err, err.Error())
+		return
+	}
+
+	chart := dto.BusDexCexTriangularSpreadHistory{}
+
+	err = s.GetDexCexHistoryChart(&req, &chart)
+	if err != nil {
+		e.Error(500, err, fmt.Sprintf("获取dex-cex价差图表数据失败，\r\n失败信息 %s", err.Error()))
+		return
+	}
+
+	e.OK(chart, "查询成功")
+}
+
 // Get 获取dex-cex价差数据
 // @Summary 获取dex-cex价差数据
 // @Description 获取dex-cex价差数据

@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"github.com/go-admin-team/go-admin-core/sdk/config"
 	"github.com/go-admin-team/go-admin-core/sdk/service"
 	"gorm.io/gorm"
 	"quanta-admin/app/business/models"
@@ -39,6 +40,12 @@ func (e *BusDexCexTriangularObserver) GetPage(c *dto.BusDexCexTriangularObserver
 	if len(*list) == 0 {
 		return nil
 	}
+
+	if config.ApplicationConfig.Mode == "dev" {
+		// dev环境不调用grpc
+		return nil
+	}
+
 	for i := range *list {
 		observerId := (*list)[i].ObserverId // 使用 (*list)[i] 访问原始元素
 		state, err := client.GetObserverState(observerId)
@@ -155,6 +162,12 @@ func (e *BusDexCexTriangularObserver) Get(d *dto.BusDexCexTriangularObserverGetR
 		e.Log.Errorf("db error:%s", err)
 		return err
 	}
+
+	if config.ApplicationConfig.Mode == "dev" {
+		// dev环境不调用grpc
+		return nil
+	}
+
 	// 获取最新价差数据
 	observerId := model.ObserverId
 	state, err := client.GetObserverState(observerId)

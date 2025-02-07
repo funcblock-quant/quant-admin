@@ -338,6 +338,7 @@ func (e *BusStrategyInstance) QueryInstanceDashboard(d *dto.BusStrategyInstanceD
 	// 查询所有策略
 	query := e.Orm.Model(&arbitrageData).
 		Scopes(actions.Permission(arbitrageData.TableName(), p))
+	//TODO dashboard面板
 	if d.StrategyInstanceIds != nil && len(d.StrategyInstanceIds) > 0 {
 		//1. 获取所有账户组
 		var strategyInstances []models.BusStrategyInstance
@@ -346,11 +347,6 @@ func (e *BusStrategyInstance) QueryInstanceDashboard(d *dto.BusStrategyInstanceD
 			Find(&strategyInstances).Error; err != nil {
 			e.Log.Errorf("Service QueryInstanceDashboard error:%s", err)
 		}
-
-		//totalBeginBalance := 0
-		//for _, strategyInstance := range strategyInstances {
-		//
-		//}
 
 		query = query.Where("strategy_instance_id in ?", d.StrategyInstanceIds)
 

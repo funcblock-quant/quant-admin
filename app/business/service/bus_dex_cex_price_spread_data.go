@@ -2,9 +2,11 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"quanta-admin/app/grpc/client"
 	pb "quanta-admin/app/grpc/proto/client/observer_service"
+	"slices"
 	"strconv"
 	"time"
 
@@ -38,6 +40,124 @@ func (e *BusDexCexPriceSpreadData) GetPage(c *dto.BusDexCexPriceSpreadDataGetPag
 		e.Log.Errorf("BusDexCexPriceSpreadDataService GetPage error:%s \r\n", err)
 		return err
 	}
+	return nil
+}
+
+// GetDexCexHistoryChart 获取BusDexCex价差图表数据
+func (e *BusDexCexPriceSpreadData) GetDexCexHistoryChart(c *dto.BusDexCexPriceSpreadDataHistoryChartReq, chart *dto.BusDexCexTriangularSpreadHistory) error {
+	var err error
+	var data models.BusDexCexPriceSpreadData
+
+	// 按照当前的时间，获取指定间隔的数据点
+	currentTime := time.Now()
+	// 将当前时间截断到整分
+	currentTime = currentTime.Truncate(time.Minute)
+	fmt.Println("当前时间：", currentTime)
+	oneHourAgo := currentTime.Add(-time.Hour)
+	fmt.Println("一小时前的时间：", oneHourAgo)
+	pointCount := 60
+	timeList := generateTimeList(time.Minute, pointCount)
+
+	priceDataList := make([]models.BusDexCexPriceSpreadData, 0)
+
+	err = e.Orm.Model(&data).
+		Where("observer_id = ? and  ? < snapshot_time and snapshot_time < ?", c.ObserverId, oneHourAgo, currentTime).
+		Order("snapshot_time asc").
+		Find(&priceDataList).Limit(pointCount).Error
+
+	if err != nil {
+		e.Log.Errorf("获取历史数据失败")
+		return err
+	}
+
+	var cexSellPriceChartPoints, dexBuyPriceChartPoints, dexBuyPriceSpreadChartPoints []dto.PriceChartPoint
+	var dexSellPriceChartPoints, cexBuyPriceChartPoints, dexSellPriceSpreadChartPoints []dto.PriceChartPoint
+	// 当前默认展示1小时数据，间隔为分钟，也就是60个数据点
+	for _, timeData := range timeList {
+		cexSellPriceChartPoint := dto.PriceChartPoint{}
+		dexBuyPriceChartPoint := dto.PriceChartPoint{}
+		dexBuyPriceSpreadChartPoint := dto.PriceChartPoint{}
+
+		dexSellPriceChartPoint := dto.PriceChartPoint{}
+		cexBuyPriceChartPoint := dto.PriceChartPoint{}
+		dexSellPriceSpreadChartPoint := dto.PriceChartPoint{}
+
+		nearestData := findNearestDataWithinMinute(priceDataList, timeData)
+		//查询时间点附近的数据
+		if nearestData == nil {
+			// 时间点附近无数据，则认为数据缺失，使用0值
+			cexSellPriceChartPoint.XAxis = timeData.Unix() // 秒级时间戳
+			cexSellPriceChartPoint.YAxis = "0"
+			dexBuyPriceChartPoint.XAxis = timeData.Unix()
+			dexBuyPriceChartPoint.YAxis = "0"
+			dexBuyPriceSpreadChartPoint.XAxis = timeData.Unix()
+			dexBuyPriceSpreadChartPoint.YAxis = "0"
+			dexSellPriceChartPoint.XAxis = timeData.Unix()
+			dexSellPriceChartPoint.YAxis = "0"
+			cexBuyPriceChartPoint.XAxis = timeData.Unix()
+			cexBuyPriceChartPoint.YAxis = "0"
+			dexSellPriceSpreadChartPoint.XAxis = timeData.Unix()
+			dexSellPriceSpreadChartPoint.YAxis = "0"
+		} else {
+			cexSellPriceChartPoint.XAxis = timeData.Unix() // 秒级时间戳
+			cexSellPriceChartPoint.YAxis = nearestData.CexSellPrice
+			dexBuyPriceChartPoint.XAxis = timeData.Unix()
+			dexBuyPriceChartPoint.YAxis = nearestData.DexBuyPrice
+			dexBuyPriceSpreadChartPoint.XAxis = timeData.Unix()
+			dexBuyPriceSpreadChartPoint.YAxis = nearestData.DexBuySpread
+			dexSellPriceChartPoint.XAxis = timeData.Unix()
+			dexSellPriceChartPoint.YAxis = nearestData.DexSellPrice
+			cexBuyPriceChartPoint.XAxis = timeData.Unix()
+			cexBuyPriceChartPoint.YAxis = nearestData.CexBuyPrice
+			dexSellPriceSpreadChartPoint.XAxis = timeData.Unix()
+			dexSellPriceSpreadChartPoint.YAxis = nearestData.DexSellSpread
+		}
+		cexSellPriceChartPoints = append(cexSellPriceChartPoints, cexSellPriceChartPoint)
+		dexBuyPriceChartPoints = append(dexBuyPriceChartPoints, dexBuyPriceChartPoint)
+		dexBuyPriceSpreadChartPoints = append(dexBuyPriceSpreadChartPoints, dexSellPriceSpreadChartPoint)
+
+		dexSellPriceChartPoints = append(dexSellPriceChartPoints, dexSellPriceChartPoint)
+		cexBuyPriceChartPoints = append(cexBuyPriceChartPoints, cexBuyPriceChartPoint)
+		dexSellPriceSpreadChartPoints = append(dexSellPriceSpreadChartPoints, dexSellPriceSpreadChartPoint)
+	}
+	chart.CexBuyPriceChartPoints = cexBuyPriceChartPoints
+	chart.CexSellPriceChartPoints = dexSellPriceChartPoints
+	chart.DexBuyPriceChartPoints = dexBuyPriceChartPoints
+	chart.DexSellPriceChartPoints = dexSellPriceChartPoints
+	chart.DexBuyPriceSpreadChartPoints = dexBuyPriceSpreadChartPoints
+	chart.DexSellPriceSpreadChartPoints = dexSellPriceSpreadChartPoints
+
+	return nil
+}
+
+func generateTimeList(interval time.Duration, count int) []time.Time {
+	now := time.Now().Truncate(time.Minute) // 截断到分钟
+	var timeList []time.Time
+	for i := 0; i <= count; i++ {
+		timeList = append(timeList, now.Add(-time.Duration(i)*interval))
+	}
+	slices.Reverse(timeList)
+	return timeList
+}
+
+func findNearestDataWithinMinute(data []models.BusDexCexPriceSpreadData, targetTime time.Time) *models.BusDexCexPriceSpreadData {
+	// 二分查找，找到小于等于 targetTime 的最大索引
+	left, right := 0, len(data)-1
+	for left <= right {
+		mid := (left + right) / 2
+		if data[mid].SnapshotTime.Before(targetTime) {
+			left = mid + 1
+		} else {
+			right = mid - 1
+		}
+	}
+
+	// 检查找到的数据是否在目标时间的前一分钟内
+	if left > 0 && data[left-1].SnapshotTime.Add(time.Minute).After(targetTime) {
+		return &data[left-1]
+	}
+
+	// 没有找到符合条件的数据，返回nil或默认值
 	return nil
 }
 
