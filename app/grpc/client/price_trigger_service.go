@@ -21,6 +21,7 @@ func StartTriggerInstance(request *trigger_service.StartTriggerRequest) (string,
 	defer clientConn.Close() // 确保连接在使用后返回连接池
 
 	// 创建 gRPC 客户端实例
+	fmt.Println("创建TriggerInstanceClient实例")
 	c := trigger_service.NewTriggerInstanceClient(clientConn)
 
 	// 设置超时 Context
@@ -28,6 +29,7 @@ func StartTriggerInstance(request *trigger_service.StartTriggerRequest) (string,
 	defer cancel()
 
 	// 发送 gRPC 请求
+	fmt.Println("开始请求trigger server to start instance")
 	resp, err := c.StartInstance(ctx, request)
 	if err != nil {
 		return "", fmt.Errorf("启动 trigger_server失败: %w", err)
