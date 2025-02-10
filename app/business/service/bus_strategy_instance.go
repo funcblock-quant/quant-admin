@@ -313,6 +313,29 @@ func (e *BusStrategyInstance) StopInstance(d *dto.BusStrategyInstanceStopReq, p 
 	return nil
 }
 
+func (e *BusStrategyInstance) BatchStopInstance(d *dto.BusStrategyInstanceBatchStopReq, p *actions.DataPermission, failedCount *int) error {
+	ids := d.GetId()
+	*failedCount = 0
+	if idsList, ok := ids.([]int); ok {
+		for _, id := range idsList {
+			req := &dto.BusStrategyInstanceStopReq{
+				Id: id,
+			}
+			err := e.StopInstance(req, p)
+			if err != nil {
+				e.Log.Warnf("batch start instance: %d error:%s \r\n", id, err)
+				*failedCount++
+				continue
+			}
+		}
+	} else {
+		e.Log.Errorf("batch start instance error with type assert \r\n")
+		return errors.New("batch start instance error")
+	}
+
+	return nil
+}
+
 // Remove 删除BusStrategyInstance
 func (e *BusStrategyInstance) Remove(d *dto.BusStrategyInstanceDeleteReq, p *actions.DataPermission) error {
 	var data models.BusStrategyInstance

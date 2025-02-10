@@ -270,6 +270,48 @@ func (e BusStrategyInstance) StopInstance(c *gin.Context) {
 	e.OK(req.GetId(), "暂停成功")
 }
 
+// BatchStopInstance 批量暂停策略实例
+// @Summary 批量暂停策略实例
+// @Description 批量暂停策略实例
+// @Tags 批量策略实例暂停
+// @Accept application/json
+// @Product application/json
+// @Param id path int true "id"
+// @Param data body dto.BusStrategyInstanceBatchStopReq true "body"
+// @Success 200 {object} response.Response	"{"code": 200, "message": "启动成功"}"
+// @Router /api/v1/batchStopStrategyInstance [POST]
+// @Security Bearer
+func (e BusStrategyInstance) BatchStopInstance(c *gin.Context) {
+	req := dto.BusStrategyInstanceBatchStopReq{}
+	//e.Logger.Infof("BatchStartInstance req : %v", req)
+	s := service.BusStrategyInstance{}
+	err := e.MakeContext(c).
+		MakeOrm().
+		Bind(&req).
+		MakeService(&s.Service).
+		Errors
+	if err != nil {
+		e.Logger.Error(err)
+		e.Error(500, err, err.Error())
+		return
+	}
+	p := actions.GetPermissionFromContext(c)
+
+	failedCount := 0
+	err = s.BatchStopInstance(&req, p, &failedCount)
+	if err != nil {
+		e.Error(500, err, fmt.Sprintf("批量暂停策略实例失败，\r\n失败信息 %s", err.Error()))
+		return
+	}
+	if failedCount > 0 && failedCount != len(req.Ids) {
+		e.OK(failedCount, "部分暂停成功")
+	} else if failedCount == 0 {
+		e.OK(failedCount, "暂停成功")
+	} else {
+		e.Error(500, errors.New("批量暂停失败"), "批量暂停失败")
+	}
+}
+
 // Delete 删除策略实例配置
 // @Summary 删除策略实例配置
 // @Description 删除策略实例配置

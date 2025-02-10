@@ -32,6 +32,7 @@ func StartTriggerInstance(request *trigger_service.StartTriggerRequest) (string,
 	fmt.Println("开始请求trigger server to start instance")
 	resp, err := c.StartInstance(ctx, request)
 	if err != nil {
+		fmt.Println("启动 trigger_server失败: %w", err)
 		return "", fmt.Errorf("启动 trigger_server失败: %w", err)
 	}
 

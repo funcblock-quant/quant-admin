@@ -32,4 +32,13 @@ jobs:
           host: 13.230.153.171
           username: ubuntu
           key: ${{ secrets.DEPLOY_KEY_PROD }}
-          script: cd /data/quanta-verse && docker compose -f docker-compose.production.yml up -d --no-deps --build
+          script: |
+            cd /data/quanta-verse
+            # 停止无用容器（不会影响正在运行的）
+            docker container prune -f
+            # 删除所有未使用的镜像（不影响正在运行的）
+            docker image prune -af
+            # 删除未使用的构建缓存
+            docker builder prune -af
+            # 重新构建并启动
+            docker compose -f docker-compose.production.yml up -d --no-deps --build
