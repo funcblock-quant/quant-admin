@@ -135,6 +135,14 @@ func (s *BusStrategyInstanceBatchStartReq) GetId() interface{} {
 	return s.Ids
 }
 
+type BusStrategyInstanceBatchStopReq struct {
+	Ids []int `json:"ids"`
+}
+
+func (s *BusStrategyInstanceBatchStopReq) GetId() interface{} {
+	return s.Ids
+}
+
 // BusStrategyInstanceStopReq 实例暂停请求参数
 type BusStrategyInstanceStopReq struct {
 	Id int `uri:"id"`
