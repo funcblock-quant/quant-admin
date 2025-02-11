@@ -246,7 +246,7 @@ func (t PriceTriggerExpireInspection) Exec(arg interface{}) error {
 type DexCexObserverInspection struct{}
 
 func (t DexCexObserverInspection) Exec(arg interface{}) error {
-	str := time.Now().Format(timeFormat) + " [INFO] JobCore DexCexObserverInspection exec success"
+	str := time.Now().Format(timeFormat) + " [INFO] JobCore DexCexObserverInspection exec success \r\n"
 	fmt.Println("开始执行dex-cex 检查任务")
 	service := daos.BusDexCexTriangularObserverDAO{
 		Db: sdk.Runtime.GetDbByKey("*"),
