@@ -94,7 +94,7 @@ func (t InstanceInspection) Exec(arg interface{}) error {
 		}
 
 		for _, instance := range instances {
-			if !contains(existIds, strconv.Itoa(instance.Id)) {
+			if contains(existIds, strconv.Itoa(instance.Id)) {
 				log.Infof("instance id : %d exists in grpc service, skip restart\r\n", instance.Id)
 				continue
 			}
