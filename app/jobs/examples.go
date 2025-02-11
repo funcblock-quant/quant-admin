@@ -8,8 +8,10 @@ import (
 	"quanta-admin/app/business/daos"
 	"quanta-admin/app/business/models"
 	"quanta-admin/app/grpc/client"
+	"quanta-admin/app/grpc/proto/client/instance_service"
 	pb "quanta-admin/app/grpc/proto/client/observer_service"
 	"quanta-admin/app/grpc/proto/client/trigger_service"
+	"quanta-admin/config"
 	"quanta-admin/notification/lark"
 	"strconv"
 	"time"
@@ -21,7 +23,6 @@ import (
 func InitJob() {
 	jobList = map[string]JobExec{
 		"ExamplesOne":                  ExamplesOne{},
-		"MonitorArbitrageOpportunity":  MonitorArbitrageOpportunity{}, //监控套利机会定时任务
 		"InstanceInspection":           InstanceInspection{},
 		"PriceTriggerInspection":       PriceTriggerInspection{},
 		"PriceTriggerExpireInspection": PriceTriggerExpireInspection{},
@@ -61,29 +62,69 @@ func testLarkNotification() {
 	notification.SendNotification()
 }
 
-// MonitorArbitrageOpportunity
-type MonitorArbitrageOpportunity struct {
-}
-
-func (t MonitorArbitrageOpportunity) Exec(arg interface{}) error {
-	str := time.Now().Format(timeFormat) + " [INFO] JobCore MonitorArbitrageOpportunity exec success"
-
-	fmt.Println(str)
-	return nil
-}
-
 // InstanceInspection 实例巡检，防止策略端服务重启后实例下线
 type InstanceInspection struct{}
 
 func (t InstanceInspection) Exec(arg interface{}) error {
-	str := time.Now().Format(timeFormat) + " [INFO] JobCore InstanceInspection exec success"
+	str := time.Now().Format(timeFormat) + " [INFO] JobCore InstanceInspection exec success\r\n"
 	// 获取所有instance对应的grpc server
-	instance, err := client.ListInstance("market-making")
+	service := daos.BusStrategyInstanceDAO{
+		Db: sdk.Runtime.GetDbByKey("*"),
+	}
+	var registeredStrategyList []models.BusStrategyBaseInfo
+	err := service.GetRegisteredInstanceList(&registeredStrategyList)
 	if err != nil {
-		fmt.Printf(err.Error())
+		log.Errorf("GetRegisteredInstanceList error: %v", err)
 		return err
 	}
-	fmt.Printf("instance:%+v\n", instance.InstanceIds)
+	for _, strategy := range registeredStrategyList {
+		grpcServiceName := config.ExtConfig.GetGrpcWithURL(strategy.GrpcEndpoint)
+		instancesResp, err := client.ListInstance(grpcServiceName)
+		if err != nil {
+			log.Errorf("strategy: %s,  grpc service: %s get running instances error: %v\r\n", strategy.StrategyName, grpcServiceName, err.Error())
+			continue
+		}
+		existIds := instancesResp.GetInstanceIds()
+		var instances []models.BusStrategyInstance
+		err = service.GetRunningInstanceByStrategyId(strategy.Id, &instances)
+		if err != nil {
+			log.Errorf("GetRunningInstanceByStrategyId error: %v\r\n", err)
+			continue
+		}
+
+		for _, instance := range instances {
+			if !contains(existIds, strconv.Itoa(instance.Id)) {
+				log.Infof("instance id : %d exists in grpc service, skip restart\r\n", instance.Id)
+				continue
+			}
+			log.Infof("instance id : %d not exists in grpc service, restart\r\n", instance.Id)
+			var config models.BusStrategyInstanceConfig
+			err := service.GetInstanceConfigByInstanceId(instance.Id, &config)
+			if err != nil {
+				log.Errorf("GetInstanceConfigByInstanceId error: %v", err)
+				continue
+			}
+			var instanceType instance_service.InstanceType
+			//启动实例
+			if instance.Type == "0" { // 观察者
+				instanceType = instance_service.InstanceType_OBSERVER_INSTANCE
+			} else if instance.Type == "1" { // 交易者
+				instanceType = instance_service.InstanceType_TRADER_INSTANCE
+			} else {
+				log.Errorf("unsupport instance type :%s \r\n", instance.Type)
+				continue
+			}
+
+			configStruct := config.SchemaText
+			newInstance, err := client.StartNewInstance(grpcServiceName, strconv.Itoa(instance.Id), instanceType, &configStruct)
+			if err != nil {
+				log.Errorf("StartNewInstance error: %v", err)
+				continue
+			}
+			log.Infof("start new instance : %s successful\r\n", newInstance)
+		}
+
+	}
 	fmt.Printf(str)
 	return nil
 }
@@ -92,7 +133,7 @@ func (t InstanceInspection) Exec(arg interface{}) error {
 type PriceTriggerInspection struct{}
 
 func (t PriceTriggerInspection) Exec(arg interface{}) error {
-	str := time.Now().Format(timeFormat) + " [INFO] JobCore PriceTriggerInspection exec success"
+	str := time.Now().Format(timeFormat) + " [INFO] JobCore PriceTriggerInspection exec success\r\n"
 	instanceIds, err := client.ListInstances()
 	if err != nil {
 		fmt.Printf(err.Error())
@@ -119,7 +160,7 @@ func (t PriceTriggerInspection) Exec(arg interface{}) error {
 			apiConfig := models.BusPriceTriggerStrategyApikeyConfig{}
 			err := apiConfigService.GetApiConfigById(instance.ApiConfig, &apiConfig)
 			if err != nil {
-				fmt.Printf("重启 instance id: %d 失败, 异常信息：%v", instance.Id, err.Error())
+				fmt.Printf("重启 instance id: %d 失败, 异常信息：%v \r\n", instance.Id, err.Error())
 				continue
 			}
 
@@ -172,7 +213,7 @@ func containsObserver(observerInfos []*pb.ObserverInfo, target string) bool {
 type PriceTriggerExpireInspection struct{}
 
 func (t PriceTriggerExpireInspection) Exec(arg interface{}) error {
-	str := time.Now().Format(timeFormat) + " [INFO] JobCore PriceTriggerExpireInspection exec success"
+	str := time.Now().Format(timeFormat) + " [INFO] JobCore PriceTriggerExpireInspection exec success\r\n"
 	fmt.Println("开始执行price-trigger 过期扫描任务")
 	service := daos.BusPriceTriggerInstanceDAO{
 		Db: sdk.Runtime.GetDbByKey("*"),
