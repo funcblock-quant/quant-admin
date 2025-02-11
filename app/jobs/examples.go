@@ -85,6 +85,7 @@ func (t InstanceInspection) Exec(arg interface{}) error {
 			continue
 		}
 		existIds := instancesResp.GetInstanceIds()
+		log.Infof("strategy: %s, get running instances: %v\r\n", strategy.StrategyName, existIds)
 		var instances []models.BusStrategyInstance
 		err = service.GetRunningInstanceByStrategyId(strategy.Id, &instances)
 		if err != nil {
