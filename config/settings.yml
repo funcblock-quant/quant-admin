@@ -11,7 +11,7 @@ settings:
     readtimeout: 1
     writertimeout: 2
     # 数据权限功能开关
-    enabledp: false
+    enabledp: true
   logger:
     # 日志存放路径
     path: temp/logs
