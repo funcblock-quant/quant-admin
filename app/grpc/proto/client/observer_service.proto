@@ -6,38 +6,35 @@ option go_package = "./observer_service;observer_service";
 import "google/protobuf/empty.proto";
 
 // Define the service
-service Observer {
-  rpc StartObserver (StartRequest) returns (StartResponse);
-  rpc StopObserver (StopRequest) returns (google.protobuf.Empty);
-  rpc ListObservers (google.protobuf.Empty) returns (ListResponse);
-  rpc GetObserverState (GetStateRequest) returns (GetStateResponse);
+service Arbitrager {
+  rpc Start (StartRequest) returns (InstantId);
+  rpc Stop (InstantId) returns (google.protobuf.Empty);
+  rpc List (google.protobuf.Empty) returns (ListResponse);
+  rpc GetObserverState (InstantId) returns (GetStateResponse);
+  rpc GetObserverParams (InstantId) returns (ObserverParams);
+  rpc UpdateObserverParams (UpdateObserverParamsRequest) returns (google.protobuf.Empty);
+  rpc EnableTrader (EnableTraderRequest) returns (google.protobuf.Empty);
+  rpc DisableTrader (InstantId) returns (google.protobuf.Empty);
+  rpc GetTraderParams (InstantId) returns (TraderParams);
+  rpc UpdateTraderParams (UpdateTraderParamsRequest) returns (google.protobuf.Empty);
 }
 
 // Message definitions
+
 message StartRequest {
-  required AmberConfig amber_config = 1;
+  required AmberObserverConfig amber_config = 1;
   required DexConfig dex_config = 2;
-  required ArbitrageConfig arbitrage_config = 3;
+  required ObserverParams params = 3;
 }
 
-message StartResponse {
+message EnableTraderRequest {
   required string instance_id = 1;
-}
-
-message StopRequest {
-  required string instance_id = 1;
-}
-
-message ListRequest {
-  required string instance_id = 1;
+  required AmberTraderConfig amber_config = 2;
+  required TraderParams params = 3;
 }
 
 message ListResponse {
-  repeated ObserverInfo observers = 1;
-}
-
-message GetStateRequest {
-  required string instance_id = 1;
+  repeated Info infos = 1;
 }
 
 message GetStateResponse {
@@ -46,48 +43,86 @@ message GetStateResponse {
   required ArbitrageState sell_on_dex = 3;
 }
 
-message AmberConfig {
+message UpdateObserverParamsRequest {
+  required string instance_id = 1;
+  required ObserverParams params = 2;
+}
+
+message UpdateTraderParamsRequest {
+  required string instance_id = 1;
+  required TraderParams params = 2;
+}
+
+// Config
+
+message AmberObserverConfig {
   required string exchange_type = 1; // Binance
-  required AmberOrderBookConfig orderbook = 2;
-  required double taker_fee = 3; // 0.00023
+  required string target_token = 2; // TRUMP
+  required string quote_token = 3; // USDT
+  optional int32 ask_depth = 4; // 20
+  optional int32 bid_depth = 5; // 20
+  required double taker_fee = 6; // 0.00023
+}
+
+message AmberTraderConfig {
+  required string exchange_type = 1; // BinanceClassicUnifiedMargin
 }
 
 message DexConfig {
-  required DexType dex_type = 1;
-  required string amm_pool = 2;
-  required string token_mint = 3;
-  required uint64 slippage_bps = 4;
-  optional uint32 max_array_size = 5;
+  oneof config {
+    RayAmmConfig ray_amm = 1;
+    RayClmmConfig ray_clmm = 2;
+  }
 }
 
-message ArbitrageConfig {
-  required double sol_amount = 1; // 1.0
+message RayAmmConfig {
+  required string pool = 1;
+  required string token_mint = 2;
 }
 
-message AmberOrderBookConfig {
-  required string base_token = 1; // TRUMP
-  required string quote_token = 2; // USDT
-  optional string symbol_connector = 3; // '/'
-  optional int32 ask_depth = 4;
-  optional int32 bid_depth = 5;
+message RayClmmConfig {
+  required string pool = 1;
+  required string token_mint = 2;
+  optional uint32 max_array_size = 3;
 }
 
-message ObserverInfo {
+// Params
+
+message ObserverParams {
+  required double sol_amount = 1;
+}
+
+message TraderParams {
+  required uint64 slippage_bps = 1;
+  required double min_profit = 2;
+  required TxBuildParam tx_build_param = 3;
+}
+
+message TxBuildParam {
+  optional uint64 priority_fee = 2; // 100_000
+  required uint64 jito_fee = 3; // 100_000
+}
+
+message Info {
   required string instance_id = 1;
   required DexType dex_type = 2;
 }
 
 message ArbitrageState {
-  required double cex_base_quantity = 1;
-  required double cex_base_fiat_amount = 2;
-  required double cex_sol_quantity = 3;
-  required double cex_sol_fiat_amount = 4;
-  required double dex_base_amount = 5;
+  required double cex_target_symbol_quantity = 1;
+  required double cex_target_symbol_quote_amount = 2;
+  required double cex_sol_symbol_quantity = 3;
+  required double cex_sol_symbol_quote_amount = 4;
+  required double dex_target_amount = 5;
   required double dex_sol_amount = 6;
-  required double profit_fiat_amount = 7;
+  required double profit_quote_amount = 7;
 }
 
 enum DexType {
   RAY_AMM = 0;
   RAY_CLMM = 1;
+}
+
+message InstantId {
+  required string instance_id = 1;
 }

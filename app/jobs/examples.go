@@ -202,7 +202,7 @@ func contains(instanceIds []string, target string) bool {
 	return false
 }
 
-func containsObserver(observerInfos []*pb.ObserverInfo, target string) bool {
+func containsObserver(observerInfos []*pb.Info, target string) bool {
 	for _, info := range observerInfos {
 		if *info.InstanceId == target {
 			return true
@@ -253,7 +253,7 @@ func (t DexCexObserverInspection) Exec(arg interface{}) error {
 		Db: sdk.Runtime.GetDbByKey("*"),
 	}
 
-	observerInfos, err := client.ListObservers()
+	observerInfos, err := client.ListArbitragerClient()
 	fmt.Printf("observerInfos:%+v\n", observerInfos)
 
 	observers := make([]models.BusDexCexTriangularObserver, 0)
@@ -267,13 +267,13 @@ func (t DexCexObserverInspection) Exec(arg interface{}) error {
 		fmt.Printf("observer:%+v\n", observer)
 		if observer.Status == "2" {
 			//已停止的直接跳过
-			fmt.Printf("observer: %s\n status is stopped, skip \r\n", observer.ObserverId)
+			fmt.Printf("observer: %s\n status is stopped, skip \r\n", observer.InstanceId)
 			continue
 		}
 
-		if containsObserver(observerInfos, observer.ObserverId) {
+		if containsObserver(observerInfos, observer.InstanceId) {
 			// 服务端已经存在的，直接跳过
-			fmt.Printf("observer: %s\n is running, skip \r\n", observer.ObserverId)
+			fmt.Printf("observer: %s\n is running, skip \r\n", observer.InstanceId)
 			continue
 		}
 
@@ -283,66 +283,81 @@ func (t DexCexObserverInspection) Exec(arg interface{}) error {
 			continue
 		}
 
-		var DexType *pb.DexType
-		if observer.DexType == "RAY_AMM" {
-			dexType := pb.DexType_RAY_AMM
-			DexType = &dexType
-		} else if observer.DexType == "RAY_CLMM" {
-			dexType := pb.DexType_RAY_CLMM
-			DexType = &dexType
-		}
-
 		maxArraySize := new(uint32)
 		*maxArraySize = 5 //默认5， clmm使用参数
 
-		dexConfig := &pb.DexConfig{
-			AmmPool:      observer.AmmPoolId,
-			TokenMint:    observer.TokenMint,
-			SlippageBps:  proto.Uint64(slippageBpsUint),
-			MaxArraySize: maxArraySize,
-			DexType:      DexType,
+		dexConfig := &pb.DexConfig{}
+		if observer.DexType == "RAY_AMM" {
+			dexConfig.Config = &pb.DexConfig_RayAmm{
+				RayAmm: &pb.RayAmmConfig{
+					Pool:      observer.AmmPoolId,
+					TokenMint: observer.TokenMint,
+				},
+			}
+		} else if observer.DexType == "RAY_CLMM" {
+			dexConfig.Config = &pb.DexConfig_RayClmm{
+				RayClmm: &pb.RayClmmConfig{
+					Pool:         observer.AmmPoolId,
+					TokenMint:    observer.TokenMint,
+					MaxArraySize: maxArraySize,
+				},
+			}
 		}
 
-		arbitrageConfig := &pb.ArbitrageConfig{
+		arbitrageConfig := &pb.ObserverParams{
 			SolAmount: observer.Volume,
 		}
 
-		amberConfig := &pb.AmberConfig{}
+		amberConfig := &pb.AmberObserverConfig{}
 		GenerateAmberConfig(&observer, amberConfig)
 
-		newObserverId, err := client.StartNewObserver(amberConfig, dexConfig, arbitrageConfig)
+		newObserverId, err := client.StartNewArbitragerClient(amberConfig, dexConfig, arbitrageConfig)
 		if err != nil {
 			continue
 		}
 		service.UpdateObserverWithNewId(newObserverId, observer.Id)
-
 		fmt.Printf("restart observer success with params: dexConfig: %+v\n, arbitrageConfig: %+v\n", dexConfig, arbitrageConfig)
+		if observer.IsTrading {
+			// 如果实例开启了交易，还需要启动交易功能
+			trader, err := observer.GetExchangeTypeForTrader()
+			if err != nil {
+				fmt.Printf("get exchange type for trader failed: %v\n", err)
+				continue
+			}
+			amberTraderConfig := &pb.AmberTraderConfig{
+				ExchangeType: &trader,
+			}
+			traderParams := &pb.TraderParams{}
+			err = client.EnableTrader(observer.InstanceId, amberTraderConfig, traderParams)
+			if err != nil {
+				fmt.Printf("restart instance: %d trader error: %v\n", observer.InstanceId, err)
+				//如果启动trader失败，则将该交易机器人设置为isTrading = false
+				service.UpdateObserverWithTradingStatus(observer.Id, false)
+			} else {
+				fmt.Printf("restart instance: %d trader success\n", observer.InstanceId)
+			}
+		}
+
 	}
 
 	fmt.Printf(str)
 	return nil
 }
 
-func GenerateAmberConfig(observer *models.BusDexCexTriangularObserver, amberConfig *pb.AmberConfig) error {
+func GenerateAmberConfig(observer *models.BusDexCexTriangularObserver, amberConfig *pb.AmberObserverConfig) error {
 	amberConfig.ExchangeType = &observer.ExchangeType
 	amberConfig.TakerFee = proto.Float64(*observer.TakerFee)
 
-	orderBook := pb.AmberOrderBookConfig{}
-	orderBook.BaseToken = &observer.BaseToken
-	orderBook.QuoteToken = &observer.QuoteToken
-	orderBook.SymbolConnector = &observer.SymbolConnector
-
-	orderBook.BidDepth = proto.Int32(20)
-	orderBook.AskDepth = proto.Int32(20)
+	amberConfig.TargetToken = &observer.TargetToken
+	amberConfig.QuoteToken = &observer.QuoteToken
 
 	if observer.Depth != "" {
 		depthInt, err := strconv.Atoi(observer.Depth)
 		if err != nil {
 			depthInt = 20 //默认20档
 		}
-		orderBook.BidDepth = proto.Int32(int32(depthInt))
-		orderBook.AskDepth = proto.Int32(int32(depthInt))
+		amberConfig.BidDepth = proto.Int32(int32(depthInt))
+		amberConfig.AskDepth = proto.Int32(int32(depthInt))
 	}
-	amberConfig.Orderbook = &orderBook
 	return nil
 }

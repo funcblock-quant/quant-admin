@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	log "github.com/go-admin-team/go-admin-core/logger"
 	"github.com/go-admin-team/go-admin-core/sdk/config"
 	"github.com/go-admin-team/go-admin-core/sdk/service"
 	"gorm.io/gorm"
@@ -47,7 +48,7 @@ func (e *BusDexCexTriangularObserver) GetPage(c *dto.BusDexCexTriangularObserver
 	}
 
 	for i := range *list {
-		observerId := (*list)[i].ObserverId // 使用 (*list)[i] 访问原始元素
+		observerId := (*list)[i].InstanceId // 使用 (*list)[i] 访问原始元素
 		state, err := client.GetObserverState(observerId)
 		if err != nil {
 			e.Log.Errorf("grpc实时获取观察状态失败， error:%s \r\n", err)
@@ -87,8 +88,8 @@ func (e *BusDexCexTriangularObserver) GetPage(c *dto.BusDexCexTriangularObserver
 			}
 			(*list)[i].DexSellDiffDuration = dexSellData.Duration
 		}
-		(*list)[i].ProfitOfBuyOnDex = strconv.FormatFloat(*buyOnDex.ProfitFiatAmount, 'f', 6, 64)
-		(*list)[i].ProfitOfSellOnDex = strconv.FormatFloat(*sellOnDex.ProfitFiatAmount, 'f', 6, 64)
+		(*list)[i].ProfitOfBuyOnDex = strconv.FormatFloat(*buyOnDex.ProfitQuoteAmount, 'f', 6, 64)
+		(*list)[i].ProfitOfSellOnDex = strconv.FormatFloat(*sellOnDex.ProfitQuoteAmount, 'f', 6, 64)
 		(*list)[i].CexSellPrice = strconv.FormatFloat(cexSellPrice, 'f', 6, 64)
 		(*list)[i].DexBuyPrice = strconv.FormatFloat(dexBuyPrice, 'f', 6, 64)
 		(*list)[i].DexBuyDiffPrice = strconv.FormatFloat(cexSellPrice-dexBuyPrice, 'f', 6, 64)
@@ -104,16 +105,16 @@ func (e *BusDexCexTriangularObserver) calculate_dex_cex_price(priceState *pb.Arb
 	var cexPrice float64      // TRUMP/USDT
 	var dexPrice float64      //TRUMP/USDT
 	var cexQuotePrice float64 // 例如：TRUMP/USDT
-	if priceState.CexBaseQuantity != nil && priceState.CexBaseFiatAmount != nil && *priceState.CexBaseQuantity != 0 {
-		cexQuotePrice = *priceState.CexBaseFiatAmount / *priceState.CexBaseQuantity
+	if priceState.CexTargetSymbolQuantity != nil && priceState.CexTargetSymbolQuoteAmount != nil && *priceState.CexTargetSymbolQuantity != 0 {
+		cexQuotePrice = *priceState.CexTargetSymbolQuoteAmount / *priceState.CexTargetSymbolQuantity
 	} else {
 		// 处理 nil 或除数为 0 的情况，避免 panic
 		cexQuotePrice = 0
 	}
 
 	var cexSolPrice float64 //SOL/USDT
-	if priceState.CexSolQuantity != nil && priceState.CexSolFiatAmount != nil && *priceState.CexSolQuantity != 0 {
-		cexSolPrice = *priceState.CexSolFiatAmount / *priceState.CexSolQuantity
+	if priceState.CexSolSymbolQuantity != nil && priceState.CexSolSymbolQuoteAmount != nil && *priceState.CexSolSymbolQuantity != 0 {
+		cexSolPrice = *priceState.CexSolSymbolQuoteAmount / *priceState.CexSolSymbolQuantity
 	} else {
 		// 处理 nil 或除数为 0 的情况，避免 panic
 		cexSolPrice = 0
@@ -128,8 +129,8 @@ func (e *BusDexCexTriangularObserver) calculate_dex_cex_price(priceState *pb.Arb
 	cexPrice = cexQuotePrice
 
 	var dexSolPrice float64 //TRUMP/WSOL
-	if priceState.DexSolAmount != nil && priceState.DexBaseAmount != nil && *priceState.CexSolQuantity != 0 {
-		dexSolPrice = *priceState.DexSolAmount / *priceState.DexBaseAmount
+	if priceState.DexSolAmount != nil && priceState.DexTargetAmount != nil && *priceState.DexTargetAmount != 0 {
+		dexSolPrice = *priceState.DexSolAmount / *priceState.DexTargetAmount
 	} else {
 		// 处理 nil 或除数为 0 的情况，避免 panic
 		dexSolPrice = 0
@@ -169,7 +170,7 @@ func (e *BusDexCexTriangularObserver) Get(d *dto.BusDexCexTriangularObserverGetR
 	}
 
 	// 获取最新价差数据
-	observerId := model.ObserverId
+	observerId := model.InstanceId
 	state, err := client.GetObserverState(observerId)
 	if err != nil {
 		e.Log.Errorf("grpc实时获取观察状态失败， error:%s \r\n", err)
@@ -184,8 +185,8 @@ func (e *BusDexCexTriangularObserver) Get(d *dto.BusDexCexTriangularObserverGetR
 	cexBuyPrice, dexSellPrice := e.calculate_dex_cex_price(sellOnDex)
 	e.Log.Infof("[sell on dex price details]: cexPrice: %+v , dexPrice: %+v \r\n", cexBuyPrice, dexSellPrice)
 
-	model.ProfitOfBuyOnDex = strconv.FormatFloat(*buyOnDex.ProfitFiatAmount, 'f', 6, 64)
-	model.ProfitOfSellOnDex = strconv.FormatFloat(*sellOnDex.ProfitFiatAmount, 'f', 6, 64)
+	model.ProfitOfBuyOnDex = strconv.FormatFloat(*buyOnDex.ProfitQuoteAmount, 'f', 6, 64)
+	model.ProfitOfSellOnDex = strconv.FormatFloat(*sellOnDex.ProfitQuoteAmount, 'f', 6, 64)
 	model.CexSellPrice = strconv.FormatFloat(cexSellPrice, 'f', 6, 64)
 	model.DexBuyPrice = strconv.FormatFloat(dexBuyPrice, 'f', 6, 64)
 	model.DexBuyDiffPrice = strconv.FormatFloat(cexSellPrice-dexBuyPrice, 'f', 6, 64)
@@ -258,9 +259,7 @@ func (e *BusDexCexTriangularObserver) Insert(c *dto.BusDexCexTriangularObserverI
 // BatchInsert 创建BusDexCexTriangularObserver对象
 func (e *BusDexCexTriangularObserver) BatchInsert(c *dto.BusDexCexTriangularObserverBatchInsertReq) error {
 	var data models.BusDexCexTriangularObserver
-	e.Log.Infof("e[BatchInsert], data: %+v", c)
-	e.Log.Infof("e[SlippageBps], data: %s", *c.SlippageBps)
-	baseTokens := c.BaseToken
+	baseTokens := c.TargetToken
 	if len(baseTokens) == 0 {
 		return errors.New("empty baseTokens")
 	}
@@ -270,18 +269,17 @@ func (e *BusDexCexTriangularObserver) BatchInsert(c *dto.BusDexCexTriangularObse
 		//循环创建监听
 
 		var ammConfig = pb.DexConfig{}
-		var amberConfig = pb.AmberConfig{}
-		var arbitrageConfig = pb.ArbitrageConfig{}
+		var amberConfig = pb.AmberObserverConfig{}
+		var arbitrageConfig = pb.ObserverParams{}
 		c.GenerateAmmConfig(&ammConfig)
 		c.GenerateAmberConfig(&amberConfig)
 		c.GenerateArbitrageConfig(&arbitrageConfig)
-		e.Log.Infof("e[BatchInsert], baseToken: %s, ammConfig: %+v", baseToken, ammConfig)
-		observerId, err := client.StartNewObserver(&amberConfig, &ammConfig, &arbitrageConfig)
+		instanceId, err := client.StartNewArbitragerClient(&amberConfig, &ammConfig, &arbitrageConfig)
 		if err != nil {
 			e.Log.Errorf("Service BatchInsert error:%s \r\n", err)
 			continue
 		}
-		c.Generate(&data, baseToken, observerId)
+		c.Generate(&data, baseToken, instanceId)
 		err = e.Orm.Create(&data).Error
 		if err != nil {
 			e.Log.Errorf("BusDexCexTriangularObserverService Insert error:%s \r\n", err)
@@ -321,7 +319,7 @@ func (e *BusDexCexTriangularObserver) Remove(d *dto.BusDexCexTriangularObserverD
 	var data models.BusDexCexTriangularObserver
 
 	observerId := d.ObserverId
-	err := client.StopObserver(observerId)
+	err := client.StopArbitragerClient(observerId)
 	if err != nil {
 		e.Log.Errorf("暂停监视器失败 error:%s \r\n", err)
 		return err
@@ -341,5 +339,201 @@ func (e *BusDexCexTriangularObserver) Remove(d *dto.BusDexCexTriangularObserverD
 	if db.RowsAffected == 0 {
 		return errors.New("无权删除该数据")
 	}
+	return nil
+}
+
+// StartTrader 启动交易功能
+func (e *BusDexCexTriangularObserver) StartTrader(c *dto.BusDexCexTriangularObserverStartTraderReq) error {
+	var data models.BusDexCexTriangularObserver
+	err := e.Orm.Model(&data).
+		Where("instance_id = ?", c.InstanceId).
+		First(&data).Error
+	if err != nil {
+		e.Log.Errorf("获取实例失败:%s \r\n", err)
+		return err
+	}
+	if data.IsTrading {
+		e.Log.Infof("实例：%s 交易功能已开启，跳过grpc调用", data.InstanceId)
+		return nil
+	}
+	exchangeType, err := data.GetExchangeTypeForTrader()
+	if err != nil {
+		e.Log.Errorf("获取ExchangeType参数异常，:%s \r\n", err)
+		return err
+	}
+	amberTraderConfig := &pb.AmberTraderConfig{
+		ExchangeType: &exchangeType,
+	}
+	slippageBpsUint, err := strconv.ParseUint(*c.SlippageBps, 10, 32)
+	if err != nil {
+		e.Log.Errorf("slippageBps: %v\n", slippageBpsUint)
+		return errors.New("error slippageBps")
+	}
+	log.Infof("slippageBps: %v\n", slippageBpsUint)
+
+	priorityFee := uint64(*c.PriorityFee * 1_000_000_000)
+	jitoFee := uint64(*c.JitoFee * 1_000_000_000)
+
+	txBuildParams := &pb.TxBuildParam{
+		PriorityFee: &priorityFee,
+		JitoFee:     &jitoFee,
+	}
+	traderParams := &pb.TraderParams{
+		SlippageBps:  &slippageBpsUint,
+		MinProfit:    c.MinProfit,
+		TxBuildParam: txBuildParams,
+	}
+	if config.ApplicationConfig.Mode != "dev" {
+		err = client.EnableTrader(data.InstanceId, amberTraderConfig, traderParams)
+		if err != nil {
+			e.Log.Errorf("GRPC 启动Trader 失败，异常:%s \r\n", err)
+			return err
+		}
+	}
+
+	// 启动Trader后，更新数据库中的相关参数
+	updateData := map[string]interface{}{
+		"is_trading":   true,
+		"slippage_bps": slippageBpsUint,
+		"min_profit":   c.MinProfit,
+		"priority_fee": priorityFee,
+		"jito_fee":     jitoFee,
+	}
+
+	if err := e.Orm.Model(&models.BusDexCexTriangularObserver{}).
+		Where("instance_id = ?", data.InstanceId).
+		Updates(updateData).Error; err != nil {
+		e.Log.Errorf("更新实例参数失败：%s", err)
+		return err
+	}
+
+	e.Log.Infof("实例：%s 参数已成功更新", data.InstanceId)
+	return nil
+}
+
+// StopTrader 停止交易功能
+func (e *BusDexCexTriangularObserver) StopTrader(c *dto.BusDexCexTriangularObserverStopTraderReq) error {
+	var data models.BusDexCexTriangularObserver
+
+	err := e.Orm.Model(&data).
+		Where("instance_id = ?", c.InstanceId).
+		First(&data).Error
+	if err != nil {
+		e.Log.Errorf("获取实例失败:%s \r\n", err)
+		return err
+	}
+	if !data.IsTrading {
+		e.Log.Infof("实例：%s 交易功能未开启，跳过grpc调用", data.InstanceId)
+		return nil
+	}
+	if config.ApplicationConfig.Mode != "dev" {
+		err = client.DisableTrader(data.InstanceId)
+		if err != nil {
+			e.Log.Errorf("grpc暂停实例：:%s 交易功能失败，异常：%s \r\n", data.InstanceId, err)
+			return err
+		}
+
+	}
+
+	// 更新observer的isTrading = false
+	err = e.Orm.Model(&data).
+		Where("instance_id = ?", c.InstanceId).
+		Update("is_trading", false).Error
+	if err != nil {
+		e.Log.Errorf("更新数据库实例:%s 交易状态失败，异常信息：%s \r\n", data.InstanceId, err)
+		return err
+	}
+
+	return nil
+}
+
+// UpdateObserver 更新observer 参数
+func (e *BusDexCexTriangularObserver) UpdateObserver(c *dto.BusDexCexTriangularUpdateObserverParamsReq) error {
+	var data models.BusDexCexTriangularObserver
+
+	err := e.Orm.Model(&data).
+		Where("instance_id = ?", c.InstanceId).
+		First(&data).Error
+	if err != nil {
+		e.Log.Errorf("获取实例失败:%s \r\n", err)
+		return err
+	}
+	observerParams := &pb.ObserverParams{
+		SolAmount: c.SolAmount,
+	}
+	if config.ApplicationConfig.Mode != "dev" {
+		// dev环境不调用grpc
+		err = client.UpdateObserverParams(data.InstanceId, observerParams)
+		if err != nil {
+			e.Log.Errorf("grpc更新实例：:%s Observer参数失败，异常：%s \r\n", data.InstanceId, err)
+			return err
+		}
+	}
+
+	// 更新observer的参数
+	err = e.Orm.Model(&data).
+		Where("instance_id = ?", c.InstanceId).
+		Update("volume", c.SolAmount).Error
+	if err != nil {
+		e.Log.Errorf("更新数据库实例:%s 交易状态失败，异常信息：%s \r\n", data.InstanceId, err)
+		return err
+	}
+
+	return nil
+}
+
+// UpdateTrader 更新Trader 参数
+func (e *BusDexCexTriangularObserver) UpdateTrader(c *dto.BusDexCexTriangularUpdateTraderParamsReq) error {
+	var data models.BusDexCexTriangularObserver
+
+	err := e.Orm.Model(&data).
+		Where("instance_id = ?", c.InstanceId).
+		First(&data).Error
+	if err != nil {
+		e.Log.Errorf("获取实例失败:%s \r\n", err)
+		return err
+	}
+	priorityFee := uint64(*c.PriorityFee * 1_000_000_000)
+	jitoFee := uint64(*c.JitoFee * 1_000_000_000)
+	slippageBpsUint, err := strconv.ParseUint(*c.SlippageBps, 10, 32)
+	if err != nil {
+		e.Log.Errorf("slippageBps: %v\n", slippageBpsUint)
+		return errors.New("error slippageBps")
+	}
+	log.Infof("slippageBps: %v\n", slippageBpsUint)
+	txBuildParams := &pb.TxBuildParam{
+		PriorityFee: &priorityFee,
+		JitoFee:     &jitoFee,
+	}
+	traderParams := &pb.TraderParams{
+		SlippageBps:  &slippageBpsUint,
+		MinProfit:    c.MinProfit,
+		TxBuildParam: txBuildParams,
+	}
+	if config.ApplicationConfig.Mode != "dev" {
+		err = client.UpdateTraderParams(data.InstanceId, traderParams)
+		if err != nil {
+			e.Log.Errorf("grpc更新实例：:%s trader参数失败，异常：%s \r\n", data.InstanceId, err)
+			return err
+		}
+	}
+
+	updateData := map[string]interface{}{
+		"is_trading":   true,
+		"slippage_bps": slippageBpsUint,
+		"min_profit":   c.MinProfit,
+		"priority_fee": priorityFee,
+		"jito_fee":     jitoFee,
+	}
+	// 更新observer的trader相关参数
+	if err := e.Orm.Model(&models.BusDexCexTriangularObserver{}).
+		Where("instance_id = ?", data.InstanceId).
+		Updates(updateData).Error; err != nil {
+		e.Log.Errorf("更新实例参数失败：%s", err)
+		return err
+	}
+
+	e.Log.Infof("实例：%s 参数已成功更新", data.InstanceId)
+
 	return nil
 }

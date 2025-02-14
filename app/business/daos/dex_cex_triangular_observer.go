@@ -19,3 +19,10 @@ func (dao *BusDexCexTriangularObserverDAO) UpdateObserverWithNewId(observerId st
 		Update("observer_id", observerId).
 		Error
 }
+
+func (dao *BusDexCexTriangularObserverDAO) UpdateObserverWithTradingStatus(id int, isTrading bool) error {
+	return dao.Db.Model(&models.BusDexCexTriangularObserver{}).
+		Where("id = ?", id).
+		Update("isTrading", isTrading).
+		Error
+}

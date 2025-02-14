@@ -251,7 +251,7 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 	}
 
 	for _, observer := range observerList {
-		observerId := observer.ObserverId
+		observerId := observer.InstanceId
 		state, err := client.GetObserverState(observerId)
 		if err != nil {
 			e.Log.Errorf("grpc获取最新价差数据失败， error:%s \r\n", err)
@@ -411,16 +411,16 @@ func (e *BusDexCexPriceSpreadData) calculate_dex_cex_price(priceState *pb.Arbitr
 	var cexPrice float64      // TRUMP/USDT
 	var dexPrice float64      //TRUMP/USDT
 	var cexQuotePrice float64 // 例如：TRUMP/USDT
-	if priceState.CexBaseQuantity != nil && priceState.CexBaseFiatAmount != nil && *priceState.CexBaseQuantity != 0 {
-		cexQuotePrice = *priceState.CexBaseFiatAmount / *priceState.CexBaseQuantity
+	if priceState.CexTargetSymbolQuantity != nil && priceState.CexTargetSymbolQuoteAmount != nil && *priceState.CexTargetSymbolQuantity != 0 {
+		cexQuotePrice = *priceState.CexTargetSymbolQuoteAmount / *priceState.CexTargetSymbolQuantity
 	} else {
 		// 处理 nil 或除数为 0 的情况，避免 panic
 		cexQuotePrice = 0
 	}
 
 	var cexSolPrice float64 //SOL/USDT
-	if priceState.CexSolQuantity != nil && priceState.CexSolFiatAmount != nil && *priceState.CexSolQuantity != 0 {
-		cexSolPrice = *priceState.CexSolFiatAmount / *priceState.CexSolQuantity
+	if priceState.CexSolSymbolQuantity != nil && priceState.CexSolSymbolQuoteAmount != nil && *priceState.CexSolSymbolQuantity != 0 {
+		cexSolPrice = *priceState.CexSolSymbolQuoteAmount / *priceState.CexSolSymbolQuantity
 	} else {
 		// 处理 nil 或除数为 0 的情况，避免 panic
 		cexSolPrice = 0
@@ -435,8 +435,8 @@ func (e *BusDexCexPriceSpreadData) calculate_dex_cex_price(priceState *pb.Arbitr
 	cexPrice = cexQuotePrice
 
 	var dexSolPrice float64 //TRUMP/WSOL
-	if priceState.DexSolAmount != nil && priceState.DexBaseAmount != nil && *priceState.CexSolQuantity != 0 {
-		dexSolPrice = *priceState.DexSolAmount / *priceState.DexBaseAmount
+	if priceState.DexSolAmount != nil && priceState.DexTargetAmount != nil && *priceState.DexTargetAmount != 0 {
+		dexSolPrice = *priceState.DexSolAmount / *priceState.DexTargetAmount
 	} else {
 		// 处理 nil 或除数为 0 的情况，避免 panic
 		dexSolPrice = 0
