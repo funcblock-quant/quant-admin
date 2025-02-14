@@ -231,3 +231,27 @@ func (e BusPriceTriggerStrategyInstance) StopInstance(c *gin.Context) {
 
 	e.OK("", "暂停实例成功")
 }
+
+// GetSymbolList 获取价格触发下单策略实例所有的币种列表
+func (e BusPriceTriggerStrategyInstance) GetSymbolList(c *gin.Context) {
+	s := service.BusPriceTriggerStrategyInstance{}
+	err := e.MakeContext(c).
+		MakeOrm().
+		MakeService(&s.Service).
+		Errors
+	if err != nil {
+		e.Logger.Error(err)
+		e.Error(500, err, err.Error())
+		return
+	}
+
+	list := make([]dto.BusPriceTriggerStrategySymbolListResp, 0)
+
+	err = s.GetSymbolList(&list)
+	if err != nil {
+		e.Error(500, err, fmt.Sprintf("获取价格触发下单策略币种列表失败，\r\n失败信息 %s", err.Error()))
+		return
+	}
+
+	e.OK(list, "查询成功")
+}

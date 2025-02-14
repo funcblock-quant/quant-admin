@@ -12,6 +12,7 @@ type BusPriceTriggerStrategyInstanceGetPageReq struct {
 	dto.Pagination `search:"-"`
 	CloseTime      time.Time `form:"closeTime"  search:"type:exact;column:close_time;table:bus_price_trigger_strategy_instance" comment:"停止时间"`
 	Status         string    `form:"status"  search:"type:exact;column:status;table:bus_price_trigger_strategy_instance" comment:"状态，created, started, stopped, closed"`
+	Symbol         string    `form:"symbol"  search:"type:exact;column:symbol;table:bus_price_trigger_strategy_instance" comment:"交易币对"`
 	ExchangeUserId string    `form:"exchangeUserId"  search:"type:exact;column:exchange_user_id;table:bus_price_trigger_strategy_instance" comment:"交易所userId"`
 	UserId         string    `form:"createBy"  search:"type:exact;column:create_by;table:bus_price_trigger_strategy_instance" comment:"创建人"`
 	ApiConfig      int       `form:"apiConfig" search:"type:exact;column:api_config;table:bus_price_trigger_strategy_instance" comment:"api配置id"`
@@ -151,4 +152,8 @@ type BusPriceTriggerStrategyInstanceDeleteReq struct {
 
 func (s *BusPriceTriggerStrategyInstanceDeleteReq) GetId() interface{} {
 	return s.Ids
+}
+
+type BusPriceTriggerStrategySymbolListResp struct {
+	Symbol string `json:"symbol" gorm:"column:symbol"`
 }
