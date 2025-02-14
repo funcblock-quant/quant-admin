@@ -1,9 +1,7 @@
 package dto
 
 import (
-	"errors"
 	"fmt"
-	log "github.com/go-admin-team/go-admin-core/logger"
 	"google.golang.org/protobuf/proto"
 	"quanta-admin/app/business/models"
 	pb "quanta-admin/app/grpc/proto/client/observer_service"
@@ -82,9 +80,9 @@ type PriceChartPoint struct {
 type BusDexCexTriangularObserverInsertReq struct {
 	Id                 int      `json:"-" comment:""`
 	StrategyInstanceId string   `json:"strategyInstanceId" comment:"策略id"`
-	ObserverId         string   `json:"observerId" comment:"观察器id"`
+	InstanceId         string   `json:"instanceId" comment:"观察器id"`
 	Symbol             string   `json:"symbol" comment:"观察币种"`
-	BaseToken          string   `json:"baseToken"`
+	TargetToken        string   `json:"targetToken"`
 	QuoteToken         string   `json:"quoteToken"`
 	SymbolConnector    string   `json:"-"`
 	ExchangeType       string   `json:"exchangeType"`
@@ -93,16 +91,16 @@ type BusDexCexTriangularObserverInsertReq struct {
 	TakerFee           *float32 `json:"takerFee"`
 	TokenMint          *string  `json:"tokenMint"`
 	AmmPoolId          *string  `json:"ammPool"`
-	SlippageBps        *float32 `json:"slippage"`
-	Depth              string   `json:"depth"`
-	Status             string   `json:"status" comment:"状态"`
+	//SlippageBps        *float32 `json:"slippage"`
+	Depth  string `json:"depth"`
+	Status string `json:"status" comment:"状态"`
 	common.ControlBy
 }
 
 type BusDexCexTriangularObserverBatchInsertReq struct {
 	StrategyInstanceId string   `json:"strategyInstanceId" comment:"策略id"`
-	ObserverId         string   `json:"observerId" comment:"观察器id"`
-	BaseToken          []string `json:"baseToken"`
+	InstanceId         string   `json:"instanceId" comment:"策略端实例id"`
+	TargetToken        []string `json:"targetToken"`
 	QuoteToken         string   `json:"quoteToken"`
 	SymbolConnector    string   `json:"-"`
 	ExchangeType       string   `json:"exchangeType"`
@@ -111,17 +109,17 @@ type BusDexCexTriangularObserverBatchInsertReq struct {
 	TakerFee           *float64 `json:"takerFee"`
 	AmmPoolId          *string  `json:"ammPool"`
 	TokenMint          *string  `json:"tokenMint"`
-	SlippageBps        *string  `json:"slippage"`
-	Depth              string   `json:"depth"`
-	Status             string   `json:"status" comment:"状态"`
+	//SlippageBps        *string  `json:"slippage"`
+	Depth  string `json:"depth"`
+	Status string `json:"status" comment:"状态"`
 	common.ControlBy
 }
 
-func (s *BusDexCexTriangularObserverBatchInsertReq) Generate(model *models.BusDexCexTriangularObserver, baseToken string, observerId string) {
+func (s *BusDexCexTriangularObserverBatchInsertReq) Generate(model *models.BusDexCexTriangularObserver, baseToken string, instanceId string) {
 	model.StrategyInstanceId = "1" //default 1
-	model.ObserverId = observerId
+	model.InstanceId = instanceId
 	model.Symbol = baseToken + "/" + s.QuoteToken
-	model.BaseToken = s.BaseToken[0] //目前就支持单个添加
+	model.TargetToken = s.TargetToken[0] //目前就支持单个添加
 	model.QuoteToken = s.QuoteToken
 	model.SymbolConnector = "/" //之前沟通默认amber全部是/连接的
 	model.ExchangeType = s.ExchangeType
@@ -131,64 +129,63 @@ func (s *BusDexCexTriangularObserverBatchInsertReq) Generate(model *models.BusDe
 	model.TakerFee = s.TakerFee
 	model.TokenMint = s.TokenMint
 	model.AmmPoolId = s.AmmPoolId
-	model.SlippageBps = *s.SlippageBps
 	model.Depth = s.Depth
 	model.Status = "1"          //新增的话说明已经启动成功了
 	model.CreateBy = s.CreateBy // 添加这而，需要记录是被谁创建的
 }
 
 func (s *BusDexCexTriangularObserverBatchInsertReq) GenerateAmmConfig(ammConfig *pb.DexConfig) error {
-	ammConfig.AmmPool = s.AmmPoolId
-	ammConfig.TokenMint = s.TokenMint
-	slippageBpsUint, err := strconv.ParseUint(*s.SlippageBps, 10, 32)
-	if err != nil {
-		log.Errorf("slippageBps: %v\n", slippageBpsUint)
-		return errors.New("error slippageBps")
-	}
-	log.Infof("slippageBps: %v\n", slippageBpsUint)
-	ammConfig.SlippageBps = proto.Uint64(slippageBpsUint)
+	//slippageBpsUint, err := strconv.ParseUint(*s.SlippageBps, 10, 32)
+	//if err != nil {
+	//	log.Errorf("slippageBps: %v\n", slippageBpsUint)
+	//	return errors.New("error slippageBps")
+	//}
+	//log.Infof("slippageBps: %v\n", slippageBpsUint)
 	maxArraySize := new(uint32)
 	*maxArraySize = 5 //默认5， clmm使用参数
-	ammConfig.MaxArraySize = maxArraySize
 	if s.DexType == "RAY_AMM" {
-		dexType := pb.DexType_RAY_AMM
-		ammConfig.DexType = &dexType
+		ammConfig.Config = &pb.DexConfig_RayAmm{
+			RayAmm: &pb.RayAmmConfig{
+				Pool:      s.AmmPoolId,
+				TokenMint: s.TokenMint,
+			},
+		}
 	} else if s.DexType == "RAY_CLMM" {
-		dexType := pb.DexType_RAY_CLMM
-		ammConfig.DexType = &dexType
+		ammConfig.Config = &pb.DexConfig_RayClmm{
+			RayClmm: &pb.RayClmmConfig{
+				Pool:         s.AmmPoolId,
+				TokenMint:    s.TokenMint,
+				MaxArraySize: maxArraySize,
+			},
+		}
 	}
 	fmt.Printf("ammConfig: %v\n", *ammConfig)
 	return nil
 }
 
-func (s *BusDexCexTriangularObserverBatchInsertReq) GenerateAmberConfig(amberConfig *pb.AmberConfig) error {
+func (s *BusDexCexTriangularObserverBatchInsertReq) GenerateAmberConfig(amberConfig *pb.AmberObserverConfig) error {
 	amberConfig.ExchangeType = &s.ExchangeType
 	amberConfig.TakerFee = proto.Float64(*s.TakerFee)
 
-	orderBook := pb.AmberOrderBookConfig{}
+	amberConfig.TargetToken = &s.TargetToken[0]
+	amberConfig.QuoteToken = &s.QuoteToken
 
-	orderBook.BaseToken = &s.BaseToken[0]
-	orderBook.QuoteToken = &s.QuoteToken
-	symbolConnector := "/"
-	orderBook.SymbolConnector = &symbolConnector
-
-	orderBook.BidDepth = proto.Int32(20)
-	orderBook.AskDepth = proto.Int32(20)
+	amberConfig.BidDepth = proto.Int32(20)
+	amberConfig.AskDepth = proto.Int32(20)
 
 	if s.Depth != "" {
 		depthInt, err := strconv.Atoi(s.Depth)
 		if err != nil {
 			depthInt = 20 //默认20档
 		}
-		orderBook.BidDepth = proto.Int32(int32(depthInt))
-		orderBook.AskDepth = proto.Int32(int32(depthInt))
+		amberConfig.BidDepth = proto.Int32(int32(depthInt))
+		amberConfig.AskDepth = proto.Int32(int32(depthInt))
 	}
-	amberConfig.Orderbook = &orderBook
 	return nil
 }
 
-func (s *BusDexCexTriangularObserverBatchInsertReq) GenerateArbitrageConfig(arbitrageConfig *pb.ArbitrageConfig) error {
-	arbitrageConfig.SolAmount = proto.Float64(*s.Volume)
+func (s *BusDexCexTriangularObserverBatchInsertReq) GenerateArbitrageConfig(observerParams *pb.ObserverParams) error {
+	observerParams.SolAmount = proto.Float64(*s.Volume)
 	return nil
 }
 
@@ -197,7 +194,7 @@ func (s *BusDexCexTriangularObserverInsertReq) Generate(model *models.BusDexCexT
 		model.Model = common.Model{Id: s.Id}
 	}
 	model.StrategyInstanceId = s.StrategyInstanceId
-	model.ObserverId = s.ObserverId
+	model.InstanceId = s.InstanceId
 	model.Symbol = s.Symbol
 	model.Status = s.Status
 	model.CreateBy = s.CreateBy // 添加这而，需要记录是被谁创建的
@@ -221,7 +218,7 @@ func (s *BusDexCexTriangularObserverUpdateReq) Generate(model *models.BusDexCexT
 		model.Model = common.Model{Id: s.Id}
 	}
 	model.StrategyInstanceId = s.StrategyInstanceId
-	model.ObserverId = s.ObserverId
+	model.InstanceId = s.ObserverId
 	model.Symbol = s.Symbol
 	model.Status = s.Status
 	model.UpdateBy = s.UpdateBy // 添加这而，需要记录是被谁更新的
@@ -252,4 +249,44 @@ func (s *BusDexCexTriangularObserverDeleteReq) GetId() interface{} {
 
 type DexCexTriangularObserverSymbolListResp struct {
 	Symbol string `json:"symbol" gorm:"column:symbol"`
+}
+
+type BusDexCexTriangularObserverStartTraderReq struct {
+	InstanceId  string   `json:"instanceId" comment:"策略端实例id"`
+	SlippageBps *string  `json:"slippage"`
+	MinProfit   *float64 `json:"minProfit"`
+	PriorityFee *float64 `json:"priorityFee"`
+	JitoFee     *float64 `json:"jitoFee"`
+	common.ControlBy
+}
+
+func (s *BusDexCexTriangularObserverStartTraderReq) Generate(model *models.BusDexCexTriangularObserver) {
+	model.InstanceId = s.InstanceId
+	model.SlippageBps = *s.SlippageBps
+	model.MinProfit = s.MinProfit
+	scaled := *s.PriorityFee * 1_000_000_000
+	model.PriorityFee = uint64(scaled)
+	scaled = *s.JitoFee * 1_000_000_000
+	model.JitoFee = uint64(scaled)
+	model.UpdateBy = s.UpdateBy // 添加这而，需要记录是被谁更新的
+}
+
+type BusDexCexTriangularObserverStopTraderReq struct {
+	InstanceId string `json:"instanceId" comment:"策略端实例id"`
+	common.ControlBy
+}
+
+type BusDexCexTriangularUpdateObserverParamsReq struct {
+	InstanceId string   `json:"instanceId" comment:"策略端实例id"`
+	SolAmount  *float64 `json:"solAmount"`
+	common.ControlBy
+}
+
+type BusDexCexTriangularUpdateTraderParamsReq struct {
+	InstanceId  string   `json:"instanceId" comment:"策略端实例id"`
+	SlippageBps *string  `json:"slippage"`
+	MinProfit   *float64 `json:"minProfit"`
+	PriorityFee *float64 `json:"priorityFee"`
+	JitoFee     *float64 `json:"jitoFee"`
+	common.ControlBy
 }

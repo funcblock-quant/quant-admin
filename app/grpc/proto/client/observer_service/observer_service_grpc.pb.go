@@ -22,200 +22,422 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Observer_StartObserver_FullMethodName    = "/grpc_service.Observer/StartObserver"
-	Observer_StopObserver_FullMethodName     = "/grpc_service.Observer/StopObserver"
-	Observer_ListObservers_FullMethodName    = "/grpc_service.Observer/ListObservers"
-	Observer_GetObserverState_FullMethodName = "/grpc_service.Observer/GetObserverState"
+	Arbitrager_Start_FullMethodName                = "/grpc_service.Arbitrager/Start"
+	Arbitrager_Stop_FullMethodName                 = "/grpc_service.Arbitrager/Stop"
+	Arbitrager_List_FullMethodName                 = "/grpc_service.Arbitrager/List"
+	Arbitrager_GetObserverState_FullMethodName     = "/grpc_service.Arbitrager/GetObserverState"
+	Arbitrager_GetObserverParams_FullMethodName    = "/grpc_service.Arbitrager/GetObserverParams"
+	Arbitrager_UpdateObserverParams_FullMethodName = "/grpc_service.Arbitrager/UpdateObserverParams"
+	Arbitrager_EnableTrader_FullMethodName         = "/grpc_service.Arbitrager/EnableTrader"
+	Arbitrager_DisableTrader_FullMethodName        = "/grpc_service.Arbitrager/DisableTrader"
+	Arbitrager_GetTraderParams_FullMethodName      = "/grpc_service.Arbitrager/GetTraderParams"
+	Arbitrager_UpdateTraderParams_FullMethodName   = "/grpc_service.Arbitrager/UpdateTraderParams"
 )
 
-// ObserverClient is the client API for Observer service.
+// ArbitragerClient is the client API for Arbitrager service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type ObserverClient interface {
-	StartObserver(ctx context.Context, in *StartRequest, opts ...grpc.CallOption) (*StartResponse, error)
-	StopObserver(ctx context.Context, in *StopRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	ListObservers(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ListResponse, error)
-	GetObserverState(ctx context.Context, in *GetStateRequest, opts ...grpc.CallOption) (*GetStateResponse, error)
+type ArbitragerClient interface {
+	Start(ctx context.Context, in *StartRequest, opts ...grpc.CallOption) (*InstantId, error)
+	Stop(ctx context.Context, in *InstantId, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	List(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ListResponse, error)
+	GetObserverState(ctx context.Context, in *InstantId, opts ...grpc.CallOption) (*GetStateResponse, error)
+	GetObserverParams(ctx context.Context, in *InstantId, opts ...grpc.CallOption) (*ObserverParams, error)
+	UpdateObserverParams(ctx context.Context, in *UpdateObserverParamsRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	EnableTrader(ctx context.Context, in *EnableTraderRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	DisableTrader(ctx context.Context, in *InstantId, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	GetTraderParams(ctx context.Context, in *InstantId, opts ...grpc.CallOption) (*TraderParams, error)
+	UpdateTraderParams(ctx context.Context, in *UpdateTraderParamsRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
-type observerClient struct {
+type arbitragerClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewObserverClient(cc grpc.ClientConnInterface) ObserverClient {
-	return &observerClient{cc}
+func NewArbitragerClient(cc grpc.ClientConnInterface) ArbitragerClient {
+	return &arbitragerClient{cc}
 }
 
-func (c *observerClient) StartObserver(ctx context.Context, in *StartRequest, opts ...grpc.CallOption) (*StartResponse, error) {
-	out := new(StartResponse)
-	err := c.cc.Invoke(ctx, Observer_StartObserver_FullMethodName, in, out, opts...)
+func (c *arbitragerClient) Start(ctx context.Context, in *StartRequest, opts ...grpc.CallOption) (*InstantId, error) {
+	out := new(InstantId)
+	err := c.cc.Invoke(ctx, Arbitrager_Start_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *observerClient) StopObserver(ctx context.Context, in *StopRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *arbitragerClient) Stop(ctx context.Context, in *InstantId, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, Observer_StopObserver_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Arbitrager_Stop_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *observerClient) ListObservers(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ListResponse, error) {
+func (c *arbitragerClient) List(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ListResponse, error) {
 	out := new(ListResponse)
-	err := c.cc.Invoke(ctx, Observer_ListObservers_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Arbitrager_List_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *observerClient) GetObserverState(ctx context.Context, in *GetStateRequest, opts ...grpc.CallOption) (*GetStateResponse, error) {
+func (c *arbitragerClient) GetObserverState(ctx context.Context, in *InstantId, opts ...grpc.CallOption) (*GetStateResponse, error) {
 	out := new(GetStateResponse)
-	err := c.cc.Invoke(ctx, Observer_GetObserverState_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Arbitrager_GetObserverState_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// ObserverServer is the server API for Observer service.
-// All implementations must embed UnimplementedObserverServer
+func (c *arbitragerClient) GetObserverParams(ctx context.Context, in *InstantId, opts ...grpc.CallOption) (*ObserverParams, error) {
+	out := new(ObserverParams)
+	err := c.cc.Invoke(ctx, Arbitrager_GetObserverParams_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *arbitragerClient) UpdateObserverParams(ctx context.Context, in *UpdateObserverParamsRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, Arbitrager_UpdateObserverParams_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *arbitragerClient) EnableTrader(ctx context.Context, in *EnableTraderRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, Arbitrager_EnableTrader_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *arbitragerClient) DisableTrader(ctx context.Context, in *InstantId, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, Arbitrager_DisableTrader_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *arbitragerClient) GetTraderParams(ctx context.Context, in *InstantId, opts ...grpc.CallOption) (*TraderParams, error) {
+	out := new(TraderParams)
+	err := c.cc.Invoke(ctx, Arbitrager_GetTraderParams_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *arbitragerClient) UpdateTraderParams(ctx context.Context, in *UpdateTraderParamsRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, Arbitrager_UpdateTraderParams_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ArbitragerServer is the server API for Arbitrager service.
+// All implementations must embed UnimplementedArbitragerServer
 // for forward compatibility
-type ObserverServer interface {
-	StartObserver(context.Context, *StartRequest) (*StartResponse, error)
-	StopObserver(context.Context, *StopRequest) (*emptypb.Empty, error)
-	ListObservers(context.Context, *emptypb.Empty) (*ListResponse, error)
-	GetObserverState(context.Context, *GetStateRequest) (*GetStateResponse, error)
-	mustEmbedUnimplementedObserverServer()
+type ArbitragerServer interface {
+	Start(context.Context, *StartRequest) (*InstantId, error)
+	Stop(context.Context, *InstantId) (*emptypb.Empty, error)
+	List(context.Context, *emptypb.Empty) (*ListResponse, error)
+	GetObserverState(context.Context, *InstantId) (*GetStateResponse, error)
+	GetObserverParams(context.Context, *InstantId) (*ObserverParams, error)
+	UpdateObserverParams(context.Context, *UpdateObserverParamsRequest) (*emptypb.Empty, error)
+	EnableTrader(context.Context, *EnableTraderRequest) (*emptypb.Empty, error)
+	DisableTrader(context.Context, *InstantId) (*emptypb.Empty, error)
+	GetTraderParams(context.Context, *InstantId) (*TraderParams, error)
+	UpdateTraderParams(context.Context, *UpdateTraderParamsRequest) (*emptypb.Empty, error)
+	mustEmbedUnimplementedArbitragerServer()
 }
 
-// UnimplementedObserverServer must be embedded to have forward compatible implementations.
-type UnimplementedObserverServer struct {
+// UnimplementedArbitragerServer must be embedded to have forward compatible implementations.
+type UnimplementedArbitragerServer struct {
 }
 
-func (UnimplementedObserverServer) StartObserver(context.Context, *StartRequest) (*StartResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method StartObserver not implemented")
+func (UnimplementedArbitragerServer) Start(context.Context, *StartRequest) (*InstantId, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Start not implemented")
 }
-func (UnimplementedObserverServer) StopObserver(context.Context, *StopRequest) (*emptypb.Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method StopObserver not implemented")
+func (UnimplementedArbitragerServer) Stop(context.Context, *InstantId) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Stop not implemented")
 }
-func (UnimplementedObserverServer) ListObservers(context.Context, *emptypb.Empty) (*ListResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListObservers not implemented")
+func (UnimplementedArbitragerServer) List(context.Context, *emptypb.Empty) (*ListResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
 }
-func (UnimplementedObserverServer) GetObserverState(context.Context, *GetStateRequest) (*GetStateResponse, error) {
+func (UnimplementedArbitragerServer) GetObserverState(context.Context, *InstantId) (*GetStateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetObserverState not implemented")
 }
-func (UnimplementedObserverServer) mustEmbedUnimplementedObserverServer() {}
+func (UnimplementedArbitragerServer) GetObserverParams(context.Context, *InstantId) (*ObserverParams, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetObserverParams not implemented")
+}
+func (UnimplementedArbitragerServer) UpdateObserverParams(context.Context, *UpdateObserverParamsRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateObserverParams not implemented")
+}
+func (UnimplementedArbitragerServer) EnableTrader(context.Context, *EnableTraderRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method EnableTrader not implemented")
+}
+func (UnimplementedArbitragerServer) DisableTrader(context.Context, *InstantId) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DisableTrader not implemented")
+}
+func (UnimplementedArbitragerServer) GetTraderParams(context.Context, *InstantId) (*TraderParams, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTraderParams not implemented")
+}
+func (UnimplementedArbitragerServer) UpdateTraderParams(context.Context, *UpdateTraderParamsRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateTraderParams not implemented")
+}
+func (UnimplementedArbitragerServer) mustEmbedUnimplementedArbitragerServer() {}
 
-// UnsafeObserverServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to ObserverServer will
+// UnsafeArbitragerServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to ArbitragerServer will
 // result in compilation errors.
-type UnsafeObserverServer interface {
-	mustEmbedUnimplementedObserverServer()
+type UnsafeArbitragerServer interface {
+	mustEmbedUnimplementedArbitragerServer()
 }
 
-func RegisterObserverServer(s grpc.ServiceRegistrar, srv ObserverServer) {
-	s.RegisterService(&Observer_ServiceDesc, srv)
+func RegisterArbitragerServer(s grpc.ServiceRegistrar, srv ArbitragerServer) {
+	s.RegisterService(&Arbitrager_ServiceDesc, srv)
 }
 
-func _Observer_StartObserver_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Arbitrager_Start_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(StartRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ObserverServer).StartObserver(ctx, in)
+		return srv.(ArbitragerServer).Start(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Observer_StartObserver_FullMethodName,
+		FullMethod: Arbitrager_Start_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ObserverServer).StartObserver(ctx, req.(*StartRequest))
+		return srv.(ArbitragerServer).Start(ctx, req.(*StartRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Observer_StopObserver_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(StopRequest)
+func _Arbitrager_Stop_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(InstantId)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ObserverServer).StopObserver(ctx, in)
+		return srv.(ArbitragerServer).Stop(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Observer_StopObserver_FullMethodName,
+		FullMethod: Arbitrager_Stop_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ObserverServer).StopObserver(ctx, req.(*StopRequest))
+		return srv.(ArbitragerServer).Stop(ctx, req.(*InstantId))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Observer_ListObservers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Arbitrager_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(emptypb.Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ObserverServer).ListObservers(ctx, in)
+		return srv.(ArbitragerServer).List(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Observer_ListObservers_FullMethodName,
+		FullMethod: Arbitrager_List_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ObserverServer).ListObservers(ctx, req.(*emptypb.Empty))
+		return srv.(ArbitragerServer).List(ctx, req.(*emptypb.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Observer_GetObserverState_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetStateRequest)
+func _Arbitrager_GetObserverState_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(InstantId)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ObserverServer).GetObserverState(ctx, in)
+		return srv.(ArbitragerServer).GetObserverState(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Observer_GetObserverState_FullMethodName,
+		FullMethod: Arbitrager_GetObserverState_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ObserverServer).GetObserverState(ctx, req.(*GetStateRequest))
+		return srv.(ArbitragerServer).GetObserverState(ctx, req.(*InstantId))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// Observer_ServiceDesc is the grpc.ServiceDesc for Observer service.
+func _Arbitrager_GetObserverParams_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(InstantId)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ArbitragerServer).GetObserverParams(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Arbitrager_GetObserverParams_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ArbitragerServer).GetObserverParams(ctx, req.(*InstantId))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Arbitrager_UpdateObserverParams_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateObserverParamsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ArbitragerServer).UpdateObserverParams(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Arbitrager_UpdateObserverParams_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ArbitragerServer).UpdateObserverParams(ctx, req.(*UpdateObserverParamsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Arbitrager_EnableTrader_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EnableTraderRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ArbitragerServer).EnableTrader(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Arbitrager_EnableTrader_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ArbitragerServer).EnableTrader(ctx, req.(*EnableTraderRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Arbitrager_DisableTrader_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(InstantId)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ArbitragerServer).DisableTrader(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Arbitrager_DisableTrader_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ArbitragerServer).DisableTrader(ctx, req.(*InstantId))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Arbitrager_GetTraderParams_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(InstantId)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ArbitragerServer).GetTraderParams(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Arbitrager_GetTraderParams_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ArbitragerServer).GetTraderParams(ctx, req.(*InstantId))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Arbitrager_UpdateTraderParams_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateTraderParamsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ArbitragerServer).UpdateTraderParams(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Arbitrager_UpdateTraderParams_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ArbitragerServer).UpdateTraderParams(ctx, req.(*UpdateTraderParamsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// Arbitrager_ServiceDesc is the grpc.ServiceDesc for Arbitrager service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var Observer_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "grpc_service.Observer",
-	HandlerType: (*ObserverServer)(nil),
+var Arbitrager_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "grpc_service.Arbitrager",
+	HandlerType: (*ArbitragerServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "StartObserver",
-			Handler:    _Observer_StartObserver_Handler,
+			MethodName: "Start",
+			Handler:    _Arbitrager_Start_Handler,
 		},
 		{
-			MethodName: "StopObserver",
-			Handler:    _Observer_StopObserver_Handler,
+			MethodName: "Stop",
+			Handler:    _Arbitrager_Stop_Handler,
 		},
 		{
-			MethodName: "ListObservers",
-			Handler:    _Observer_ListObservers_Handler,
+			MethodName: "List",
+			Handler:    _Arbitrager_List_Handler,
 		},
 		{
 			MethodName: "GetObserverState",
-			Handler:    _Observer_GetObserverState_Handler,
+			Handler:    _Arbitrager_GetObserverState_Handler,
+		},
+		{
+			MethodName: "GetObserverParams",
+			Handler:    _Arbitrager_GetObserverParams_Handler,
+		},
+		{
+			MethodName: "UpdateObserverParams",
+			Handler:    _Arbitrager_UpdateObserverParams_Handler,
+		},
+		{
+			MethodName: "EnableTrader",
+			Handler:    _Arbitrager_EnableTrader_Handler,
+		},
+		{
+			MethodName: "DisableTrader",
+			Handler:    _Arbitrager_DisableTrader_Handler,
+		},
+		{
+			MethodName: "GetTraderParams",
+			Handler:    _Arbitrager_GetTraderParams_Handler,
+		},
+		{
+			MethodName: "UpdateTraderParams",
+			Handler:    _Arbitrager_UpdateTraderParams_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

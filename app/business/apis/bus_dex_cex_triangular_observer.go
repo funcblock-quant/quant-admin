@@ -248,3 +248,95 @@ func (e BusDexCexTriangularObserver) Delete(c *gin.Context) {
 	}
 	e.OK(req.GetId(), "删除成功")
 }
+
+func (e BusDexCexTriangularObserver) StartTrader(c *gin.Context) {
+	s := service.BusDexCexTriangularObserver{}
+	req := dto.BusDexCexTriangularObserverStartTraderReq{}
+	err := e.MakeContext(c).
+		MakeOrm().
+		Bind(&req).
+		MakeService(&s.Service).
+		Errors
+	if err != nil {
+		e.Logger.Error(err)
+		e.Error(500, err, err.Error())
+		return
+	}
+	req.SetUpdateBy(user.GetUserId(c))
+	err = s.StartTrader(&req)
+	if err != nil {
+		e.Error(500, err, fmt.Sprintf("启动交易失败，\r\n失败信息 %s", err.Error()))
+		return
+	}
+
+	e.OK(nil, "开启交易成功")
+}
+
+func (e BusDexCexTriangularObserver) StopTrader(c *gin.Context) {
+	s := service.BusDexCexTriangularObserver{}
+	req := dto.BusDexCexTriangularObserverStopTraderReq{}
+	err := e.MakeContext(c).
+		MakeOrm().
+		Bind(&req).
+		MakeService(&s.Service).
+		Errors
+	if err != nil {
+		e.Logger.Error(err)
+		e.Error(500, err, err.Error())
+		return
+	}
+	req.SetUpdateBy(user.GetUserId(c))
+	err = s.StopTrader(&req)
+	if err != nil {
+		e.Error(500, err, fmt.Sprintf("停止交易失败，\r\n失败信息 %s", err.Error()))
+		return
+	}
+
+	e.OK(nil, "停止交易成功")
+}
+
+func (e BusDexCexTriangularObserver) UpdateObserver(c *gin.Context) {
+	s := service.BusDexCexTriangularObserver{}
+	req := dto.BusDexCexTriangularUpdateObserverParamsReq{}
+	err := e.MakeContext(c).
+		MakeOrm().
+		Bind(&req).
+		MakeService(&s.Service).
+		Errors
+	if err != nil {
+		e.Logger.Error(err)
+		e.Error(500, err, err.Error())
+		return
+	}
+	req.SetUpdateBy(user.GetUserId(c))
+	err = s.UpdateObserver(&req)
+	if err != nil {
+		e.Error(500, err, fmt.Sprintf("更新observer 参数失败，\r\n失败信息 %s", err.Error()))
+		return
+	}
+
+	e.OK(nil, "更新成功")
+}
+
+func (e BusDexCexTriangularObserver) UpdateTrader(c *gin.Context) {
+	s := service.BusDexCexTriangularObserver{}
+	req := dto.BusDexCexTriangularUpdateTraderParamsReq{}
+	err := e.MakeContext(c).
+		MakeOrm().
+		Bind(&req).
+		MakeService(&s.Service).
+		Errors
+	if err != nil {
+		e.Logger.Error(err)
+		e.Error(500, err, err.Error())
+		return
+	}
+	req.SetUpdateBy(user.GetUserId(c))
+	err = s.UpdateTrader(&req)
+	if err != nil {
+		e.Error(500, err, fmt.Sprintf("更新trader 参数失败，\r\n失败信息 %s", err.Error()))
+		return
+	}
+
+	e.OK(nil, "更新成功")
+}

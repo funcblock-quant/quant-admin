@@ -26,4 +26,8 @@ func registerBusDexCexTriangularObserverRouter(v1 *gin.RouterGroup, authMiddlewa
 	}
 	v1.POST("/batchAddBusDexCexTriangularObserver", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.BatchInsert)
 	v1.GET("/busDexCexTriangularSymbolList", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.GetSymbolList)
+	v1.POST("/busDexCexTriangularStartTrader", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.StartTrader)
+	v1.POST("/busDexCexTriangularStopTrader", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.StopTrader)
+	v1.PUT("/busDexCexTriangularUpdateObserver", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.UpdateObserver)
+	v1.PUT("/busDexCexTriangularUpdateTrader", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.UpdateTrader)
 }
