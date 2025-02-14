@@ -16,13 +16,13 @@ func (dao *BusDexCexTriangularObserverDAO) GetObserverList(observers *[]models.B
 func (dao *BusDexCexTriangularObserverDAO) UpdateObserverWithNewId(observerId string, id int) error {
 	return dao.Db.Model(&models.BusDexCexTriangularObserver{}).
 		Where("id = ?", id).
-		Update("observer_id", observerId).
+		Update("instance_id", observerId).
 		Error
 }
 
 func (dao *BusDexCexTriangularObserverDAO) UpdateObserverWithTradingStatus(id int, isTrading bool) error {
 	return dao.Db.Model(&models.BusDexCexTriangularObserver{}).
 		Where("id = ?", id).
-		Update("isTrading", isTrading).
+		Update("is_trading", isTrading).
 		Error
 }
