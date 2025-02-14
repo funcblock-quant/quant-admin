@@ -242,3 +242,20 @@ func (e *BusPriceTriggerStrategyInstance) Remove(d *dto.BusPriceTriggerStrategyI
 	}
 	return nil
 }
+
+// GetSymbolList 获取BusPriceTriggerStrategyInstance所有币种列表
+func (e *BusPriceTriggerStrategyInstance) GetSymbolList(list *[]dto.BusPriceTriggerStrategySymbolListResp) error {
+	var err error
+	var data models.BusPriceTriggerStrategyInstance
+
+	err = e.Orm.Model(&data).
+		Select("symbol").
+		Group("symbol").
+		Debug().Find(list).Error
+
+	if err != nil {
+		e.Log.Errorf("BusPriceTriggerStrategyInstance GetSymbolList error:%s \r\n", err)
+		return err
+	}
+	return nil
+}
