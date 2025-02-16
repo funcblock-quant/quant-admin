@@ -32,6 +32,7 @@ func (m *BusDexCexPriceSpreadDataGetPageReq) GetNeedSearch() interface{} {
 
 type BusDexCexPriceSpreadDataHistoryChartReq struct {
 	ObserverId string `json:"observerId" comment:"监视器id"`
+	Id         string `json:"id"` // 由于每次服务器重启后，策略端会生成新的observerId，所以查询历史价格的时候，只能用数据库id替代observerid
 	Interval   string `json:"interval" comment:"数据时间间隔,单位：s"`
 }
 
