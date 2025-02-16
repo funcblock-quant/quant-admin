@@ -24,6 +24,7 @@ const _ = grpc.SupportPackageIsVersion7
 const (
 	Arbitrager_Start_FullMethodName                = "/grpc_service.Arbitrager/Start"
 	Arbitrager_Stop_FullMethodName                 = "/grpc_service.Arbitrager/Stop"
+	Arbitrager_Get_FullMethodName                  = "/grpc_service.Arbitrager/Get"
 	Arbitrager_List_FullMethodName                 = "/grpc_service.Arbitrager/List"
 	Arbitrager_GetObserverState_FullMethodName     = "/grpc_service.Arbitrager/GetObserverState"
 	Arbitrager_GetObserverParams_FullMethodName    = "/grpc_service.Arbitrager/GetObserverParams"
@@ -40,6 +41,7 @@ const (
 type ArbitragerClient interface {
 	Start(ctx context.Context, in *StartRequest, opts ...grpc.CallOption) (*InstantId, error)
 	Stop(ctx context.Context, in *InstantId, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	Get(ctx context.Context, in *InstantId, opts ...grpc.CallOption) (*BasicInfo, error)
 	List(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ListResponse, error)
 	GetObserverState(ctx context.Context, in *InstantId, opts ...grpc.CallOption) (*GetStateResponse, error)
 	GetObserverParams(ctx context.Context, in *InstantId, opts ...grpc.CallOption) (*ObserverParams, error)
@@ -70,6 +72,15 @@ func (c *arbitragerClient) Start(ctx context.Context, in *StartRequest, opts ...
 func (c *arbitragerClient) Stop(ctx context.Context, in *InstantId, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, Arbitrager_Stop_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *arbitragerClient) Get(ctx context.Context, in *InstantId, opts ...grpc.CallOption) (*BasicInfo, error) {
+	out := new(BasicInfo)
+	err := c.cc.Invoke(ctx, Arbitrager_Get_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -154,6 +165,7 @@ func (c *arbitragerClient) UpdateTraderParams(ctx context.Context, in *UpdateTra
 type ArbitragerServer interface {
 	Start(context.Context, *StartRequest) (*InstantId, error)
 	Stop(context.Context, *InstantId) (*emptypb.Empty, error)
+	Get(context.Context, *InstantId) (*BasicInfo, error)
 	List(context.Context, *emptypb.Empty) (*ListResponse, error)
 	GetObserverState(context.Context, *InstantId) (*GetStateResponse, error)
 	GetObserverParams(context.Context, *InstantId) (*ObserverParams, error)
@@ -174,6 +186,9 @@ func (UnimplementedArbitragerServer) Start(context.Context, *StartRequest) (*Ins
 }
 func (UnimplementedArbitragerServer) Stop(context.Context, *InstantId) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Stop not implemented")
+}
+func (UnimplementedArbitragerServer) Get(context.Context, *InstantId) (*BasicInfo, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
 }
 func (UnimplementedArbitragerServer) List(context.Context, *emptypb.Empty) (*ListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
@@ -244,6 +259,24 @@ func _Arbitrager_Stop_Handler(srv interface{}, ctx context.Context, dec func(int
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ArbitragerServer).Stop(ctx, req.(*InstantId))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Arbitrager_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(InstantId)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ArbitragerServer).Get(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Arbitrager_Get_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ArbitragerServer).Get(ctx, req.(*InstantId))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -406,6 +439,10 @@ var Arbitrager_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Stop",
 			Handler:    _Arbitrager_Stop_Handler,
+		},
+		{
+			MethodName: "Get",
+			Handler:    _Arbitrager_Get_Handler,
 		},
 		{
 			MethodName: "List",

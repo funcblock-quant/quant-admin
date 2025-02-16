@@ -9,6 +9,7 @@ import "google/protobuf/empty.proto";
 service Arbitrager {
   rpc Start (StartRequest) returns (InstantId);
   rpc Stop (InstantId) returns (google.protobuf.Empty);
+  rpc Get (InstantId) returns (BasicInfo);
   rpc List (google.protobuf.Empty) returns (ListResponse);
   rpc GetObserverState (InstantId) returns (GetStateResponse);
   rpc GetObserverParams (InstantId) returns (ObserverParams);
@@ -34,7 +35,7 @@ message EnableTraderRequest {
 }
 
 message ListResponse {
-  repeated Info infos = 1;
+  repeated BasicInfo infos = 1;
 }
 
 message GetStateResponse {
@@ -103,9 +104,13 @@ message TxBuildParam {
   required uint64 jito_fee = 3; // 100_000
 }
 
-message Info {
+message BasicInfo {
   required string instance_id = 1;
   required DexType dex_type = 2;
+  required AmberObserverConfig amber_observer_config = 3;
+  required DexConfig dex_config = 4;
+  required bool trader_enabled = 5;
+  optional AmberTraderConfig amber_trader_config = 6;
 }
 
 message ArbitrageState {

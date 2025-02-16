@@ -202,7 +202,7 @@ func contains(instanceIds []string, target string) bool {
 	return false
 }
 
-func containsObserver(observerInfos []*pb.Info, target string) bool {
+func containsObserver(observerInfos []*pb.BasicInfo, target string) bool {
 	for _, info := range observerInfos {
 		if *info.InstanceId == target {
 			return true
@@ -283,60 +283,61 @@ func (t DexCexObserverInspection) Exec(arg interface{}) error {
 			continue
 		}
 
-		maxArraySize := new(uint32)
-		*maxArraySize = 5 //默认5， clmm使用参数
-
-		dexConfig := &pb.DexConfig{}
-		if observer.DexType == "RAY_AMM" {
-			dexConfig.Config = &pb.DexConfig_RayAmm{
-				RayAmm: &pb.RayAmmConfig{
-					Pool:      observer.AmmPoolId,
-					TokenMint: observer.TokenMint,
-				},
-			}
-		} else if observer.DexType == "RAY_CLMM" {
-			dexConfig.Config = &pb.DexConfig_RayClmm{
-				RayClmm: &pb.RayClmmConfig{
-					Pool:         observer.AmmPoolId,
-					TokenMint:    observer.TokenMint,
-					MaxArraySize: maxArraySize,
-				},
-			}
-		}
-
-		arbitrageConfig := &pb.ObserverParams{
-			SolAmount: observer.Volume,
-		}
-
-		amberConfig := &pb.AmberObserverConfig{}
-		GenerateAmberConfig(&observer, amberConfig)
-
-		newObserverId, err := client.StartNewArbitragerClient(amberConfig, dexConfig, arbitrageConfig)
-		if err != nil {
-			continue
-		}
-		service.UpdateObserverWithNewId(newObserverId, observer.Id)
-		fmt.Printf("restart observer success with params: dexConfig: %+v\n, arbitrageConfig: %+v\n", dexConfig, arbitrageConfig)
-		if observer.IsTrading {
-			// 如果实例开启了交易，还需要启动交易功能
-			trader, err := observer.GetExchangeTypeForTrader()
-			if err != nil {
-				fmt.Printf("get exchange type for trader failed: %v\n", err)
-				continue
-			}
-			amberTraderConfig := &pb.AmberTraderConfig{
-				ExchangeType: &trader,
-			}
-			traderParams := &pb.TraderParams{}
-			err = client.EnableTrader(observer.InstanceId, amberTraderConfig, traderParams)
-			if err != nil {
-				fmt.Printf("restart instance: %d trader error: %v\n", observer.InstanceId, err)
-				//如果启动trader失败，则将该交易机器人设置为isTrading = false
-				service.UpdateObserverWithTradingStatus(observer.Id, false)
-			} else {
-				fmt.Printf("restart instance: %d trader success\n", observer.InstanceId)
-			}
-		}
+		log.Infof("restart observer success")
+		//maxArraySize := new(uint32)
+		//*maxArraySize = 5 //默认5， clmm使用参数
+		//
+		//dexConfig := &pb.DexConfig{}
+		//if observer.DexType == "RAY_AMM" {
+		//	dexConfig.Config = &pb.DexConfig_RayAmm{
+		//		RayAmm: &pb.RayAmmConfig{
+		//			Pool:      observer.AmmPoolId,
+		//			TokenMint: observer.TokenMint,
+		//		},
+		//	}
+		//} else if observer.DexType == "RAY_CLMM" {
+		//	dexConfig.Config = &pb.DexConfig_RayClmm{
+		//		RayClmm: &pb.RayClmmConfig{
+		//			Pool:         observer.AmmPoolId,
+		//			TokenMint:    observer.TokenMint,
+		//			MaxArraySize: maxArraySize,
+		//		},
+		//	}
+		//}
+		//
+		//arbitrageConfig := &pb.ObserverParams{
+		//	SolAmount: observer.Volume,
+		//}
+		//
+		//amberConfig := &pb.AmberObserverConfig{}
+		//GenerateAmberConfig(&observer, amberConfig)
+		//
+		//newObserverId, err := client.StartNewArbitragerClient(amberConfig, dexConfig, arbitrageConfig)
+		//if err != nil {
+		//	continue
+		//}
+		//service.UpdateObserverWithNewId(newObserverId, observer.Id)
+		//fmt.Printf("restart observer success with params: dexConfig: %+v\n, arbitrageConfig: %+v\n", dexConfig, arbitrageConfig)
+		//if observer.IsTrading {
+		//	// 如果实例开启了交易，还需要启动交易功能
+		//	trader, err := observer.GetExchangeTypeForTrader()
+		//	if err != nil {
+		//		fmt.Printf("get exchange type for trader failed: %v\n", err)
+		//		continue
+		//	}
+		//	amberTraderConfig := &pb.AmberTraderConfig{
+		//		ExchangeType: &trader,
+		//	}
+		//	traderParams := &pb.TraderParams{}
+		//	err = client.EnableTrader(observer.InstanceId, amberTraderConfig, traderParams)
+		//	if err != nil {
+		//		fmt.Printf("restart instance: %d trader error: %v\n", observer.InstanceId, err)
+		//		//如果启动trader失败，则将该交易机器人设置为isTrading = false
+		//		service.UpdateObserverWithTradingStatus(observer.Id, false)
+		//	} else {
+		//		fmt.Printf("restart instance: %d trader success\n", observer.InstanceId)
+		//	}
+		//}
 
 	}
 
