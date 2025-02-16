@@ -252,6 +252,7 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 
 	for _, observer := range observerList {
 		observerId := strconv.Itoa(observer.Id)
+		e.Log.Infof("observerId:%s get latest spread data \r\n", observerId)
 		state, err := client.GetObserverState(observerId)
 		if err != nil {
 			e.Log.Errorf("grpc获取最新价差数据失败， error:%s \r\n", err)
