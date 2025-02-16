@@ -137,10 +137,10 @@ func (t PriceTriggerInspection) Exec(arg interface{}) error {
 	str := time.Now().Format(timeFormat) + " [INFO] JobCore PriceTriggerInspection exec success\r\n"
 	instanceIds, err := client.ListInstances()
 	if err != nil {
-		fmt.Printf(err.Error())
+		log.Errorf(err.Error())
 		return err
 	}
-	fmt.Printf("instanceIds:%+v\n", instanceIds)
+	log.Infof("instanceIds:%+v\n", instanceIds)
 	service := daos.BusPriceTriggerInstanceDAO{
 		Db: sdk.Runtime.GetDbByKey("*"),
 	}
@@ -151,7 +151,7 @@ func (t PriceTriggerInspection) Exec(arg interface{}) error {
 	instances := make([]models.BusPriceTriggerStrategyInstance, 0)
 	err = service.GetInstancesList(&instances)
 	if err != nil {
-		fmt.Printf(err.Error())
+		log.Errorf(err.Error())
 		return err
 	}
 
@@ -161,7 +161,7 @@ func (t PriceTriggerInspection) Exec(arg interface{}) error {
 			apiConfig := models.BusPriceTriggerStrategyApikeyConfig{}
 			err := apiConfigService.GetApiConfigById(instance.ApiConfig, &apiConfig)
 			if err != nil {
-				fmt.Printf("重启 instance id: %d 失败, 异常信息：%v \r\n", instance.Id, err.Error())
+				log.Errorf("重启 instance id: %d 失败, 异常信息：%v \r\n", instance.Id, err.Error())
 				continue
 			}
 
@@ -184,12 +184,12 @@ func (t PriceTriggerInspection) Exec(arg interface{}) error {
 
 			_, err = client.StartTriggerInstance(request)
 			if err != nil {
-				fmt.Errorf("Service grpc start error:%s \r\n", err)
+				log.Errorf("Service grpc start error:%s \r\n", err)
 				continue
 			}
 		}
 	}
-	fmt.Printf(str)
+	log.Infof(str)
 	return nil
 }
 
@@ -215,7 +215,7 @@ type PriceTriggerExpireInspection struct{}
 
 func (t PriceTriggerExpireInspection) Exec(arg interface{}) error {
 	str := time.Now().Format(timeFormat) + " [INFO] JobCore PriceTriggerExpireInspection exec success\r\n"
-	fmt.Println("开始执行price-trigger 过期扫描任务")
+	log.Infof("开始执行price-trigger 过期扫描任务")
 	service := daos.BusPriceTriggerInstanceDAO{
 		Db: sdk.Runtime.GetDbByKey("*"),
 	}
@@ -223,7 +223,7 @@ func (t PriceTriggerExpireInspection) Exec(arg interface{}) error {
 	instances := make([]models.BusPriceTriggerStrategyInstance, 0)
 	err := service.GetInstancesList(&instances)
 	if err != nil {
-		fmt.Printf(err.Error())
+		log.Infof(err.Error())
 		return err
 	}
 	expiredIds := make([]string, 0)
@@ -233,14 +233,14 @@ func (t PriceTriggerExpireInspection) Exec(arg interface{}) error {
 			expiredIds = append(expiredIds, strconv.Itoa(instance.Id))
 		}
 	}
-	fmt.Println("过期任务id：", expiredIds)
+	log.Infof("过期任务id：", expiredIds)
 	if len(expiredIds) > 0 {
 		err = service.ExpireInstanceWithIds(expiredIds)
 		if err != nil {
 			fmt.Printf("关停过期下单实例失败, 异常信息：%v\n", err.Error())
 		}
 	}
-	fmt.Printf(str)
+	log.Infof(str)
 	return nil
 }
 
@@ -248,100 +248,101 @@ type DexCexObserverInspection struct{}
 
 func (t DexCexObserverInspection) Exec(arg interface{}) error {
 	str := time.Now().Format(timeFormat) + " [INFO] JobCore DexCexObserverInspection exec success \r\n"
-	fmt.Println("开始执行dex-cex 检查任务")
+	log.Infof("开始执行dex-cex 检查任务")
 	service := daos.BusDexCexTriangularObserverDAO{
 		Db: sdk.Runtime.GetDbByKey("*"),
 	}
 
 	observerInfos, err := client.ListArbitragerClient()
-	fmt.Printf("observerInfos:%+v\n", observerInfos)
+	log.Infof("observerInfos:%+v\n", observerInfos)
 
 	observers := make([]models.BusDexCexTriangularObserver, 0)
 	err = service.GetObserverList(&observers)
 	if err != nil {
-		fmt.Printf(err.Error())
+		log.Infof(err.Error())
 		return err
 	}
 
 	for _, observer := range observers {
-		fmt.Printf("observer:%+v\n", observer)
+		log.Infof("observer:%+v\n", observer)
 		if observer.Status == "2" {
 			//已停止的直接跳过
-			fmt.Printf("observer: %s\n status is stopped, skip \r\n", observer.InstanceId)
+			log.Infof("observer: %s\n status is stopped, skip \r\n", observer.InstanceId)
 			continue
 		}
 
 		if containsObserver(observerInfos, observer.InstanceId) {
 			// 服务端已经存在的，直接跳过
-			fmt.Printf("observer: %s\n is running, skip \r\n", observer.InstanceId)
+			log.Infof("observer: %s\n is running, skip \r\n", observer.InstanceId)
 			continue
 		}
 
 		slippageBpsUint, err := strconv.ParseUint(observer.SlippageBps, 10, 32)
 		if err != nil {
-			log.Errorf("slippageBps: %v\n", slippageBpsUint)
+			log.Infof("slippageBps: %v\n", slippageBpsUint)
 			continue
 		}
 
 		log.Infof("restart observer success")
-		//maxArraySize := new(uint32)
-		//*maxArraySize = 5 //默认5， clmm使用参数
-		//
-		//dexConfig := &pb.DexConfig{}
-		//if observer.DexType == "RAY_AMM" {
-		//	dexConfig.Config = &pb.DexConfig_RayAmm{
-		//		RayAmm: &pb.RayAmmConfig{
-		//			Pool:      observer.AmmPoolId,
-		//			TokenMint: observer.TokenMint,
-		//		},
-		//	}
-		//} else if observer.DexType == "RAY_CLMM" {
-		//	dexConfig.Config = &pb.DexConfig_RayClmm{
-		//		RayClmm: &pb.RayClmmConfig{
-		//			Pool:         observer.AmmPoolId,
-		//			TokenMint:    observer.TokenMint,
-		//			MaxArraySize: maxArraySize,
-		//		},
-		//	}
-		//}
-		//
-		//arbitrageConfig := &pb.ObserverParams{
-		//	SolAmount: observer.Volume,
-		//}
-		//
-		//amberConfig := &pb.AmberObserverConfig{}
-		//GenerateAmberConfig(&observer, amberConfig)
-		//
-		//newObserverId, err := client.StartNewArbitragerClient(amberConfig, dexConfig, arbitrageConfig)
-		//if err != nil {
-		//	continue
-		//}
-		//service.UpdateObserverWithNewId(newObserverId, observer.Id)
-		//fmt.Printf("restart observer success with params: dexConfig: %+v\n, arbitrageConfig: %+v\n", dexConfig, arbitrageConfig)
-		//if observer.IsTrading {
-		//	// 如果实例开启了交易，还需要启动交易功能
-		//	trader, err := observer.GetExchangeTypeForTrader()
-		//	if err != nil {
-		//		fmt.Printf("get exchange type for trader failed: %v\n", err)
-		//		continue
-		//	}
-		//	amberTraderConfig := &pb.AmberTraderConfig{
-		//		ExchangeType: &trader,
-		//	}
-		//	traderParams := &pb.TraderParams{}
-		//	err = client.EnableTrader(observer.InstanceId, amberTraderConfig, traderParams)
-		//	if err != nil {
-		//		fmt.Printf("restart instance: %d trader error: %v\n", observer.InstanceId, err)
-		//		//如果启动trader失败，则将该交易机器人设置为isTrading = false
-		//		service.UpdateObserverWithTradingStatus(observer.Id, false)
-		//	} else {
-		//		fmt.Printf("restart instance: %d trader success\n", observer.InstanceId)
-		//	}
-		//}
+		maxArraySize := new(uint32)
+		*maxArraySize = 5 //默认5， clmm使用参数
+
+		dexConfig := &pb.DexConfig{}
+		if observer.DexType == "RAY_AMM" {
+			dexConfig.Config = &pb.DexConfig_RayAmm{
+				RayAmm: &pb.RayAmmConfig{
+					Pool:      observer.AmmPoolId,
+					TokenMint: observer.TokenMint,
+				},
+			}
+		} else if observer.DexType == "RAY_CLMM" {
+			dexConfig.Config = &pb.DexConfig_RayClmm{
+				RayClmm: &pb.RayClmmConfig{
+					Pool:         observer.AmmPoolId,
+					TokenMint:    observer.TokenMint,
+					MaxArraySize: maxArraySize,
+				},
+			}
+		}
+
+		arbitrageConfig := &pb.ObserverParams{
+			SolAmount: observer.Volume,
+		}
+
+		amberConfig := &pb.AmberObserverConfig{}
+		GenerateAmberConfig(&observer, amberConfig)
+
+		newObserverId, err := client.StartNewArbitragerClient(amberConfig, dexConfig, arbitrageConfig)
+		if err != nil {
+			log.Errorf("create new arbitrager error:%s \r\n", err.Error())
+			continue
+		}
+		service.UpdateObserverWithNewId(newObserverId, observer.Id)
+		log.Infof("restart observer success with params: dexConfig: %+v\n, arbitrageConfig: %+v\n", dexConfig, arbitrageConfig)
+		if observer.IsTrading {
+			// 如果实例开启了交易，还需要启动交易功能
+			trader, err := observer.GetExchangeTypeForTrader()
+			if err != nil {
+				log.Infof("get exchange type for trader failed: %v\n", err)
+				continue
+			}
+			amberTraderConfig := &pb.AmberTraderConfig{
+				ExchangeType: &trader,
+			}
+			traderParams := &pb.TraderParams{}
+			err = client.EnableTrader(observer.InstanceId, amberTraderConfig, traderParams)
+			if err != nil {
+				log.Infof("restart instance: %d trader error: %v\n", observer.InstanceId, err)
+				//如果启动trader失败，则将该交易机器人设置为isTrading = false
+				service.UpdateObserverWithTradingStatus(observer.Id, false)
+			} else {
+				log.Infof("restart instance: %d trader success\n", observer.InstanceId)
+			}
+		}
 
 	}
 
-	fmt.Printf(str)
+	log.Infof(str)
 	return nil
 }
 
