@@ -63,7 +63,7 @@ func (e *BusDexCexPriceSpreadData) GetDexCexHistoryChart(c *dto.BusDexCexPriceSp
 	priceDataList := make([]models.BusDexCexPriceSpreadData, 0)
 
 	err = e.Orm.Model(&data).
-		Where("observer_id = ? and  ? < snapshot_time and snapshot_time < ?", c.ObserverId, oneHourAgo, currentTime).
+		Where("observer_id = ? and  ? < snapshot_time and snapshot_time < ?", c.Id, oneHourAgo, currentTime).
 		Order("snapshot_time asc").
 		Find(&priceDataList).Limit(pointCount).Error
 
@@ -251,7 +251,7 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 	}
 
 	for _, observer := range observerList {
-		observerId := observer.InstanceId
+		observerId := strconv.Itoa(observer.Id)
 		state, err := client.GetObserverState(observerId)
 		if err != nil {
 			e.Log.Errorf("grpc获取最新价差数据失败， error:%s \r\n", err)
