@@ -80,7 +80,7 @@ func StopArbitragerClient(instanceId string) (err error) {
 	return nil
 }
 
-func ListArbitragerClient() (clientList []*observer_service.Info, err error) {
+func ListArbitragerClient() (clientList []*observer_service.BasicInfo, err error) {
 	// 获取 gRPC 客户端连接
 	clientConn, err := pool.GetGrpcClient("solana-observer")
 	if err != nil {
