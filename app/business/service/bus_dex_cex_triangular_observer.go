@@ -49,6 +49,7 @@ func (e *BusDexCexTriangularObserver) GetPage(c *dto.BusDexCexTriangularObserver
 
 	for i := range *list {
 		observerId := (*list)[i].InstanceId // 使用 (*list)[i] 访问原始元素
+		id := (*list)[i].Id
 		state, err := client.GetObserverState(observerId)
 		if err != nil {
 			e.Log.Errorf("grpc实时获取观察状态失败， error:%s \r\n", err)
@@ -66,7 +67,7 @@ func (e *BusDexCexTriangularObserver) GetPage(c *dto.BusDexCexTriangularObserver
 		if cexSellPrice-dexBuyPrice > 0 {
 			//获取最新的价差记录统计信息，设置价差持续时间
 			dexBuyData := models.BusDexCexPriceSpreadStatistics{}
-			err = e.Orm.Model(&dexBuyData).Where("observer_id = ? and spread_type = ? and end_time is null", observerId, 1).Order("created_at desc").First(&dexBuyData).Limit(1).Error
+			err = e.Orm.Model(&dexBuyData).Where("observer_id = ? and spread_type = ? and end_time is null", id, 1).Order("created_at desc").First(&dexBuyData).Limit(1).Error
 			if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
 				(*list)[i].DexBuyDiffDuration = "0"
 			}
@@ -78,7 +79,7 @@ func (e *BusDexCexTriangularObserver) GetPage(c *dto.BusDexCexTriangularObserver
 		}
 		if dexSellPrice-cexBuyPrice > 0 {
 			dexSellData := models.BusDexCexPriceSpreadStatistics{}
-			err = e.Orm.Model(&dexSellData).Where("observer_id = ? and spread_type = ? and end_time is null", observerId, 2).Order("created_at desc").First(&dexSellData).Limit(1).Error
+			err = e.Orm.Model(&dexSellData).Where("observer_id = ? and spread_type = ? and end_time is null", id, 2).Order("created_at desc").First(&dexSellData).Limit(1).Error
 			if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
 				(*list)[i].DexBuyDiffDuration = "0"
 			}
@@ -171,6 +172,7 @@ func (e *BusDexCexTriangularObserver) Get(d *dto.BusDexCexTriangularObserverGetR
 
 	// 获取最新价差数据
 	observerId := model.InstanceId
+	id := model.Id
 	state, err := client.GetObserverState(observerId)
 	if err != nil {
 		e.Log.Errorf("grpc实时获取观察状态失败， error:%s \r\n", err)
@@ -193,7 +195,7 @@ func (e *BusDexCexTriangularObserver) Get(d *dto.BusDexCexTriangularObserverGetR
 	if cexSellPrice-dexBuyPrice > 0 {
 		//获取最新的价差记录统计信息，设置价差持续时间
 		dexBuyData := models.BusDexCexPriceSpreadStatistics{}
-		err = e.Orm.Model(&dexBuyData).Where("observer_id = ? and spread_type = ? and end_time is null", observerId, 1).Order("created_at desc").First(&dexBuyData).Limit(1).Error
+		err = e.Orm.Model(&dexBuyData).Where("observer_id = ? and spread_type = ? and end_time is null", id, 1).Order("created_at desc").First(&dexBuyData).Limit(1).Error
 		if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
 			model.DexBuyDiffDuration = "0"
 		}
@@ -205,7 +207,7 @@ func (e *BusDexCexTriangularObserver) Get(d *dto.BusDexCexTriangularObserverGetR
 	}
 	if dexSellPrice-cexBuyPrice > 0 {
 		dexSellData := models.BusDexCexPriceSpreadStatistics{}
-		err = e.Orm.Model(&dexSellData).Where("observer_id = ? and spread_type = ? and end_time is null", observerId, 2).Order("created_at desc").First(&dexSellData).Limit(1).Error
+		err = e.Orm.Model(&dexSellData).Where("observer_id = ? and spread_type = ? and end_time is null", id, 2).Order("created_at desc").First(&dexSellData).Limit(1).Error
 		if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
 			model.DexBuyDiffDuration = "0"
 		}
