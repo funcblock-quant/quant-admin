@@ -240,7 +240,7 @@ func (s *BusDexCexTriangularObserverGetReq) GetId() interface{} {
 // BusDexCexTriangularObserverDeleteReq 功能删除请求参数
 type BusDexCexTriangularObserverDeleteReq struct {
 	Ids        int    `json:"ids"`
-	ObserverId string `json:"observerId"`
+	ObserverId string `json:"instanceId"`
 }
 
 func (s *BusDexCexTriangularObserverDeleteReq) GetId() interface{} {
