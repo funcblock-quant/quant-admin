@@ -89,8 +89,12 @@ func (e *BusDexCexTriangularObserver) GetPage(c *dto.BusDexCexTriangularObserver
 			}
 			(*list)[i].DexSellDiffDuration = dexSellData.Duration
 		}
-		(*list)[i].ProfitOfBuyOnDex = strconv.FormatFloat(*buyOnDex.ProfitQuoteAmount, 'f', 6, 64)
-		(*list)[i].ProfitOfSellOnDex = strconv.FormatFloat(*sellOnDex.ProfitQuoteAmount, 'f', 6, 64)
+
+		buyOnDexProfit := *buyOnDex.CexTargetSymbolQuoteAmount - *buyOnDex.CexSolSymbolQuoteAmount
+		sellOnDexProfit := *sellOnDex.CexSolSymbolQuoteAmount - *sellOnDex.CexTargetSymbolQuoteAmount
+
+		(*list)[i].ProfitOfBuyOnDex = strconv.FormatFloat(buyOnDexProfit, 'f', 6, 64)
+		(*list)[i].ProfitOfSellOnDex = strconv.FormatFloat(sellOnDexProfit, 'f', 6, 64)
 		(*list)[i].CexSellPrice = strconv.FormatFloat(cexSellPrice, 'f', 6, 64)
 		(*list)[i].DexBuyPrice = strconv.FormatFloat(dexBuyPrice, 'f', 6, 64)
 		(*list)[i].DexBuyDiffPrice = strconv.FormatFloat(cexSellPrice-dexBuyPrice, 'f', 6, 64)
@@ -187,8 +191,11 @@ func (e *BusDexCexTriangularObserver) Get(d *dto.BusDexCexTriangularObserverGetR
 	cexBuyPrice, dexSellPrice := e.calculate_dex_cex_price(sellOnDex)
 	e.Log.Infof("[sell on dex price details]: cexPrice: %+v , dexPrice: %+v \r\n", cexBuyPrice, dexSellPrice)
 
-	model.ProfitOfBuyOnDex = strconv.FormatFloat(*buyOnDex.ProfitQuoteAmount, 'f', 6, 64)
-	model.ProfitOfSellOnDex = strconv.FormatFloat(*sellOnDex.ProfitQuoteAmount, 'f', 6, 64)
+	buyOnDexProfit := *buyOnDex.CexTargetSymbolQuoteAmount - *buyOnDex.CexSolSymbolQuoteAmount
+	sellOnDexProfit := *sellOnDex.CexSolSymbolQuoteAmount - *sellOnDex.CexTargetSymbolQuoteAmount
+
+	model.ProfitOfBuyOnDex = strconv.FormatFloat(buyOnDexProfit, 'f', 6, 64)
+	model.ProfitOfSellOnDex = strconv.FormatFloat(sellOnDexProfit, 'f', 6, 64)
 	model.CexSellPrice = strconv.FormatFloat(cexSellPrice, 'f', 6, 64)
 	model.DexBuyPrice = strconv.FormatFloat(dexBuyPrice, 'f', 6, 64)
 	model.DexBuyDiffPrice = strconv.FormatFloat(cexSellPrice-dexBuyPrice, 'f', 6, 64)
