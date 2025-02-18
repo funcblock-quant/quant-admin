@@ -69,24 +69,26 @@ func (e *BusDexCexTriangularObserver) GetPage(c *dto.BusDexCexTriangularObserver
 			//获取最新的价差记录统计信息，设置价差持续时间
 			dexBuyData := models.BusDexCexPriceSpreadStatistics{}
 			err = e.Orm.Model(&dexBuyData).Where("observer_id = ? and spread_type = ? and end_time is null", id, 1).Order("created_at desc").First(&dexBuyData).Limit(1).Error
-			if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
-				(*list)[i].DexBuyDiffDuration = "0"
-			}
 			if err != nil {
-				e.Log.Errorf("db error:%s", err)
-				return err
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					(*list)[i].DexBuyDiffDuration = "0"
+				} else {
+					e.Log.Errorf("db error:%s", err)
+					return err
+				}
 			}
 			(*list)[i].DexBuyDiffDuration = dexBuyData.Duration
 		}
 		if dexSellPrice-cexBuyPrice > 0 {
 			dexSellData := models.BusDexCexPriceSpreadStatistics{}
 			err = e.Orm.Model(&dexSellData).Where("observer_id = ? and spread_type = ? and end_time is null", id, 2).Order("created_at desc").First(&dexSellData).Limit(1).Error
-			if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
-				(*list)[i].DexBuyDiffDuration = "0"
-			}
 			if err != nil {
-				e.Log.Errorf("db error:%s", err)
-				return err
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					(*list)[i].DexBuyDiffDuration = "0"
+				} else {
+					e.Log.Errorf("db error:%s", err)
+					return err
+				}
 			}
 			(*list)[i].DexSellDiffDuration = dexSellData.Duration
 		}
