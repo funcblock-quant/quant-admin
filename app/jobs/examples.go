@@ -285,7 +285,7 @@ func (t DexCexObserverInspection) Exec(arg interface{}) error {
 
 		log.Infof("restart observer success")
 		maxArraySize := new(uint32)
-		*maxArraySize = 5 //默认5， clmm使用参数
+		*maxArraySize = uint32(observer.MaxArraySize) //默认5， clmm使用参数
 
 		dexConfig := &pb.DexConfig{}
 		if observer.DexType == "RAY_AMM" {

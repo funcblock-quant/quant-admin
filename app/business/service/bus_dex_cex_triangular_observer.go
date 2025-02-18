@@ -4,6 +4,7 @@ import (
 	"errors"
 	log "github.com/go-admin-team/go-admin-core/logger"
 	"github.com/go-admin-team/go-admin-core/sdk/config"
+	"github.com/go-admin-team/go-admin-core/sdk/pkg/utils"
 	"github.com/go-admin-team/go-admin-core/sdk/service"
 	"gorm.io/gorm"
 	"quanta-admin/app/business/models"
@@ -268,6 +269,7 @@ func (e *BusDexCexTriangularObserver) Insert(c *dto.BusDexCexTriangularObserverI
 // BatchInsert 创建BusDexCexTriangularObserver对象
 func (e *BusDexCexTriangularObserver) BatchInsert(c *dto.BusDexCexTriangularObserverBatchInsertReq) error {
 	var data models.BusDexCexTriangularObserver
+	var err error
 	baseTokens := c.TargetToken
 	if len(baseTokens) == 0 {
 		return errors.New("empty baseTokens")
@@ -283,10 +285,16 @@ func (e *BusDexCexTriangularObserver) BatchInsert(c *dto.BusDexCexTriangularObse
 		c.GenerateAmmConfig(&ammConfig)
 		c.GenerateAmberConfig(&amberConfig)
 		c.GenerateArbitrageConfig(&arbitrageConfig)
-		instanceId, err := client.StartNewArbitragerClient(&amberConfig, &ammConfig, &arbitrageConfig)
-		if err != nil {
-			e.Log.Errorf("Service BatchInsert error:%s \r\n", err)
-			continue
+		var instanceId string
+		if config.ApplicationConfig.Mode == "dev" {
+			// dev环境不调用grpc
+			instanceId = utils.GetUUID()
+		} else {
+			instanceId, err = client.StartNewArbitragerClient(&amberConfig, &ammConfig, &arbitrageConfig)
+			if err != nil {
+				e.Log.Errorf("Service BatchInsert error:%s \r\n", err)
+				continue
+			}
 		}
 		c.Generate(&data, baseToken, instanceId)
 		err = e.Orm.Create(&data).Error

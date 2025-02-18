@@ -12,21 +12,21 @@ import (
 
 type BusDexCexTriangularObserverGetPageReq struct {
 	dto.Pagination `search:"-"`
-	Symbol         string `form:"symbol"  search:"type:exact;column:symbol;table:bus_dex_cex_triangular_observer"`
+	Symbol         string `form:"symbol"  search:"type:exact;column:symbol;table:bus_dex_cex_triangular_instance"`
 	BusDexCexTriangularObserverOrder
 }
 
 type BusDexCexTriangularObserverOrder struct {
-	Id                 string `form:"idOrder"  search:"type:order;column:id;table:bus_dex_cex_triangular_observer"`
-	StrategyInstanceId string `form:"strategyInstanceIdOrder"  search:"type:order;column:strategy_instance_id;table:bus_dex_cex_triangular_observer"`
-	ObserverId         string `form:"observerIdOrder"  search:"type:order;column:observer_id;table:bus_dex_cex_triangular_observer"`
-	Symbol             string `form:"symbolOrder"  search:"type:order;column:symbol;table:bus_dex_cex_triangular_observer"`
-	Status             string `form:"statusOrder"  search:"type:order;column:status;table:bus_dex_cex_triangular_observer"`
-	CreateBy           string `form:"createByOrder"  search:"type:order;column:create_by;table:bus_dex_cex_triangular_observer"`
-	UpdateBy           string `form:"updateByOrder"  search:"type:order;column:update_by;table:bus_dex_cex_triangular_observer"`
-	CreatedAt          string `form:"createdAtOrder"  search:"type:order;column:created_at;table:bus_dex_cex_triangular_observer"`
-	UpdatedAt          string `form:"updatedAtOrder"  search:"type:order;column:updated_at;table:bus_dex_cex_triangular_observer"`
-	DeletedAt          string `form:"deletedAtOrder"  search:"type:order;column:deleted_at;table:bus_dex_cex_triangular_observer"`
+	Id                 string `form:"idOrder"  search:"type:order;column:id;table:bus_dex_cex_triangular_instance"`
+	StrategyInstanceId string `form:"strategyInstanceIdOrder"  search:"type:order;column:strategy_instance_id;table:bus_dex_cex_triangular_instance"`
+	ObserverId         string `form:"observerIdOrder"  search:"type:order;column:observer_id;table:bus_dex_cex_triangular_instance"`
+	Symbol             string `form:"symbolOrder"  search:"type:order;column:symbol;table:bus_dex_cex_triangular_instance"`
+	Status             string `form:"statusOrder"  search:"type:order;column:status;table:bus_dex_cex_triangular_instance"`
+	CreateBy           string `form:"createByOrder"  search:"type:order;column:create_by;table:bus_dex_cex_triangular_instance"`
+	UpdateBy           string `form:"updateByOrder"  search:"type:order;column:update_by;table:bus_dex_cex_triangular_instance"`
+	CreatedAt          string `form:"createdAtOrder"  search:"type:order;column:created_at;table:bus_dex_cex_triangular_instance"`
+	UpdatedAt          string `form:"updatedAtOrder"  search:"type:order;column:updated_at;table:bus_dex_cex_triangular_instance"`
+	DeletedAt          string `form:"deletedAtOrder"  search:"type:order;column:deleted_at;table:bus_dex_cex_triangular_instance""`
 }
 
 func (m *BusDexCexTriangularObserverGetPageReq) GetNeedSearch() interface{} {
@@ -109,6 +109,7 @@ type BusDexCexTriangularObserverBatchInsertReq struct {
 	TakerFee           *float64 `json:"takerFee"`
 	AmmPoolId          *string  `json:"ammPool"`
 	TokenMint          *string  `json:"tokenMint"`
+	MaxArraySize       int      `json:"maxArraySize"`
 	//SlippageBps        *string  `json:"slippage"`
 	Depth  string `json:"depth"`
 	Status string `json:"status" comment:"状态"`
@@ -124,7 +125,7 @@ func (s *BusDexCexTriangularObserverBatchInsertReq) Generate(model *models.BusDe
 	model.SymbolConnector = "/" //之前沟通默认amber全部是/连接的
 	model.ExchangeType = s.ExchangeType
 	model.DexType = s.DexType
-	model.MaxArraySize = 5
+	model.MaxArraySize = s.MaxArraySize
 	model.Volume = s.Volume
 	model.TakerFee = s.TakerFee
 	model.TokenMint = s.TokenMint
@@ -142,7 +143,7 @@ func (s *BusDexCexTriangularObserverBatchInsertReq) GenerateAmmConfig(ammConfig 
 	//}
 	//log.Infof("slippageBps: %v\n", slippageBpsUint)
 	maxArraySize := new(uint32)
-	*maxArraySize = 5 //默认5， clmm使用参数
+	*maxArraySize = uint32(s.MaxArraySize) //默认5， clmm使用参数
 	if s.DexType == "RAY_AMM" {
 		ammConfig.Config = &pb.DexConfig_RayAmm{
 			RayAmm: &pb.RayAmmConfig{
