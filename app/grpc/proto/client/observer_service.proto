@@ -120,7 +120,6 @@ message ArbitrageState {
   required double cex_sol_symbol_quote_amount = 4;
   required double dex_target_amount = 5;
   required double dex_sol_amount = 6;
-  required double profit_quote_amount = 7;
 }
 
 enum DexType {
