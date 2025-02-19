@@ -142,6 +142,8 @@ func (e *BusDexCexPriceSpreadData) GetDexCexHistoryChart(c *dto.BusDexCexPriceSp
 	chart.DexSellPriceChartPoints = dexSellPriceChartPoints
 	chart.DexBuyPriceSpreadChartPoints = dexBuyPriceSpreadChartPoints
 	chart.DexSellPriceSpreadChartPoints = dexSellPriceSpreadChartPoints
+	chart.DexBuyProfitChartPoints = dexBuyProfitChartPoints
+	chart.DexSellProfitChartPoints = dexSellProfitChartPoints
 
 	return nil
 }

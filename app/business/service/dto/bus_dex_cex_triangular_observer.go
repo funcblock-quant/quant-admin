@@ -67,9 +67,11 @@ type BusDexCexTriangularSpreadHistory struct {
 	CexSellPriceChartPoints       []PriceChartPoint `json:"cexSellPriceChartPoints" gorm:"-"`
 	DexBuyPriceChartPoints        []PriceChartPoint `json:"dexBuyPriceChartPoints" gorm:"-"`
 	DexBuyPriceSpreadChartPoints  []PriceChartPoint `json:"dexBuyPriceSpreadChartPoints" gorm:"-"`
+	DexBuyProfitChartPoints       []PriceChartPoint `json:"dexBuyProfitChartPoints" gorm:"-"`
 	DexSellPriceChartPoints       []PriceChartPoint `json:"dexSellPriceChartPoints" gorm:"-"`
 	CexBuyPriceChartPoints        []PriceChartPoint `json:"cexBuyPriceChartPoints" gorm:"-"`
 	DexSellPriceSpreadChartPoints []PriceChartPoint `json:"dexSellPriceSpreadChartPoints" gorm:"-"`
+	DexSellProfitChartPoints      []PriceChartPoint `json:"dexSellProfitChartPoints" gorm:"-"`
 }
 
 type PriceChartPoint struct {
