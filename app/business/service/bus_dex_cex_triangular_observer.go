@@ -96,14 +96,22 @@ func (e *BusDexCexTriangularObserver) GetPage(c *dto.BusDexCexTriangularObserver
 		buyOnDexProfit := *buyOnDex.CexTargetSymbolQuoteAmount - *buyOnDex.CexSolSymbolQuoteAmount
 		sellOnDexProfit := *sellOnDex.CexSolSymbolQuoteAmount - *sellOnDex.CexTargetSymbolQuoteAmount
 
-		(*list)[i].ProfitOfBuyOnDex = strconv.FormatFloat(buyOnDexProfit, 'f', 6, 64)
-		(*list)[i].ProfitOfSellOnDex = strconv.FormatFloat(sellOnDexProfit, 'f', 6, 64)
-		(*list)[i].CexSellPrice = strconv.FormatFloat(cexSellPrice, 'f', 6, 64)
-		(*list)[i].DexBuyPrice = strconv.FormatFloat(dexBuyPrice, 'f', 6, 64)
-		(*list)[i].DexBuyDiffPrice = strconv.FormatFloat(cexSellPrice-dexBuyPrice, 'f', 6, 64)
-		(*list)[i].CexBuyPrice = strconv.FormatFloat(cexBuyPrice, 'f', 6, 64)
-		(*list)[i].DexSellPrice = strconv.FormatFloat(dexSellPrice, 'f', 6, 64)
-		(*list)[i].DexSellDiffPrice = strconv.FormatFloat(dexSellPrice-cexBuyPrice, 'f', 6, 64)
+		//(*list)[i].ProfitOfBuyOnDex = strconv.FormatFloat(buyOnDexProfit, 'f', 6, 64)
+		//(*list)[i].ProfitOfSellOnDex = strconv.FormatFloat(sellOnDexProfit, 'f', 6, 64)
+		//(*list)[i].CexSellPrice = strconv.FormatFloat(cexSellPrice, 'f', 6, 64)
+		//(*list)[i].DexBuyPrice = strconv.FormatFloat(dexBuyPrice, 'f', 6, 64)
+		//(*list)[i].DexBuyDiffPrice = strconv.FormatFloat(cexSellPrice-dexBuyPrice, 'f', 6, 64)
+		//(*list)[i].CexBuyPrice = strconv.FormatFloat(cexBuyPrice, 'f', 6, 64)
+		//(*list)[i].DexSellPrice = strconv.FormatFloat(dexSellPrice, 'f', 6, 64)
+		//(*list)[i].DexSellDiffPrice = strconv.FormatFloat(dexSellPrice-cexBuyPrice, 'f', 6, 64)
+		(*list)[i].ProfitOfBuyOnDex = buyOnDexProfit
+		(*list)[i].ProfitOfSellOnDex = sellOnDexProfit
+		(*list)[i].CexSellPrice = cexSellPrice
+		(*list)[i].DexBuyPrice = dexBuyPrice
+		(*list)[i].DexBuyDiffPrice = cexSellPrice - dexBuyPrice
+		(*list)[i].CexBuyPrice = cexBuyPrice
+		(*list)[i].DexSellPrice = dexSellPrice
+		(*list)[i].DexSellDiffPrice = dexSellPrice - cexBuyPrice
 	}
 
 	return nil
@@ -197,11 +205,11 @@ func (e *BusDexCexTriangularObserver) Get(d *dto.BusDexCexTriangularObserverGetR
 	buyOnDexProfit := *buyOnDex.CexTargetSymbolQuoteAmount - *buyOnDex.CexSolSymbolQuoteAmount
 	sellOnDexProfit := *sellOnDex.CexSolSymbolQuoteAmount - *sellOnDex.CexTargetSymbolQuoteAmount
 
-	model.ProfitOfBuyOnDex = strconv.FormatFloat(buyOnDexProfit, 'f', 6, 64)
-	model.ProfitOfSellOnDex = strconv.FormatFloat(sellOnDexProfit, 'f', 6, 64)
-	model.CexSellPrice = strconv.FormatFloat(cexSellPrice, 'f', 6, 64)
-	model.DexBuyPrice = strconv.FormatFloat(dexBuyPrice, 'f', 6, 64)
-	model.DexBuyDiffPrice = strconv.FormatFloat(cexSellPrice-dexBuyPrice, 'f', 6, 64)
+	model.ProfitOfBuyOnDex = buyOnDexProfit
+	model.ProfitOfSellOnDex = sellOnDexProfit
+	model.CexSellPrice = cexSellPrice
+	model.DexBuyPrice = dexBuyPrice
+	model.DexBuyDiffPrice = cexSellPrice - dexBuyPrice
 	if cexSellPrice-dexBuyPrice > 0 {
 		//获取最新的价差记录统计信息，设置价差持续时间
 		dexBuyData := models.BusDexCexPriceSpreadStatistics{}
@@ -227,9 +235,9 @@ func (e *BusDexCexTriangularObserver) Get(d *dto.BusDexCexTriangularObserverGetR
 		}
 		model.DexSellDiffDuration = dexSellData.Duration
 	}
-	model.CexBuyPrice = strconv.FormatFloat(cexBuyPrice, 'f', 6, 64)
-	model.DexSellPrice = strconv.FormatFloat(dexSellPrice, 'f', 6, 64)
-	model.DexSellDiffPrice = strconv.FormatFloat(dexSellPrice-cexBuyPrice, 'f', 6, 64)
+	model.CexBuyPrice = cexBuyPrice
+	model.DexSellPrice = dexSellPrice
+	model.DexSellDiffPrice = dexSellPrice - cexBuyPrice
 
 	return nil
 }
