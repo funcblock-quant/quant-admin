@@ -15,8 +15,8 @@ type BusDexCexPriceSpreadStatistics struct {
 	StartTime          *time.Time `json:"startTime" gorm:"type:timestamp;default:NULL;comment:正向价差开始时间"`
 	EndTime            *time.Time `json:"endTime" gorm:"type:timestamp;default:NULL;comment:正向价差结束时间"`
 	Duration           string     `json:"duration" gorm:"type:int;comment:价差持续时间"`
-	MaxPriceDifference string     `json:"maxPriceDifference" gorm:"type:float;comment:最大价差"`
-	MinPriceDifference string     `json:"minPriceDifference" gorm:"type:float;comment:最小价差"`
+	MaxPriceDifference float64    `json:"maxPriceDifference" gorm:"type:float;comment:最大价差"`
+	MinPriceDifference float64    `json:"minPriceDifference" gorm:"type:float;comment:最小价差"`
 	CreatedAt          time.Time  `json:"createdAt" gorm:"comment:创建时间"`
 }
 

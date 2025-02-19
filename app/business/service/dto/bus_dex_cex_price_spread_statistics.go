@@ -37,8 +37,8 @@ type BusDexCexPriceSpreadStatisticsInsertReq struct {
 	StartTime          time.Time `json:"startTime" comment:"正向价差开始时间"`
 	EndTime            time.Time `json:"endTime" comment:"正向价差结束时间"`
 	Duration           string    `json:"duration" comment:"价差持续时间"`
-	MaxPriceDifference string    `json:"maxPriceDifference" comment:"最大价差"`
-	MinPriceDifference string    `json:"minPriceDifference" comment:"最小价差"`
+	MaxPriceDifference float64   `json:"maxPriceDifference" comment:"最大价差"`
+	MinPriceDifference float64   `json:"minPriceDifference" comment:"最小价差"`
 	common.ControlBy
 }
 
@@ -68,8 +68,8 @@ type BusDexCexPriceSpreadStatisticsUpdateReq struct {
 	StartTime          time.Time `json:"startTime" comment:"正向价差开始时间"`
 	EndTime            time.Time `json:"endTime" comment:"正向价差结束时间"`
 	Duration           string    `json:"duration" comment:"价差持续时间"`
-	MaxPriceDifference string    `json:"maxPriceDifference" comment:"最大价差"`
-	MinPriceDifference string    `json:"minPriceDifference" comment:"最小价差"`
+	MaxPriceDifference float64   `json:"maxPriceDifference" comment:"最大价差"`
+	MinPriceDifference float64   `json:"minPriceDifference" comment:"最小价差"`
 	common.ControlBy
 }
 
