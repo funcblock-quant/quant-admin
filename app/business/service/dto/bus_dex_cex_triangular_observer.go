@@ -19,7 +19,7 @@ type BusDexCexTriangularObserverGetPageReq struct {
 type BusDexCexTriangularObserverOrder struct {
 	Id                 string `form:"idOrder"  search:"type:order;column:id;table:bus_dex_cex_triangular_instance"`
 	StrategyInstanceId string `form:"strategyInstanceIdOrder"  search:"type:order;column:strategy_instance_id;table:bus_dex_cex_triangular_instance"`
-	ObserverId         string `form:"observerIdOrder"  search:"type:order;column:observer_id;table:bus_dex_cex_triangular_instance"`
+	ObserverId         string `form:"observerIdOrder"  search:"type:order;column:instance_id;table:bus_dex_cex_triangular_instance"`
 	Symbol             string `form:"symbolOrder"  search:"type:order;column:symbol;table:bus_dex_cex_triangular_instance"`
 	Status             string `form:"statusOrder"  search:"type:order;column:status;table:bus_dex_cex_triangular_instance"`
 	CreateBy           string `form:"createByOrder"  search:"type:order;column:create_by;table:bus_dex_cex_triangular_instance"`
@@ -40,21 +40,21 @@ type BusDexCexTriangularObserverGetPageResp struct {
 }
 
 type ProfitOfBuyOnDexResp struct {
-	CexSellPrice       string `json:"cexSellPrice" gorm:"-"`
-	DexBuyPrice        string `json:"dexBuyPrice" gorm:"-"`
-	DexBuyDiffPrice    string `json:"dexBuyDiffPrice" gorm:"-"`
-	DexBuyDiffPercent  string `json:"dexBuyDiffPercent" gorm:"-"`
-	DexBuyDiffDuration string `json:"dexBuyDiffDuration" gorm:"-"`
-	ProfitOfBuyOnDex   string `json:"profitOfBuyOnDex" gorm:"-"`
+	CexSellPrice       float64 `json:"cexSellPrice" gorm:"-"`
+	DexBuyPrice        float64 `json:"dexBuyPrice" gorm:"-"`
+	DexBuyDiffPrice    float64 `json:"dexBuyDiffPrice" gorm:"-"`
+	DexBuyDiffPercent  string  `json:"dexBuyDiffPercent" gorm:"-"`
+	DexBuyDiffDuration string  `json:"dexBuyDiffDuration" gorm:"-"`
+	ProfitOfBuyOnDex   float64 `json:"profitOfBuyOnDex" gorm:"-"`
 }
 
 type ProfitOfSellOnDexResp struct {
-	CexBuyPrice         string `json:"cexBuyPrice" gorm:"-"`
-	DexSellPrice        string `json:"dexSellPrice" gorm:"-"`
-	DexSellDiffPrice    string `json:"dexSellDiffPrice" gorm:"-"`
-	DexSellDiffPercent  string `json:"dexSellDiffPercent" gorm:"-"`
-	DexSellDiffDuration string `json:"dexSellDiffDuration" gorm:"-"`
-	ProfitOfSellOnDex   string `json:"profitOfSellOnDex" gorm:"-"`
+	CexBuyPrice         float64 `json:"cexBuyPrice" gorm:"-"`
+	DexSellPrice        float64 `json:"dexSellPrice" gorm:"-"`
+	DexSellDiffPrice    float64 `json:"dexSellDiffPrice" gorm:"-"`
+	DexSellDiffPercent  string  `json:"dexSellDiffPercent" gorm:"-"`
+	DexSellDiffDuration string  `json:"dexSellDiffDuration" gorm:"-"`
+	ProfitOfSellOnDex   float64 `json:"profitOfSellOnDex" gorm:"-"`
 }
 
 type BusDexCexTriangularObserverDetailResp struct {
