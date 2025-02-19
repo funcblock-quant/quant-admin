@@ -40,10 +40,10 @@ type BusDexCexPriceSpreadDataInsertReq struct {
 	Id           int       `json:"-" comment:""` //
 	ObserverId   string    `json:"observerId" comment:"观察器id"`
 	Symbol       string    `json:"symbol" comment:"观察币种"`
-	DexBuyPrice  string    `json:"dexBuyPrice" comment:"dex买入价格"`
-	DexSellPrice string    `json:"dexSellPrice" comment:"dex卖出价格"`
-	CexBuyPrice  string    `json:"cexBuyPrice" comment:"cex买入价格"`
-	CexSellPrice string    `json:"cexSellPrice" comment:"cex卖出价格"`
+	DexBuyPrice  float64   `json:"dexBuyPrice" comment:"dex买入价格"`
+	DexSellPrice float64   `json:"dexSellPrice" comment:"dex卖出价格"`
+	CexBuyPrice  float64   `json:"cexBuyPrice" comment:"cex买入价格"`
+	CexSellPrice float64   `json:"cexSellPrice" comment:"cex卖出价格"`
 	SnapshotTime time.Time `json:"snapshotTime" comment:"快照时间"`
 	common.ControlBy
 }
@@ -69,10 +69,10 @@ type BusDexCexPriceSpreadDataUpdateReq struct {
 	Id           int       `uri:"id" comment:""` //
 	ObserverId   string    `json:"observerId" comment:"观察器id"`
 	Symbol       string    `json:"symbol" comment:"观察币种"`
-	DexBuyPrice  string    `json:"dexBuyPrice" comment:"dex买入价格"`
-	DexSellPrice string    `json:"dexSellPrice" comment:"dex卖出价格"`
-	CexBuyPrice  string    `json:"cexBuyPrice" comment:"cex买入价格"`
-	CexSellPrice string    `json:"cexSellPrice" comment:"cex卖出价格"`
+	DexBuyPrice  float64   `json:"dexBuyPrice" comment:"dex买入价格"`
+	DexSellPrice float64   `json:"dexSellPrice" comment:"dex卖出价格"`
+	CexBuyPrice  float64   `json:"cexBuyPrice" comment:"cex买入价格"`
+	CexSellPrice float64   `json:"cexSellPrice" comment:"cex卖出价格"`
 	SnapshotTime time.Time `json:"snapshotTime" comment:"快照时间"`
 	common.ControlBy
 }

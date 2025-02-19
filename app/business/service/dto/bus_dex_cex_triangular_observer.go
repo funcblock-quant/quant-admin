@@ -73,8 +73,8 @@ type BusDexCexTriangularSpreadHistory struct {
 }
 
 type PriceChartPoint struct {
-	XAxis int64  `json:"xAxis"` //横坐标，时间戳
-	YAxis string `json:"yAxis"` //纵坐标
+	XAxis int64   `json:"xAxis"` //横坐标，时间戳
+	YAxis float64 `json:"yAxis"` //纵坐标
 }
 
 type BusDexCexTriangularObserverInsertReq struct {

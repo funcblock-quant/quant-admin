@@ -72,18 +72,20 @@ func (e *BusDexCexPriceSpreadData) GetDexCexHistoryChart(c *dto.BusDexCexPriceSp
 		return err
 	}
 
-	var cexSellPriceChartPoints, dexBuyPriceChartPoints, dexBuyPriceSpreadChartPoints []dto.PriceChartPoint
-	var dexSellPriceChartPoints, cexBuyPriceChartPoints, dexSellPriceSpreadChartPoints []dto.PriceChartPoint
+	var cexSellPriceChartPoints, dexBuyPriceChartPoints, dexBuyPriceSpreadChartPoints, dexBuyProfitChartPoints []dto.PriceChartPoint
+	var dexSellPriceChartPoints, cexBuyPriceChartPoints, dexSellPriceSpreadChartPoints, dexSellProfitChartPoints []dto.PriceChartPoint
 	// 当前默认展示1小时数据，间隔为分钟，也就是60个数据点
 	e.Log.Infof("获取到历史记录 %d 条 \r\n", len(priceDataList))
 	for _, timeData := range timeList {
 		cexSellPriceChartPoint := dto.PriceChartPoint{}
 		dexBuyPriceChartPoint := dto.PriceChartPoint{}
 		dexBuyPriceSpreadChartPoint := dto.PriceChartPoint{}
+		dexBuyProfitChartPoint := dto.PriceChartPoint{}
 
 		dexSellPriceChartPoint := dto.PriceChartPoint{}
 		cexBuyPriceChartPoint := dto.PriceChartPoint{}
 		dexSellPriceSpreadChartPoint := dto.PriceChartPoint{}
+		dexSellProfitChartPoint := dto.PriceChartPoint{}
 
 		nearestData := findNearestDataWithinMinute(priceDataList, timeData)
 		//查询时间点附近的数据
@@ -91,17 +93,21 @@ func (e *BusDexCexPriceSpreadData) GetDexCexHistoryChart(c *dto.BusDexCexPriceSp
 			e.Log.Infof("未获取到历史价格记录，使用默认值 \r\n")
 			// 时间点附近无数据，则认为数据缺失，使用0值
 			cexSellPriceChartPoint.XAxis = timeData.Unix() // 秒级时间戳
-			cexSellPriceChartPoint.YAxis = "0"
+			cexSellPriceChartPoint.YAxis = 0
 			dexBuyPriceChartPoint.XAxis = timeData.Unix()
-			dexBuyPriceChartPoint.YAxis = "0"
+			dexBuyPriceChartPoint.YAxis = 0
 			dexBuyPriceSpreadChartPoint.XAxis = timeData.Unix()
-			dexBuyPriceSpreadChartPoint.YAxis = "0"
+			dexBuyPriceSpreadChartPoint.YAxis = 0
 			dexSellPriceChartPoint.XAxis = timeData.Unix()
-			dexSellPriceChartPoint.YAxis = "0"
+			dexSellPriceChartPoint.YAxis = 0
 			cexBuyPriceChartPoint.XAxis = timeData.Unix()
-			cexBuyPriceChartPoint.YAxis = "0"
+			cexBuyPriceChartPoint.YAxis = 0
 			dexSellPriceSpreadChartPoint.XAxis = timeData.Unix()
-			dexSellPriceSpreadChartPoint.YAxis = "0"
+			dexSellPriceSpreadChartPoint.YAxis = 0
+			dexBuyProfitChartPoint.XAxis = timeData.Unix()
+			dexBuyProfitChartPoint.YAxis = 0
+			dexSellProfitChartPoint.XAxis = timeData.Unix()
+			dexSellProfitChartPoint.YAxis = 0
 		} else {
 			cexSellPriceChartPoint.XAxis = timeData.Unix() // 秒级时间戳
 			cexSellPriceChartPoint.YAxis = nearestData.CexSellPrice
@@ -115,14 +121,20 @@ func (e *BusDexCexPriceSpreadData) GetDexCexHistoryChart(c *dto.BusDexCexPriceSp
 			cexBuyPriceChartPoint.YAxis = nearestData.CexBuyPrice
 			dexSellPriceSpreadChartPoint.XAxis = timeData.Unix()
 			dexSellPriceSpreadChartPoint.YAxis = nearestData.DexSellSpread
+			dexBuyProfitChartPoint.XAxis = timeData.Unix()
+			dexBuyProfitChartPoint.YAxis = nearestData.DexBuyProfit
+			dexSellProfitChartPoint.XAxis = timeData.Unix()
+			dexSellProfitChartPoint.YAxis = nearestData.DexSellProfit
 		}
 		cexSellPriceChartPoints = append(cexSellPriceChartPoints, cexSellPriceChartPoint)
 		dexBuyPriceChartPoints = append(dexBuyPriceChartPoints, dexBuyPriceChartPoint)
 		dexBuyPriceSpreadChartPoints = append(dexBuyPriceSpreadChartPoints, dexBuyPriceSpreadChartPoint)
+		dexBuyProfitChartPoints = append(dexBuyProfitChartPoints, dexBuyProfitChartPoint)
 
 		dexSellPriceChartPoints = append(dexSellPriceChartPoints, dexSellPriceChartPoint)
 		cexBuyPriceChartPoints = append(cexBuyPriceChartPoints, cexBuyPriceChartPoint)
 		dexSellPriceSpreadChartPoints = append(dexSellPriceSpreadChartPoints, dexSellPriceSpreadChartPoint)
+		dexSellProfitChartPoints = append(dexSellProfitChartPoints, dexSellProfitChartPoint)
 	}
 	chart.CexBuyPriceChartPoints = cexBuyPriceChartPoints
 	chart.CexSellPriceChartPoints = cexSellPriceChartPoints
@@ -265,16 +277,21 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 		sellOnDex := state.GetSellOnDex()
 		cexBuyPrice, dexSellPrice := e.calculate_dex_cex_price(sellOnDex)
 
+		buyOnDexProfit := *buyOnDex.CexTargetSymbolQuoteAmount - *buyOnDex.CexSolSymbolQuoteAmount
+		sellOnDexProfit := *sellOnDex.CexSolSymbolQuoteAmount - *sellOnDex.CexTargetSymbolQuoteAmount
+
 		spreadData := models.BusDexCexPriceSpreadData{
 			ObserverId:           id,
 			Symbol:               observer.Symbol,
-			DexBuyPrice:          strconv.FormatFloat(dexBuyPrice, 'f', 6, 64),
-			CexSellPrice:         strconv.FormatFloat(cexSellPrice, 'f', 6, 64),
-			DexSellPrice:         strconv.FormatFloat(dexSellPrice, 'f', 6, 64),
-			CexBuyPrice:          strconv.FormatFloat(cexBuyPrice, 'f', 6, 64),
-			DexBuySpread:         strconv.FormatFloat(cexSellPrice-dexBuyPrice, 'f', 6, 64),
+			DexBuyPrice:          dexBuyPrice,
+			CexSellPrice:         cexSellPrice,
+			DexSellPrice:         dexSellPrice,
+			CexBuyPrice:          cexBuyPrice,
+			DexBuySpread:         cexSellPrice - dexBuyPrice,
 			DexBuySpreadPercent:  strconv.FormatFloat(math.Abs((cexSellPrice-dexBuyPrice)/dexBuyPrice), 'f', 6, 64),
-			DexSellSpread:        strconv.FormatFloat(dexSellPrice-cexBuyPrice, 'f', 6, 64),
+			DexBuyProfit:         buyOnDexProfit,
+			DexSellSpread:        dexSellPrice - cexBuyPrice,
+			DexSellProfit:        sellOnDexProfit,
 			DexSellSpreadPercent: strconv.FormatFloat(math.Abs((dexSellPrice-cexBuyPrice)/cexBuyPrice), 'f', 6, 64),
 			SnapshotTime:         time.Now(),
 		}
@@ -312,14 +329,14 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 			if startTime != nil {
 				dexBuyData.Duration = strconv.FormatFloat(currentTime.Sub(*startTime).Seconds(), 'f', 0, 64)
 			}
-			maxPriceDifference, _ := strconv.ParseFloat(dexBuyData.MaxPriceDifference, 64)
-			minPriceDifference, _ := strconv.ParseFloat(dexBuyData.MinPriceDifference, 64)
-			dexBuySpreadf, _ := strconv.ParseFloat(spreadData.DexBuySpread, 64)
+			maxPriceDifference := dexBuyData.MaxPriceDifference
+			minPriceDifference := dexBuyData.MinPriceDifference
+			dexBuySpreadf := spreadData.DexBuySpread
 			if dexBuySpreadf >= maxPriceDifference {
-				dexBuyData.MaxPriceDifference = strconv.FormatFloat(dexBuySpreadf, 'f', 6, 64)
+				dexBuyData.MaxPriceDifference = dexBuySpreadf
 			}
 			if dexBuySpreadf <= minPriceDifference {
-				dexBuyData.MinPriceDifference = strconv.FormatFloat(dexBuySpreadf, 'f', 6, 64)
+				dexBuyData.MinPriceDifference = dexBuySpreadf
 			}
 			err = e.Orm.Save(&dexBuyData).Error
 			if err != nil {
@@ -375,14 +392,14 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 			if startTime != nil {
 				dexSellData.Duration = strconv.FormatFloat(currentTime.Sub(*startTime).Seconds(), 'f', 0, 64)
 			}
-			maxPriceDifference, _ := strconv.ParseFloat(dexSellData.MaxPriceDifference, 64)
-			minPriceDifference, _ := strconv.ParseFloat(dexSellData.MinPriceDifference, 64)
-			dexSellSpreadf, _ := strconv.ParseFloat(spreadData.DexSellSpread, 64)
+			maxPriceDifference := dexSellData.MaxPriceDifference
+			minPriceDifference := dexSellData.MinPriceDifference
+			dexSellSpreadf := spreadData.DexSellSpread
 			if dexSellSpreadf >= maxPriceDifference {
-				dexSellData.MaxPriceDifference = strconv.FormatFloat(dexSellSpreadf, 'f', 6, 64)
+				dexSellData.MaxPriceDifference = dexSellSpreadf
 			}
 			if dexSellSpreadf <= minPriceDifference {
-				dexSellData.MinPriceDifference = strconv.FormatFloat(dexSellSpreadf, 'f', 6, 64)
+				dexSellData.MinPriceDifference = dexSellSpreadf
 			}
 			err = e.Orm.Save(&dexSellData).Error
 			if err != nil {
