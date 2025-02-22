@@ -23,6 +23,7 @@ jobs:
       - name: executing remote ssh commands
         uses: appleboy/ssh-action@master
         env:
+          ENVIRONMENT: production
           DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
           DATABASE_USERNAME: ${{ secrets.DATABASE_USERNAME }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}

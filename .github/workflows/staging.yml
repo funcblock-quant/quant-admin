@@ -11,47 +11,35 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup SSH Config for Jump Host
-        run: |
-            mkdir -p ~/.ssh
-            echo "${{ secrets.DEPLOY_KEY_STAGING_JUMP }}" > ~/.ssh/id_rsa_jump
-            chmod 600 ~/.ssh/id_rsa_jump
-            echo "${{ secrets.DEPLOY_KEY_STAGING }}" > ~/.ssh/id_rsa_staging
-            chmod 600 ~/.ssh/id_rsa_staging
-            cat >> ~/.ssh/config <<EOF
-            Host jump-host
-              HostName 57.180.62.181
-              User ec2-user
-              IdentityFile ~/.ssh/id_rsa_jump
-              StrictHostKeyChecking no
-            
-            Host staging-server
-              HostName 172.31.47.52
-              User ec2-user
-              IdentityFile ~/.ssh/id_rsa_staging
-              ProxyJump jump-host
-              StrictHostKeyChecking no
-            EOF
-
-      - name: rsync deployments via jump host
-        run: |
-          # 调试 SSH 连接
-          ssh -F ～/.ssh/config staging-server "echo 'SSH connection successful'"
-      
-          rsync -avzr --delete -e "ssh -F ～/.ssh/config" ./ staging-server:/data/quanta-verse
-
-      - name: executing remote ssh commands via jump host
-        run: |
-          ssh staging-server << EOF
-            export DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }}
-            export DATABASE_USERNAME=${{ secrets.DATABASE_USERNAME }}
-            export JWT_SECRET=${{ secrets.JWT_SECRET }}
-            export LARK_WEBHOOK=${{ secrets.LARK_WEBHOOK }}
-            export ENVIRONMENT=staging  # 设置环境变量为 staging
+      - name: rsync deployments
+        uses: burnett01/rsync-deployments@4.1
+        with:
+          switches: -avzr --delete
+          path: ./
+          remote_path: /data/quanta-verse
+          remote_host: 54.249.249.88
+          remote_user: ubuntu
+          remote_key: ${{ secrets.DEPLOY_KEY_STAGING }}
+      - name: executing remote ssh commands
+        uses: appleboy/ssh-action@master
+        env:
+          ENVIRONMENT: staging
+          DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+          DATABASE_USERNAME: ${{ secrets.DATABASE_USERNAME }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          LARK_WEBHOOK: ${{ secrets.LARK_WEBHOOK}}
+        with:
+          envs: DATABASE_PASSWORD, DATABASE_USERNAME, JWT_SECRET, LARK_WEBHOOK
+          host: 54.249.249.88
+          username: ubuntu
+          key: ${{ secrets.DEPLOY_KEY_STAGING }}
+          script: |
             cd /data/quanta-verse
+            # 停止无用容器（不会影响正在运行的）
             docker container prune -f
+            # 删除所有未使用的镜像（不影响正在运行的）
             docker image prune -af
+            # 删除未使用的构建缓存
             docker builder prune -af
-            docker compose -f docker-compose.staging.yml up -d --no-deps --build
-          EOF
+            # 重新构建并启动
+            docker compose -f docker-compose.production.yml up -d --no-deps --build
