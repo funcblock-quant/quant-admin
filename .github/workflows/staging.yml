@@ -1,0 +1,54 @@
+name: Staging
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - price_trigger_new_features
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup SSH Config for Jump Host
+        run: |
+            mkdir -p ~/.ssh
+            echo "${{ secrets.DEPLOY_KEY_STAGING_JUMP }}" > ~/.ssh/id_rsa_jump
+            chmod 600 ~/.ssh/id_rsa_jump
+            echo "${{ secrets.DEPLOY_KEY_STAGING }}" > ~/.ssh/id_rsa_staging
+            chmod 600 ~/.ssh/id_rsa_staging
+            cat >> ~/.ssh/config <<EOF
+            Host jump-host
+              HostName 57.180.62.181
+              User ec2-user
+              IdentityFile ~/.ssh/id_rsa_jump
+              StrictHostKeyChecking no
+            
+            Host staging-server
+              HostName 172.31.47.52
+              User ec2-user
+              IdentityFile ~/.ssh/id_rsa_staging
+              ProxyJump jump-host
+              StrictHostKeyChecking no
+            EOF
+
+      - name: rsync deployments via jump host
+        run: |
+          rsync -avzr --delete -e "ssh -F ~/.ssh/config" ./ staging-server:/data/quanta-verse
+
+      - name: executing remote ssh commands via jump host
+        run: |
+          ssh staging-server << EOF
+            export DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }}
+            export DATABASE_USERNAME=${{ secrets.DATABASE_USERNAME }}
+            export JWT_SECRET=${{ secrets.JWT_SECRET }}
+            export LARK_WEBHOOK=${{ secrets.LARK_WEBHOOK }}
+            export ENVIRONMENT=staging  # 设置环境变量为 staging
+            cd /data/quanta-verse
+            docker container prune -f
+            docker image prune -af
+            docker builder prune -af
+            docker compose -f docker-compose.staging.yml up -d --no-deps --build
+          EOF
