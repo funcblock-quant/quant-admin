@@ -1,4 +1,4 @@
-name: Production
+name: Staging
 
 on:
   workflow_dispatch:
@@ -45,6 +45,7 @@ jobs:
             export DATABASE_USERNAME=${{ secrets.DATABASE_USERNAME }}
             export JWT_SECRET=${{ secrets.JWT_SECRET }}
             export LARK_WEBHOOK=${{ secrets.LARK_WEBHOOK }}
+            export ENVIRONMENT=staging  # 设置环境变量为 staging
             cd /data/quanta-verse
             docker container prune -f
             docker image prune -af
