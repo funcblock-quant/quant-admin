@@ -36,7 +36,10 @@ jobs:
 
       - name: rsync deployments via jump host
         run: |
-          rsync -avzr --delete -e "ssh -F ~/.ssh/config" ./ staging-server:/data/quanta-verse
+          # 调试 SSH 连接
+          ssh -F ～/.ssh/config staging-server "echo 'SSH connection successful'"
+      
+          rsync -avzr --delete -e "ssh -F ～/.ssh/config" ./ staging-server:/data/quanta-verse
 
       - name: executing remote ssh commands via jump host
         run: |
