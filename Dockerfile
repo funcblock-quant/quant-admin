@@ -16,6 +16,8 @@ RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -a -installsuffix cgo -o 
 
 FROM alpine
 
+ARG ENVIRONMENT
+
 WORKDIR /app
 
 COPY --from=builder /app/quanta-admin /app/quanta-admin
