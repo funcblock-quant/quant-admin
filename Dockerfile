@@ -16,13 +16,11 @@ RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -a -installsuffix cgo -o 
 
 FROM alpine
 
-ARG ENVIRONMENT
-
 WORKDIR /app
 
 COPY --from=builder /app/quanta-admin /app/quanta-admin
-COPY --from=builder /app/config/settings.${ENVIRONMENT}.yml /app/config/settings.yml
+COPY --from=builder /app/config/settings.staging.yml /app/config/settings.yml
 
 EXPOSE 8000
 
-CMD ["/app/quanta-admin","server","-c", "/app/config/settings.${ENVIRONMENT}.yml"]
+CMD ["/app/quanta-admin","server","-c", "/app/config/settings.staging.yml"]
