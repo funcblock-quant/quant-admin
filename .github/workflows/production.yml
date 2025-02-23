@@ -42,4 +42,4 @@ jobs:
             # 删除未使用的构建缓存
             docker builder prune -af
             # 重新构建并启动
-            docker compose -f docker-compose.staging.yml up -d --no-deps --build
+            docker compose -f docker-compose.production.yml up -d --no-deps --build
