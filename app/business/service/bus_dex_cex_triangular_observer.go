@@ -58,24 +58,28 @@ func (e *BusDexCexTriangularObserver) GetPage(c *dto.BusDexCexTriangularObserver
 		}
 		e.Log.Infof("get state for observerId:%d \r\n state: %+v \r\n", strconv.Itoa(id), state)
 		buyOnDex := state.GetBuyOnDex()
-		var cexSellPrice, dexBuyPrice float64
+		var cexSellPrice, dexBuyPrice, buyOnDexProfit float64
 		if buyOnDex != nil {
 			cexSellPrice, dexBuyPrice = e.calculate_dex_cex_price(buyOnDex, true)
+			buyOnDexProfit = *buyOnDex.CexSellQuoteAmount - *buyOnDex.CexBuyQuoteAmount
 		} else {
 			// 处理 buyOnDex 为空的情况，例如设置默认值或跳过计算
 			cexSellPrice = 0
 			dexBuyPrice = 0
+			buyOnDexProfit = 0
 		}
 		e.Log.Infof("[buy on dex price details]: cexPrice: %+v , dexPrice: %+v \r\n", cexSellPrice, dexBuyPrice)
 
 		sellOnDex := state.GetSellOnDex()
-		var cexBuyPrice, dexSellPrice float64
+		var cexBuyPrice, dexSellPrice, sellOnDexProfit float64
 		if sellOnDex != nil {
 			cexBuyPrice, dexSellPrice = e.calculate_dex_cex_price(sellOnDex, false)
+			sellOnDexProfit = *sellOnDex.CexSellQuoteAmount - *sellOnDex.CexBuyQuoteAmount
 		} else {
 			// 处理 sellOnDex 为空的情况，例如设置默认值或跳过计算
 			cexBuyPrice = 0
 			dexSellPrice = 0
+			sellOnDexProfit = 0
 		}
 		e.Log.Infof("[sell on dex price details]: cexPrice: %+v , dexPrice: %+v \r\n", cexBuyPrice, dexSellPrice)
 
@@ -106,9 +110,6 @@ func (e *BusDexCexTriangularObserver) GetPage(c *dto.BusDexCexTriangularObserver
 			}
 			(*list)[i].DexSellDiffDuration = dexSellData.Duration
 		}
-
-		buyOnDexProfit := *buyOnDex.CexSellQuoteAmount - *buyOnDex.CexBuyQuoteAmount
-		sellOnDexProfit := *sellOnDex.CexSellQuoteAmount - *sellOnDex.CexBuyQuoteAmount
 
 		//(*list)[i].ProfitOfBuyOnDex = strconv.FormatFloat(buyOnDexProfit, 'f', 6, 64)
 		//(*list)[i].ProfitOfSellOnDex = strconv.FormatFloat(sellOnDexProfit, 'f', 6, 64)
