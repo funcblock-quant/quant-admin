@@ -463,7 +463,7 @@ func (e *BusDexCexTriangularObserver) StartTrader(c *dto.BusDexCexTriangularObse
 	}
 
 	if err := e.Orm.Model(&models.BusDexCexTriangularObserver{}).
-		Where("id = ?", data.InstanceId).
+		Where("id = ?", data.Id).
 		Updates(updateData).Error; err != nil {
 		e.Log.Errorf("更新实例参数失败：%s", err)
 		return err
