@@ -275,9 +275,23 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 		}
 		currentTime := time.Now()
 		buyOnDex := state.GetBuyOnDex()
-		cexSellPrice, dexBuyPrice := e.calculate_dex_cex_price(buyOnDex, true)
+		var cexSellPrice, dexBuyPrice float64
+		if buyOnDex != nil {
+			cexSellPrice, dexBuyPrice = e.calculate_dex_cex_price(buyOnDex, true)
+		} else {
+			// 处理 buyOnDex 为空的情况，例如设置默认值或跳过计算
+			cexSellPrice = 0
+			dexBuyPrice = 0
+		}
 		sellOnDex := state.GetSellOnDex()
-		cexBuyPrice, dexSellPrice := e.calculate_dex_cex_price(sellOnDex, false)
+		var cexBuyPrice, dexSellPrice float64
+		if sellOnDex != nil {
+			cexBuyPrice, dexSellPrice = e.calculate_dex_cex_price(sellOnDex, false)
+		} else {
+			// 处理 sellOnDex 为空的情况，例如设置默认值或跳过计算
+			cexBuyPrice = 0
+			dexSellPrice = 0
+		}
 
 		buyOnDexProfit := *buyOnDex.CexSellQuoteAmount - *buyOnDex.CexBuyQuoteAmount
 		sellOnDexProfit := *sellOnDex.CexSellQuoteAmount - *sellOnDex.CexBuyQuoteAmount
