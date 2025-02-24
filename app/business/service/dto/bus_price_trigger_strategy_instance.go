@@ -1,6 +1,7 @@
 package dto
 
 import (
+	"strconv"
 	"time"
 
 	"quanta-admin/app/business/models"
@@ -74,16 +75,23 @@ type BusPriceTriggerStrategyStatistical struct {
 }
 
 type BusPriceTriggerStrategyInstanceInsertReq struct {
-	Id             int       `json:"-" comment:""` //
-	OpenPrice      string    `json:"openPrice" comment:"开仓价格"`
-	ClosePrice     string    `json:"closePrice" comment:"平仓价格"`
-	Amount         string    `json:"amount" comment:"开仓数量"`
-	Side           string    `json:"side" comment:"买卖方向"`
-	Symbol         string    `json:"symbol" comment:"交易币种"`
-	CloseTime      time.Time `json:"closeTime" comment:"停止时间"`
-	ApiConfig      int       `json:"apiConfig" comment:"api配置id"`
-	Status         string    `json:"status" comment:"状态，created, started, stopped, closed"`
-	ExchangeUserId string    `json:"exchangeUserId"`
+	Id                int       `json:"-" comment:""` //
+	OpenPrice         string    `json:"openPrice" comment:"开仓价格"`
+	ClosePrice        string    `json:"closePrice" comment:"平仓价格"`
+	Amount            string    `json:"amount" comment:"开仓数量"`
+	Side              string    `json:"side" comment:"买卖方向"`
+	Symbol            string    `json:"symbol" comment:"交易币种"`
+	CloseTime         time.Time `json:"closeTime" comment:"停止时间"`
+	ApiConfig         int       `json:"apiConfig" comment:"api配置id"`
+	Status            string    `json:"status" comment:"状态，created, started, stopped, closed"`
+	ExchangeUserId    string    `json:"exchangeUserId"`
+	ExecuteNum        int       `json:"executeNum"`
+	ProfitTargetType  string    `json:"profitTargetType"`
+	ProfitTargetPrice float64   `json:"profitTargetPrice"`
+	LossTargetPrice   float64   `json:"lossTargetPrice"`
+	CallbackRatio     float64   `json:"callbackRatio"`
+	CutoffRatio       float64   `json:"cutoffRatio"`
+	MinProfit         float64   `json:"minProfit"`
 	common.ControlBy
 }
 
@@ -122,6 +130,16 @@ func (s *BusPriceTriggerStrategyInstanceInsertReq) Generate(model *models.BusPri
 	model.ApiConfig = s.ApiConfig
 	model.CreateBy = s.CreateBy // 添加这而，需要记录是被谁创建的
 	model.ExchangeUserId = s.ExchangeUserId
+	model.ExecuteNum = s.ExecuteNum
+	model.ProfitTargetType = s.ProfitTargetType
+	if s.ProfitTargetType == "LIMIT" {
+		model.ProfitTargetPrice = strconv.FormatFloat(s.ProfitTargetPrice, 'f', -1, 64)
+		model.LossTargetPrice = strconv.FormatFloat(s.LossTargetPrice, 'f', -1, 64)
+	} else if s.ProfitTargetType == "FLOATING" {
+		model.CallbackRatio = &s.CallbackRatio
+		model.CutoffRatio = &s.CutoffRatio
+		model.MinProfit = &s.MinProfit
+	}
 }
 
 func (s *BusPriceTriggerStrategyInstanceInsertReq) GetId() interface{} {

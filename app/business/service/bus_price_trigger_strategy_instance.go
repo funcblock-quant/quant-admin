@@ -105,6 +105,7 @@ func (e *BusPriceTriggerStrategyInstance) Insert(c *dto.BusPriceTriggerStrategyI
 	var err error
 	var data models.BusPriceTriggerStrategyInstance
 	c.Generate(&data)
+	e.Log.Infof("create price trigger instance:%v", data)
 	data.Status = "created"
 	//启动事务
 	tx := e.Orm.Begin()
@@ -129,29 +130,29 @@ func (e *BusPriceTriggerStrategyInstance) Insert(c *dto.BusPriceTriggerStrategyI
 	}
 
 	//创建成功后， 自动通过grpc启动
-	apiConfigReq := trigger_service.APIConfig{
-		ApiKey:    apiKeyConfig.ApiKey,
-		SecretKey: apiKeyConfig.SecretKey,
-		Exchange:  apiKeyConfig.Exchange,
-	}
-
-	request := &trigger_service.StartTriggerRequest{
-		InstanceId: strconv.Itoa(data.Id),
-		OpenPrice:  c.OpenPrice,
-		ClosePrice: c.ClosePrice,
-		Side:       c.Side,
-		Amount:     c.Amount,
-		Symbol:     c.Symbol,
-		StopTime:   strconv.FormatInt(c.CloseTime.UnixMilli(), 10),
-		ApiConfig:  &apiConfigReq,
-		UserId:     c.ExchangeUserId,
-	}
-	_, err = client.StartTriggerInstance(request)
-	if err != nil {
-		tx.Rollback()
-		e.Log.Errorf("Service grpc start error:%s \r\n", err)
-		return err
-	}
+	//apiConfigReq := trigger_service.APIConfig{
+	//	ApiKey:    apiKeyConfig.ApiKey,
+	//	SecretKey: apiKeyConfig.SecretKey,
+	//	Exchange:  apiKeyConfig.Exchange,
+	//}
+	//
+	//request := &trigger_service.StartTriggerRequest{
+	//	InstanceId: strconv.Itoa(data.Id),
+	//	OpenPrice:  c.OpenPrice,
+	//	ClosePrice: c.ClosePrice,
+	//	Side:       c.Side,
+	//	Amount:     c.Amount,
+	//	Symbol:     c.Symbol,
+	//	StopTime:   strconv.FormatInt(c.CloseTime.UnixMilli(), 10),
+	//	ApiConfig:  &apiConfigReq,
+	//	UserId:     c.ExchangeUserId,
+	//}
+	//_, err = client.StartTriggerInstance(request)
+	//if err != nil {
+	//	tx.Rollback()
+	//	e.Log.Errorf("Service grpc start error:%s \r\n", err)
+	//	return err
+	//}
 	e.Log.Infof("instance id : %d grpc start success\r\n", data.Id)
 
 	tx.Commit()

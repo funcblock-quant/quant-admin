@@ -198,14 +198,13 @@ func (e *BusDexCexTriangularObserver) Get(d *dto.BusDexCexTriangularObserverGetR
 	}
 
 	// 获取最新价差数据
-	observerId := model.InstanceId
-	id := model.Id
-	state, err := client.GetObserverState(observerId)
+	id := strconv.Itoa(model.Id)
+	state, err := client.GetObserverState(id)
 	if err != nil {
 		e.Log.Errorf("grpc实时获取观察状态失败， error:%s \r\n", err)
 		return nil
 	}
-	e.Log.Infof("get state for observerId:%d \r\n state: %+v \r\n", observerId, state)
+	e.Log.Infof("get state for observerId:%d \r\n state: %+v \r\n", id, state)
 	buyOnDex := state.GetBuyOnDex()
 	cexSellPrice, dexBuyPrice := e.calculate_dex_cex_price(buyOnDex, true)
 	e.Log.Infof("[buy on dex price details]: cexPrice: %+v , dexPrice: %+v \r\n", cexSellPrice, dexBuyPrice)
