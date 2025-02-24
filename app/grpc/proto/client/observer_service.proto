@@ -41,8 +41,8 @@ message ListResponse {
 
 message GetStateResponse {
   required int64 timestamp = 1;
-  optional ObserverState buy_on_dex = 2;
-  optional ObserverState sell_on_dex = 3;
+  required ObserverState buy_on_dex = 2;
+  required ObserverState sell_on_dex = 3;
 }
 
 message UpdateObserverParamsRequest {
