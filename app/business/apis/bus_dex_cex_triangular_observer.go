@@ -340,3 +340,26 @@ func (e BusDexCexTriangularObserver) UpdateTrader(c *gin.Context) {
 
 	e.OK(nil, "更新成功")
 }
+
+func (e BusDexCexTriangularObserver) UpdateWaterLevel(c *gin.Context) {
+	s := service.BusDexCexTriangularObserver{}
+	req := dto.BusDexCexTriangularUpdateWaterLevelParamsReq{}
+	err := e.MakeContext(c).
+		MakeOrm().
+		Bind(&req).
+		MakeService(&s.Service).
+		Errors
+	if err != nil {
+		e.Logger.Error(err)
+		e.Error(500, err, err.Error())
+		return
+	}
+	req.SetUpdateBy(user.GetUserId(c))
+	err = s.UpdateWaterLevel(&req)
+	if err != nil {
+		e.Error(500, err, fmt.Sprintf("更新trader 参数失败，\r\n失败信息 %s", err.Error()))
+		return
+	}
+
+	e.OK(nil, "更新成功")
+}

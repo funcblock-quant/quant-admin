@@ -423,6 +423,7 @@ func (e *BusDexCexTriangularObserver) StartTrader(c *dto.BusDexCexTriangularObse
 		TokenConfig:  tokenConfig,
 	}
 
+	e.Log.Infof("water level start req: %v \r\n", clientRequest)
 	_, err = client.StartWaterLevelInstance(clientRequest)
 	if err != nil {
 		e.Log.Errorf("启动水位调节失败:%s \r\n", err)
@@ -738,6 +739,53 @@ func (e *BusDexCexTriangularObserver) UpdateTrader(c *dto.BusDexCexTriangularUpd
 
 	updateData := map[string]interface{}{
 		"slippage_bps": slippageBpsUint,
+	}
+	// 更新observer的trader相关参数
+	if err := e.Orm.Model(&models.BusDexCexTriangularObserver{}).
+		Where("id = ?", data.Id).
+		Updates(updateData).Error; err != nil {
+		e.Log.Errorf("更新实例参数失败：%s", err)
+		return err
+	}
+
+	e.Log.Infof("实例：%d 参数已成功更新", data.Id)
+
+	return nil
+}
+
+// UpdateWaterLevel 更新WaterLevel 参数
+func (e *BusDexCexTriangularObserver) UpdateWaterLevel(c *dto.BusDexCexTriangularUpdateWaterLevelParamsReq) error {
+	var data models.BusDexCexTriangularObserver
+
+	err := e.Orm.Model(&data).
+		Where("id = ?", c.InstanceId).
+		First(&data).Error
+	if err != nil {
+		e.Log.Errorf("获取实例失败:%s \r\n", err)
+		return err
+	}
+	instanceId := strconv.Itoa(data.Id)
+	waterLevelParams := &waterLevelPb.UpdateInstanceParamsRequest{
+		InstanceId:             instanceId,
+		AlertThreshold:         strconv.FormatFloat(*c.AlertThreshold, 'f', -1, 64),
+		BuyTriggerThreshold:    strconv.FormatFloat(*c.BuyTriggerThreshold, 'f', -1, 64),
+		TargetBalanceThreshold: strconv.FormatFloat(*c.TargetBalanceThreshold, 'f', -1, 64),
+		SellTriggerThreshold:   strconv.FormatFloat(*c.SellTriggerThreshold, 'f', -1, 64),
+	}
+	if config.ApplicationConfig.Mode != "dev" {
+
+		err = client.UpdateWaterLevelInstance(waterLevelParams)
+		if err != nil {
+			e.Log.Errorf("grpc更新实例：:%s water level参数失败，异常：%s \r\n", instanceId, err)
+			return err
+		}
+	}
+
+	updateData := map[string]interface{}{
+		"alert_threshold":          c.AlertThreshold,
+		"buy_trigger_threshold":    c.BuyTriggerThreshold,
+		"target_balance_threshold": c.TargetBalanceThreshold,
+		"sell_trigger_threshold":   c.SellTriggerThreshold,
 	}
 	// 更新observer的trader相关参数
 	if err := e.Orm.Model(&models.BusDexCexTriangularObserver{}).

@@ -284,7 +284,7 @@ type DexCexTriangularObserverSymbolListResp struct {
 }
 
 type BusDexCexTriangularObserverStartTraderReq struct {
-	InstanceId             int      `json:"instanceId" comment:"策略端实例id"`
+	InstanceId             int      `json:"id" comment:"策略端实例id"`
 	AlertThreshold         *float64 `json:"alertThreshold"`
 	BuyTriggerThreshold    *float64 `json:"buyTriggerThreshold"`
 	TargetBalanceThreshold *float64 `json:"targetBalanceThreshold"`
@@ -297,15 +297,15 @@ type BusDexCexTriangularObserverStartTraderReq struct {
 }
 
 type BusDexCexTriangularObserverStopTraderReq struct {
-	InstanceId int `json:"instanceId" comment:"策略端实例id"`
+	InstanceId int `json:"id" comment:"策略端实例id"`
 	common.ControlBy
 }
 
 type BusDexCexTriangularUpdateObserverParamsReq struct {
-	InstanceId               int      `json:"instanceId" comment:"策略端实例id"`
+	InstanceId               int      `json:"id" comment:"策略端实例id"`
 	MinSolAmount             *float64 `json:"minSolAmount"`
 	MaxSolAmount             *float64 `json:"maxSolAmount"`
-	TriggerProfitQuoteAmount *float64 `json:"triggerProfitQuoteAmount"`
+	TriggerProfitQuoteAmount *float64 `json:"minProfit"`
 	PriorityFee              *float64 `json:"priorityFee"`
 	JitoFee                  *float64 `json:"jitoFee"`
 	common.ControlBy
@@ -322,10 +322,19 @@ func (s *BusDexCexTriangularUpdateObserverParamsReq) Generate(model *models.BusD
 }
 
 type BusDexCexTriangularUpdateTraderParamsReq struct {
-	InstanceId  int     `json:"instanceId" comment:"策略端实例id"`
+	InstanceId  int     `json:"id" comment:"策略端实例id"`
 	SlippageBps *string `json:"slippage"`
 	//MinProfit   *float64 `json:"minProfit"`
 	//PriorityFee *float64 `json:"priorityFee"`
 	//JitoFee     *float64 `json:"jitoFee"`
+	common.ControlBy
+}
+
+type BusDexCexTriangularUpdateWaterLevelParamsReq struct {
+	InstanceId             int      `json:"id" comment:"策略端实例id"`
+	AlertThreshold         *float64 `json:"alertThreshold"`
+	BuyTriggerThreshold    *float64 `json:"buyTriggerThreshold"`
+	TargetBalanceThreshold *float64 `json:"targetBalanceThreshold"`
+	SellTriggerThreshold   *float64 `json:"sellTriggerThreshold"`
 	common.ControlBy
 }
