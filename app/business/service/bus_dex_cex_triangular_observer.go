@@ -51,14 +51,13 @@ func (e *BusDexCexTriangularObserver) GetPage(c *dto.BusDexCexTriangularObserver
 	}
 
 	for i := range *list {
-		observerId := (*list)[i].InstanceId // 使用 (*list)[i] 访问原始元素
 		id := (*list)[i].Id
-		state, err := client.GetObserverState(observerId)
+		state, err := client.GetObserverState(strconv.Itoa(id))
 		if err != nil {
 			e.Log.Errorf("grpc实时获取观察状态失败， error:%s \r\n", err)
 			continue
 		}
-		e.Log.Infof("get state for observerId:%d \r\n state: %+v \r\n", observerId, state)
+		e.Log.Infof("get state for observerId:%d \r\n state: %+v \r\n", strconv.Itoa(id), state)
 		buyOnDex := state.GetBuyOnDex()
 		cexSellPrice, dexBuyPrice := e.calculate_dex_cex_price(buyOnDex, true)
 		e.Log.Infof("[buy on dex price details]: cexPrice: %+v , dexPrice: %+v \r\n", cexSellPrice, dexBuyPrice)
