@@ -21,6 +21,6 @@ WORKDIR /app
 COPY --from=builder /app/quanta-admin /app/quanta-admin
 COPY --from=builder /app/config/settings.yml /app/config/settings.yml
 
-EXPOSE 8002
+EXPOSE 8000
 
 CMD ["/app/quanta-admin","server","-c", "/app/config/settings.yml"]
