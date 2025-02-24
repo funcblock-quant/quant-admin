@@ -329,7 +329,7 @@ func (e *BusDexCexTriangularObserver) BatchInsert(c *dto.BusDexCexTriangularObse
 			}
 		}
 
-		tx.Where("id = ?", data.Id).Update("status", 1)
+		tx.Model(&data).Where("id = ?", data.Id).Update("status", 1)
 		err = tx.Commit().Error
 		if err != nil {
 			e.Log.Errorf("BusDexCexTriangularObserverService Insert error:%s \r\n", err)
