@@ -7,7 +7,7 @@ settings:
     # 服务名称
     name: quantaAdmin
     # 端口号
-    port: 8000 # 服务端口号
+    port: 8002 # 服务端口号
     readtimeout: 1
     writertimeout: 2
     # 数据权限功能开关
@@ -51,7 +51,7 @@ settings:
     grpc:
 #      solana-observer: 172.31.47.132:8000
 #      market-making: 172.31.45.8:8000
-      trigger-service: localhost:50052
+      trigger-service: 172.31.32.225:50051
   #      jupserver: 127.0.0.1:2900
   cache:
     #    redis:

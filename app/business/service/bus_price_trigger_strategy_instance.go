@@ -2,17 +2,18 @@ package service
 
 import (
 	"errors"
+	"fmt"
+	"github.com/go-admin-team/go-admin-core/sdk/config"
 	"github.com/go-admin-team/go-admin-core/sdk/service"
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
-	"quanta-admin/app/grpc/client"
-	"quanta-admin/app/grpc/proto/client/trigger_service"
-	"strconv"
-
 	"quanta-admin/app/business/models"
 	"quanta-admin/app/business/service/dto"
+	"quanta-admin/app/grpc/client"
+	"quanta-admin/app/grpc/proto/client/trigger_service"
 	"quanta-admin/common/actions"
 	cDto "quanta-admin/common/dto"
+	"strconv"
 )
 
 type BusPriceTriggerStrategyInstance struct {
@@ -197,6 +198,119 @@ func (e *BusPriceTriggerStrategyInstance) StopInstance(req *dto.StopTriggerInsta
 	err = e.Orm.Model(&data).
 		Update("status", "stopped").
 		Error
+
+	if err != nil {
+		e.Log.Errorf("Service StopInstance throw db error:%s \r\n", err)
+		return err
+	}
+	return nil
+}
+
+// UpdateProfitTarget
+// @Accept  application/json
+// @Product application/json
+// @Param
+// @Success 200 {object} response.Response "{"code": 200, "data": [...]}"
+// @Router /api/v1/updateProfitTarget [put]
+// @Security Bearer
+func (e *BusPriceTriggerStrategyInstance) UpdateProfitTarget(req *dto.BusPriceTriggerStrategyInstanceUpdateProfitTargetReq) error {
+	var err error
+	data := models.BusPriceTriggerStrategyInstance{}
+
+	err = e.Orm.Model(&data).First(&data, req.Id).Error
+	if err != nil {
+		e.Log.Errorf("Service UpdateProfitTarget error:%s \r\n", err)
+		return err
+	}
+
+	profitTargetType := req.ProfitTargetType
+	profitTargetConfig := &trigger_service.ProfitTargetConfig{
+		InstanceId: strconv.Itoa(data.Id),
+	}
+	if profitTargetType == "LIMIT" {
+		//限价止盈
+		profitTargetConfig.ProfitTargetType = trigger_service.ProfitTargetType_LIMIT
+		profitTargetConfig.Config = &trigger_service.ProfitTargetConfig_LimitConfig{
+			LimitConfig: &trigger_service.LimitTypeConfig{
+				ProfitTargetPrice: req.ProfitTargetPrice,
+				LossTargetPrice:   req.LossTargetPrice,
+			},
+		}
+	} else if profitTargetType == "FLOATING" {
+		//浮动止盈
+		profitTargetConfig.ProfitTargetType = trigger_service.ProfitTargetType_FLOATING
+		profitTargetConfig.Config = &trigger_service.ProfitTargetConfig_FloatingConfig{
+			FloatingConfig: &trigger_service.FloatingTypeConfig{
+				CallbackRatio: req.CallbackRatio,
+				CutoffRatio:   req.CutoffRatio,
+				MinProfit:     req.MinProfit,
+			},
+		}
+	}
+
+	e.Log.Infof("update profit target instance id : %d\r\n", data.Id)
+	if config.ApplicationConfig.Mode != "dev" {
+		err = client.UpdateProfitTarget(profitTargetConfig)
+		err = nil
+		if err != nil {
+			e.Log.Errorf("Service StopInstance throw grpc error:%s \r\n", err)
+			return err
+		}
+	}
+
+	err = e.Orm.Model(&data).
+		Updates(map[string]interface{}{
+			"profit_target_type":  req.ProfitTargetType,
+			"profit_target_price": fmt.Sprintf("%.16f", req.ProfitTargetPrice),
+			"loss_target_price":   fmt.Sprintf("%.16f", req.LossTargetPrice),
+			"callback_ratio":      req.CallbackRatio,
+			"cutoff_ratio":        req.CutoffRatio,
+			"min_profit":          req.MinProfit,
+		}).Error
+
+	if err != nil {
+		e.Log.Errorf("Service StopInstance throw db error:%s \r\n", err)
+		return err
+	}
+	return nil
+}
+
+// UpdateExecuteNum
+// @Accept  application/json
+// @Product application/json
+// @Param
+// @Success 200 {object} response.Response "{"code": 200, "data": [...]}"
+// @Router /api/v1/updateExecuteNum [put]
+// @Security Bearer
+func (e *BusPriceTriggerStrategyInstance) UpdateExecuteNum(req *dto.BusPriceTriggerStrategyInstanceUpdateExecuteNumReq) error {
+	var err error
+	data := models.BusPriceTriggerStrategyInstance{}
+
+	err = e.Orm.Model(&data).First(&data, req.Id).Error
+	if err != nil {
+		e.Log.Errorf("Service UpdateProfitTarget error:%s \r\n", err)
+		return err
+	}
+
+	executeConfig := &trigger_service.ExecuteConfig{
+		InstanceId: strconv.Itoa(data.Id),
+		ExecuteNum: uint32(req.ExecuteNum),
+	}
+
+	e.Log.Infof("update execute num, instance id : %d\r\n", data.Id)
+	if config.ApplicationConfig.Mode != "dev" {
+		err = client.UpdateExecuteNum(executeConfig)
+		err = nil
+		if err != nil {
+			e.Log.Errorf("Service UpdateExecuteNum throw grpc error:%s \r\n", err)
+			return err
+		}
+	}
+
+	err = e.Orm.Model(&data).
+		Updates(map[string]interface{}{
+			"execute_num": req.ExecuteNum,
+		}).Error
 
 	if err != nil {
 		e.Log.Errorf("Service StopInstance throw db error:%s \r\n", err)

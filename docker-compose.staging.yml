@@ -1,7 +1,10 @@
 version: '3.8'
 services:
   quanta-admin-api:
-    build: .
+    build:
+      context: .
+      args:
+        ENVIRONMENT: ${ENVIRONMENT}  # 通过 build argument 传递环境变量
     container_name: quanta-admin
     privileged: true
     restart: always

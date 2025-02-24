@@ -206,7 +206,7 @@ func (e BusPriceTriggerStrategyInstance) Delete(c *gin.Context) {
 // @Accept application/json
 // @Product application/json
 // @Param data body dto.BusPriceTriggerStrategyInstanceInsertReq true "data"
-// @Success 200 {object} response.Response	"{"code": 200, "message": "添加成功"}"
+// @Success 200 {object} response.Response	"{"code": 200, "message": "暂停实例成功"}"
 // @Router /api/v1/stopTriggerInstance [post]
 // @Security Bearer
 func (e BusPriceTriggerStrategyInstance) StopInstance(c *gin.Context) {
@@ -230,6 +230,72 @@ func (e BusPriceTriggerStrategyInstance) StopInstance(c *gin.Context) {
 	}
 
 	e.OK("", "暂停实例成功")
+}
+
+// UpdateProfitTarget 修改止盈配置
+// @Summary 修改止盈配置
+// @Description 修改止盈配置
+// @Tags 修改止盈配置
+// @Accept application/json
+// @Product application/json
+// @Param data body dto.BusPriceTriggerStrategyInstanceUpdateProfitTargetReq true "data"
+// @Success 200 {object} response.Response	"{"code": 200, "message": "修改止盈配置成功"}"
+// @Router /api/v1/updateProfitTarget [put]
+// @Security Bearer
+func (e BusPriceTriggerStrategyInstance) UpdateProfitTarget(c *gin.Context) {
+	req := dto.BusPriceTriggerStrategyInstanceUpdateProfitTargetReq{}
+	s := service.BusPriceTriggerStrategyInstance{}
+	err := e.MakeContext(c).
+		MakeOrm().
+		Bind(&req).
+		MakeService(&s.Service).
+		Errors
+	if err != nil {
+		e.Logger.Error(err)
+		e.Error(500, err, err.Error())
+		return
+	}
+	e.Logger.Infof("req:%#v", req)
+	err = s.UpdateProfitTarget(&req)
+	if err != nil {
+		e.Error(500, err, fmt.Sprintf("修改止盈配置失败，\r\n失败信息 %s", err.Error()))
+		return
+	}
+
+	e.OK("", "修改止盈配置成功")
+}
+
+// UpdateExecuteNum 修改执行次数
+// @Summary 修改执行次数
+// @Description 修改执行次数
+// @Tags 修改执行次数
+// @Accept application/json
+// @Product application/json
+// @Param data body dto.BusPriceTriggerStrategyInstanceUpdateExecuteNumReq true "data"
+// @Success 200 {object} response.Response	"{"code": 200, "message": "修改成功"}"
+// @Router /api/v1/updateExecuteNum [put]
+// @Security Bearer
+func (e BusPriceTriggerStrategyInstance) UpdateExecuteNum(c *gin.Context) {
+	req := dto.BusPriceTriggerStrategyInstanceUpdateExecuteNumReq{}
+	s := service.BusPriceTriggerStrategyInstance{}
+	err := e.MakeContext(c).
+		MakeOrm().
+		Bind(&req).
+		MakeService(&s.Service).
+		Errors
+	if err != nil {
+		e.Logger.Error(err)
+		e.Error(500, err, err.Error())
+		return
+	}
+	e.Logger.Infof("req:%#v", req)
+	err = s.UpdateExecuteNum(&req)
+	if err != nil {
+		e.Error(500, err, fmt.Sprintf("修改执行次数失败，\r\n失败信息 %s", err.Error()))
+		return
+	}
+
+	e.OK("", "修改成功")
 }
 
 // GetSymbolList 获取价格触发下单策略实例所有的币种列表

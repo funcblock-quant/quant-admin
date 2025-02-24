@@ -22,10 +22,12 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	TriggerInstance_StartInstance_FullMethodName = "/grpc_service.TriggerInstance/StartInstance"
-	TriggerInstance_StopInstance_FullMethodName  = "/grpc_service.TriggerInstance/StopInstance"
-	TriggerInstance_ListInstances_FullMethodName = "/grpc_service.TriggerInstance/ListInstances"
-	TriggerInstance_CheckApiKey_FullMethodName   = "/grpc_service.TriggerInstance/CheckApiKey"
+	TriggerInstance_StartInstance_FullMethodName            = "/grpc_service.TriggerInstance/StartInstance"
+	TriggerInstance_StopInstance_FullMethodName             = "/grpc_service.TriggerInstance/StopInstance"
+	TriggerInstance_ListInstances_FullMethodName            = "/grpc_service.TriggerInstance/ListInstances"
+	TriggerInstance_CheckApiKey_FullMethodName              = "/grpc_service.TriggerInstance/CheckApiKey"
+	TriggerInstance_UpdateProfitTargetConfig_FullMethodName = "/grpc_service.TriggerInstance/UpdateProfitTargetConfig"
+	TriggerInstance_UpdateExecuteNum_FullMethodName         = "/grpc_service.TriggerInstance/UpdateExecuteNum"
 )
 
 // TriggerInstanceClient is the client API for TriggerInstance service.
@@ -40,6 +42,10 @@ type TriggerInstanceClient interface {
 	ListInstances(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*TriggerListResponse, error)
 	// 检查apikey连通性
 	CheckApiKey(ctx context.Context, in *APIConfig, opts ...grpc.CallOption) (*CheckApiKeyHealthyResponse, error)
+	// 修改止盈参数
+	UpdateProfitTargetConfig(ctx context.Context, in *ProfitTargetConfig, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// 修改执行次数
+	UpdateExecuteNum(ctx context.Context, in *ExecuteConfig, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type triggerInstanceClient struct {
@@ -86,6 +92,24 @@ func (c *triggerInstanceClient) CheckApiKey(ctx context.Context, in *APIConfig, 
 	return out, nil
 }
 
+func (c *triggerInstanceClient) UpdateProfitTargetConfig(ctx context.Context, in *ProfitTargetConfig, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, TriggerInstance_UpdateProfitTargetConfig_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *triggerInstanceClient) UpdateExecuteNum(ctx context.Context, in *ExecuteConfig, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, TriggerInstance_UpdateExecuteNum_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TriggerInstanceServer is the server API for TriggerInstance service.
 // All implementations must embed UnimplementedTriggerInstanceServer
 // for forward compatibility
@@ -98,6 +122,10 @@ type TriggerInstanceServer interface {
 	ListInstances(context.Context, *emptypb.Empty) (*TriggerListResponse, error)
 	// 检查apikey连通性
 	CheckApiKey(context.Context, *APIConfig) (*CheckApiKeyHealthyResponse, error)
+	// 修改止盈参数
+	UpdateProfitTargetConfig(context.Context, *ProfitTargetConfig) (*emptypb.Empty, error)
+	// 修改执行次数
+	UpdateExecuteNum(context.Context, *ExecuteConfig) (*emptypb.Empty, error)
 	mustEmbedUnimplementedTriggerInstanceServer()
 }
 
@@ -116,6 +144,12 @@ func (UnimplementedTriggerInstanceServer) ListInstances(context.Context, *emptyp
 }
 func (UnimplementedTriggerInstanceServer) CheckApiKey(context.Context, *APIConfig) (*CheckApiKeyHealthyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CheckApiKey not implemented")
+}
+func (UnimplementedTriggerInstanceServer) UpdateProfitTargetConfig(context.Context, *ProfitTargetConfig) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateProfitTargetConfig not implemented")
+}
+func (UnimplementedTriggerInstanceServer) UpdateExecuteNum(context.Context, *ExecuteConfig) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateExecuteNum not implemented")
 }
 func (UnimplementedTriggerInstanceServer) mustEmbedUnimplementedTriggerInstanceServer() {}
 
@@ -202,6 +236,42 @@ func _TriggerInstance_CheckApiKey_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TriggerInstance_UpdateProfitTargetConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProfitTargetConfig)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TriggerInstanceServer).UpdateProfitTargetConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TriggerInstance_UpdateProfitTargetConfig_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TriggerInstanceServer).UpdateProfitTargetConfig(ctx, req.(*ProfitTargetConfig))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TriggerInstance_UpdateExecuteNum_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ExecuteConfig)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TriggerInstanceServer).UpdateExecuteNum(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TriggerInstance_UpdateExecuteNum_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TriggerInstanceServer).UpdateExecuteNum(ctx, req.(*ExecuteConfig))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // TriggerInstance_ServiceDesc is the grpc.ServiceDesc for TriggerInstance service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -224,6 +294,14 @@ var TriggerInstance_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CheckApiKey",
 			Handler:    _TriggerInstance_CheckApiKey_Handler,
+		},
+		{
+			MethodName: "UpdateProfitTargetConfig",
+			Handler:    _TriggerInstance_UpdateProfitTargetConfig_Handler,
+		},
+		{
+			MethodName: "UpdateExecuteNum",
+			Handler:    _TriggerInstance_UpdateExecuteNum_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

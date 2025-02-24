@@ -16,6 +16,10 @@ service TriggerInstance {
   rpc ListInstances (google.protobuf.Empty) returns (TriggerListResponse);
   // 检查apikey连通性
   rpc CheckApiKey (APIConfig) returns (CheckApiKeyHealthyResponse);
+  // 修改止盈参数
+  rpc UpdateProfitTargetConfig(ProfitTargetConfig) returns (google.protobuf.Empty);
+  // 修改执行次数
+  rpc UpdateExecuteNum(ExecuteConfig) returns (google.protobuf.Empty);
 }
 
 // Message definitions
@@ -23,24 +27,20 @@ message StartTriggerRequest {
   string        instance_id = 1; // 中台实例id
   string        open_price = 2; // 开仓价格
   string        close_price = 3; // 平仓价格
-  string        side =4; // 开仓方向
+  string        side = 4; // 开仓方向
   string        amount = 5; //开仓数量
   string        symbol = 6; // 交易对
   string        stop_time = 7; //停止时间
-  APIConfig     api_config = 8; //Apikey相关
-  string        user_id = 9; // 实例启动中台user_id
+  string        user_id = 8; // 实例启动中台user_id
+  APIConfig     api_config = 9; //Apikey相关
+  ProfitTargetConfig profit_target_config = 10; // 止盈配置
+  ExecuteConfig execute_config = 11; //执行参数配置
 }
 
 message CheckApiKeyHealthyRequest {
   string api_key = 1;
   string secret_key = 2;
-  string exchange= 3;
-}
-
-message APIConfig {
-  string api_key = 1;
-  string secret_key = 2;
-  string exchange= 3;
+  string exchange = 3;
 }
 
 message CheckApiKeyHealthyResponse {
@@ -57,4 +57,45 @@ message StopTriggerRequest {
 
 message TriggerListResponse {
   repeated string instance_ids = 1;
+}
+
+/**配置**/
+message APIConfig {
+  string api_key = 1;
+  string secret_key = 2;
+  string exchange = 3;
+}
+
+message ProfitTargetConfig {
+  string        instance_id = 1; // 中台实例id
+  ProfitTargetType profit_target_type = 2;
+  oneof config {
+    FloatingTypeConfig floating_config = 3;
+    LimitTypeConfig limit_config = 4;
+  }
+}
+
+// 浮动止盈参数
+message FloatingTypeConfig {
+  double callback_ratio = 1; // 回调比例，比如40%传的就是0.4
+  double cutoff_ratio = 2; //止盈比例，如果不设置值，则认为是全部止盈,1
+  double min_profit = 3; //最低盈利金额，可不填
+}
+
+// 限价止盈参数
+message LimitTypeConfig {
+  double profit_target_price = 1; //限定的止盈价格
+  double loss_target_price = 2; //限定的止损价格
+}
+
+// 执行参数
+message ExecuteConfig {
+  string instance_id = 1; // 中台实例id
+  uint32 execute_num = 2; //任务执行次数
+}
+
+/* 枚举 **/
+enum ProfitTargetType {
+  FLOATING = 0;
+  LIMIT = 1;
 }
