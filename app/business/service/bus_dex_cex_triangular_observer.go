@@ -264,7 +264,7 @@ func (e *BusDexCexTriangularObserver) GetSymbolList(p *actions.DataPermission, l
 		).
 		Select("symbol").
 		Group("symbol").
-		Where("status = ?", 1).
+		Where("status IN ?", []int{1, 2, 3}).
 		Debug().Find(list).Error
 
 	if err != nil {

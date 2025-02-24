@@ -256,7 +256,7 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 	var observer models.BusDexCexTriangularObserver
 
 	err := e.Orm.Model(&observer).
-		Where("status = ?", 1). // 运行中的实例
+		Where("status IN ?", []int{1, 2, 3}). // 运行中的实例
 		Find(&observerList).Error
 
 	if err != nil {
