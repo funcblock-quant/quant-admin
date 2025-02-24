@@ -283,7 +283,6 @@ func (t DexCexObserverInspection) Exec(arg interface{}) error {
 			continue
 		}
 
-		log.Infof("restart observer success")
 		maxArraySize := new(uint32)
 		*maxArraySize = uint32(observer.MaxArraySize) //默认5， clmm使用参数
 
