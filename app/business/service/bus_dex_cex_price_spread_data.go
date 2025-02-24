@@ -275,26 +275,33 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 		}
 		currentTime := time.Now()
 		buyOnDex := state.GetBuyOnDex()
-		var cexSellPrice, dexBuyPrice float64
+		var cexSellPrice, dexBuyPrice, buyOnDexProfit float64
+		var dexBuySpreadPercent, dexSellSpreadPercent string
 		if buyOnDex != nil {
 			cexSellPrice, dexBuyPrice = e.calculate_dex_cex_price(buyOnDex, true)
+			buyOnDexProfit = *buyOnDex.CexSellQuoteAmount - *buyOnDex.CexBuyQuoteAmount
+			dexBuySpreadPercent = strconv.FormatFloat(math.Abs((cexSellPrice-dexBuyPrice)/dexBuyPrice), 'f', 6, 64)
 		} else {
 			// 处理 buyOnDex 为空的情况，例如设置默认值或跳过计算
 			cexSellPrice = 0
 			dexBuyPrice = 0
+			buyOnDexProfit = 0
+			dexBuySpreadPercent = "0.0"
 		}
 		sellOnDex := state.GetSellOnDex()
-		var cexBuyPrice, dexSellPrice float64
+		var cexBuyPrice, dexSellPrice, sellOnDexProfit float64
+
 		if sellOnDex != nil {
 			cexBuyPrice, dexSellPrice = e.calculate_dex_cex_price(sellOnDex, false)
+			sellOnDexProfit = *sellOnDex.CexSellQuoteAmount - *sellOnDex.CexBuyQuoteAmount
+			dexBuySpreadPercent = strconv.FormatFloat(math.Abs((dexSellPrice-cexBuyPrice)/cexBuyPrice), 'f', 6, 64)
 		} else {
 			// 处理 sellOnDex 为空的情况，例如设置默认值或跳过计算
 			cexBuyPrice = 0
 			dexSellPrice = 0
+			buyOnDexProfit = 0
+			dexSellSpreadPercent = "0.0"
 		}
-
-		buyOnDexProfit := *buyOnDex.CexSellQuoteAmount - *buyOnDex.CexBuyQuoteAmount
-		sellOnDexProfit := *sellOnDex.CexSellQuoteAmount - *sellOnDex.CexBuyQuoteAmount
 
 		spreadData := models.BusDexCexPriceSpreadData{
 			ObserverId:           id,
@@ -304,11 +311,11 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 			DexSellPrice:         dexSellPrice,
 			CexBuyPrice:          cexBuyPrice,
 			DexBuySpread:         cexSellPrice - dexBuyPrice,
-			DexBuySpreadPercent:  strconv.FormatFloat(math.Abs((cexSellPrice-dexBuyPrice)/dexBuyPrice), 'f', 6, 64),
+			DexBuySpreadPercent:  dexBuySpreadPercent,
 			DexBuyProfit:         buyOnDexProfit,
 			DexSellSpread:        dexSellPrice - cexBuyPrice,
 			DexSellProfit:        sellOnDexProfit,
-			DexSellSpreadPercent: strconv.FormatFloat(math.Abs((dexSellPrice-cexBuyPrice)/cexBuyPrice), 'f', 6, 64),
+			DexSellSpreadPercent: dexSellSpreadPercent,
 			SnapshotTime:         time.Now(),
 		}
 		e.Orm.Create(&spreadData)
