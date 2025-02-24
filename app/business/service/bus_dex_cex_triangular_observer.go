@@ -469,7 +469,7 @@ func (e *BusDexCexTriangularObserver) StartTrader(c *dto.BusDexCexTriangularObse
 		return err
 	}
 
-	e.Log.Infof("实例：%s 参数已成功更新", data.InstanceId)
+	e.Log.Infof("实例：%s 参数已成功更新", data.Id)
 	return nil
 }
 
@@ -550,7 +550,7 @@ func requestStartTrader(instance *models.BusDexCexTriangularObserver, e *BusDexC
 		instanceId := strconv.Itoa(instance.Id)
 		err := client.EnableTrader(instanceId, amberTraderConfig, traderParams)
 		if err != nil {
-			e.Log.Errorf("GRPC 启动Trader for instanceId:%s 失败，异常:%s \r\n", instance.InstanceId, err)
+			e.Log.Errorf("GRPC 启动Trader for instanceId:%d 失败，异常:%s \r\n", instance.Id, err)
 			return err
 		}
 	}
@@ -622,13 +622,14 @@ func (e *BusDexCexTriangularObserver) StopTrader(c *dto.BusDexCexTriangularObser
 		return err
 	}
 	if !data.IsTrading {
-		e.Log.Infof("实例：%s 交易功能未开启，跳过grpc调用", data.InstanceId)
+		e.Log.Infof("实例：%s 交易功能未开启，跳过grpc调用", c.InstanceId)
 		return nil
 	}
+	instanceId := strconv.Itoa(c.InstanceId)
 	if config.ApplicationConfig.Mode != "dev" {
-		err = client.DisableTrader(data.InstanceId)
+		err = client.DisableTrader(instanceId)
 		if err != nil {
-			e.Log.Errorf("grpc暂停实例：:%s 交易功能失败，异常：%s \r\n", data.InstanceId, err)
+			e.Log.Errorf("grpc暂停实例：:%d 交易功能失败，异常：%s \r\n", c.InstanceId, err)
 			return err
 		}
 
@@ -639,7 +640,7 @@ func (e *BusDexCexTriangularObserver) StopTrader(c *dto.BusDexCexTriangularObser
 		Where("id = ?", c.InstanceId).
 		Update("is_trading", false).Error
 	if err != nil {
-		e.Log.Errorf("更新数据库实例:%s 交易状态失败，异常信息：%s \r\n", data.InstanceId, err)
+		e.Log.Errorf("更新数据库实例:%d 交易状态失败，异常信息：%s \r\n", c.InstanceId, err)
 		return err
 	}
 
@@ -676,7 +677,7 @@ func (e *BusDexCexTriangularObserver) UpdateObserver(c *dto.BusDexCexTriangularU
 		instanceId := strconv.Itoa(data.Id)
 		err = client.UpdateObserverParams(instanceId, observerParams)
 		if err != nil {
-			e.Log.Errorf("grpc更新实例：:%s Observer参数失败，异常：%s \r\n", data.InstanceId, err)
+			e.Log.Errorf("grpc更新实例：:%d Observer参数失败，异常：%s \r\n", data.Id, err)
 			return err
 		}
 	}
@@ -727,9 +728,10 @@ func (e *BusDexCexTriangularObserver) UpdateTrader(c *dto.BusDexCexTriangularUpd
 		SlippageBps: &slippageBpsUint,
 	}
 	if config.ApplicationConfig.Mode != "dev" {
-		err = client.UpdateTraderParams(data.InstanceId, traderParams)
+		instanceId := strconv.Itoa(data.Id)
+		err = client.UpdateTraderParams(instanceId, traderParams)
 		if err != nil {
-			e.Log.Errorf("grpc更新实例：:%s trader参数失败，异常：%s \r\n", data.InstanceId, err)
+			e.Log.Errorf("grpc更新实例：:%s trader参数失败，异常：%s \r\n", instanceId, err)
 			return err
 		}
 	}
@@ -745,7 +747,7 @@ func (e *BusDexCexTriangularObserver) UpdateTrader(c *dto.BusDexCexTriangularUpd
 		return err
 	}
 
-	e.Log.Infof("实例：%s 参数已成功更新", data.InstanceId)
+	e.Log.Infof("实例：%d 参数已成功更新", data.Id)
 
 	return nil
 }
