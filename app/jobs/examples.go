@@ -305,19 +305,27 @@ func (t DexCexObserverInspection) Exec(arg interface{}) error {
 			}
 		}
 
+		transactionFee := &pb.TransactionFee{
+			PriorityFee: &observer.PriorityFee,
+			JitoFee:     &observer.JitoFee,
+		}
+
 		arbitrageConfig := &pb.ObserverParams{
-			SolAmount: observer.Volume,
+			MinSolAmount:             observer.MinSolAmount,
+			MaxSolAmount:             observer.MaxSolAmount,
+			TriggerProfitQuoteAmount: observer.MinProfit,
+			TxFee:                    transactionFee,
 		}
 
 		amberConfig := &pb.AmberObserverConfig{}
 		GenerateAmberConfig(&observer, amberConfig)
 
-		newObserverId, err := client.StartNewArbitragerClient(amberConfig, dexConfig, arbitrageConfig)
+		instanceId := strconv.Itoa(observer.Id)
+		err = client.StartNewArbitragerClient(&instanceId, amberConfig, dexConfig, arbitrageConfig)
 		if err != nil {
 			log.Errorf("create new arbitrager error:%s \r\n", err.Error())
 			continue
 		}
-		service.UpdateObserverWithNewId(newObserverId, observer.Id)
 		log.Infof("restart observer success with params: dexConfig: %+v\n, arbitrageConfig: %+v\n", dexConfig, arbitrageConfig)
 		if observer.IsTrading {
 			// 如果实例开启了交易，还需要启动交易功能
@@ -329,7 +337,9 @@ func (t DexCexObserverInspection) Exec(arg interface{}) error {
 			amberTraderConfig := &pb.AmberTraderConfig{
 				ExchangeType: &trader,
 			}
-			traderParams := &pb.TraderParams{}
+			traderParams := &pb.TraderParams{
+				SlippageBps: &slippageBpsUint,
+			}
 			err = client.EnableTrader(observer.InstanceId, amberTraderConfig, traderParams)
 			if err != nil {
 				log.Infof("restart instance: %d trader error: %v\n", observer.InstanceId, err)

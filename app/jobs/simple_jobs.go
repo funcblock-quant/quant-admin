@@ -13,6 +13,7 @@ func InitSimpleJob() {
 	fmt.Printf("Init simple job \n")
 	c.AddFunc("@every 5s", func() {
 		// 每5s一次，获取最新的实时价差
+		fmt.Println("GetLatestSpreadData Job running")
 		s := service.BusDexCexPriceSpreadData{}
 		orm := sdk.Runtime.GetDbByKey("*")
 		s.Orm = orm
@@ -21,6 +22,34 @@ func InitSimpleJob() {
 		err := s.GetLatestSpreadData()
 		if err != nil {
 			fmt.Errorf("GetLatestSpreadData failed, err:%v\n", err)
+		}
+	})
+
+	c.AddFunc("@every 5s", func() {
+		// 每5s一次，获查看链上链下套利实例水位调节情况
+		fmt.Println("Monitor WaterLevel Job running")
+		s := service.BusDexCexTriangularObserver{}
+		orm := sdk.Runtime.GetDbByKey("*")
+		s.Orm = orm
+		log := logger.NewHelper(sdk.Runtime.GetLogger()).WithFields(map[string]interface{}{})
+		s.Log = log
+		err := s.MonitorWaterLevelToStartTrader()
+		if err != nil {
+			fmt.Errorf("Monitor WaterLevel Job run failed, err:%v\n", err)
+		}
+	})
+
+	c.AddFunc("@every 5s", func() {
+		// 每5s一次，获查看交易中的实例的水位健康状态
+		fmt.Println("MonitorWaterLevelToStopTrader Job running")
+		s := service.BusDexCexTriangularObserver{}
+		orm := sdk.Runtime.GetDbByKey("*")
+		s.Orm = orm
+		log := logger.NewHelper(sdk.Runtime.GetLogger()).WithFields(map[string]interface{}{})
+		s.Log = log
+		err := s.MonitorWaterLevelToStopTrader()
+		if err != nil {
+			fmt.Errorf("MonitorWaterLevelToStopTrader Job run failed, err:%v\n", err)
 		}
 	})
 

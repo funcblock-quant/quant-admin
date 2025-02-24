@@ -266,21 +266,20 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 
 	for _, observer := range observerList {
 		id := strconv.Itoa(observer.Id)
-		observerId := observer.InstanceId
-		e.Log.Infof("id:%s get latest spread data \r\n", observerId)
-		state, err := client.GetObserverState(observerId)
+		e.Log.Infof("id:%s get latest spread data \r\n", id)
+		state, err := client.GetObserverState(id)
 		if err != nil {
 			e.Log.Errorf("grpc获取最新价差数据失败， error:%s \r\n", err)
 			continue
 		}
 		currentTime := time.Now()
 		buyOnDex := state.GetBuyOnDex()
-		cexSellPrice, dexBuyPrice := e.calculate_dex_cex_price(buyOnDex)
+		cexSellPrice, dexBuyPrice := e.calculate_dex_cex_price(buyOnDex, true)
 		sellOnDex := state.GetSellOnDex()
-		cexBuyPrice, dexSellPrice := e.calculate_dex_cex_price(sellOnDex)
+		cexBuyPrice, dexSellPrice := e.calculate_dex_cex_price(sellOnDex, false)
 
-		buyOnDexProfit := *buyOnDex.CexTargetSymbolQuoteAmount - *buyOnDex.CexSolSymbolQuoteAmount
-		sellOnDexProfit := *sellOnDex.CexSolSymbolQuoteAmount - *sellOnDex.CexTargetSymbolQuoteAmount
+		buyOnDexProfit := *buyOnDex.CexSellQuoteAmount - *buyOnDex.CexBuyQuoteAmount
+		sellOnDexProfit := *sellOnDex.CexSellQuoteAmount - *sellOnDex.CexBuyQuoteAmount
 
 		spreadData := models.BusDexCexPriceSpreadData{
 			ObserverId:           id,
@@ -428,31 +427,43 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 	return nil
 }
 
-func (e *BusDexCexPriceSpreadData) calculate_dex_cex_price(priceState *pb.ArbitrageState) (float64, float64) {
+func (e *BusDexCexPriceSpreadData) calculate_dex_cex_price(priceState *pb.ObserverState, isDexBuy bool) (float64, float64) {
 	var cexPrice float64      // TRUMP/USDT
 	var dexPrice float64      //TRUMP/USDT
 	var cexQuotePrice float64 // 例如：TRUMP/USDT
-	if priceState.CexTargetSymbolQuantity != nil && priceState.CexTargetSymbolQuoteAmount != nil && *priceState.CexTargetSymbolQuantity != 0 {
-		cexQuotePrice = *priceState.CexTargetSymbolQuoteAmount / *priceState.CexTargetSymbolQuantity
+	var cexSolPrice float64   //SOL/USDT
+	if isDexBuy {
+		// dex买入
+		if priceState.CexSellQuantity != nil && priceState.CexSellQuoteAmount != nil && *priceState.CexSellQuantity != 0 {
+			cexQuotePrice = *priceState.CexSellQuoteAmount / *priceState.CexSellQuantity
+		} else {
+			// 处理 nil 或除数为 0 的情况，避免 panic
+			cexQuotePrice = 0
+		}
+
+		if priceState.CexBuyQuantity != nil && priceState.CexBuyQuoteAmount != nil && *priceState.CexBuyQuantity != 0 {
+			cexSolPrice = *priceState.CexBuyQuoteAmount / *priceState.CexBuyQuantity
+		} else {
+			// 处理 nil 或除数为 0 的情况，避免 panic
+			cexSolPrice = 0
+		}
 	} else {
-		// 处理 nil 或除数为 0 的情况，避免 panic
-		cexQuotePrice = 0
+		// dex卖出
+		if priceState.CexBuyQuantity != nil && priceState.CexBuyQuoteAmount != nil && *priceState.CexBuyQuantity != 0 {
+			cexQuotePrice = *priceState.CexBuyQuoteAmount / *priceState.CexBuyQuantity
+		} else {
+			// 处理 nil 或除数为 0 的情况，避免 panic
+			cexQuotePrice = 0
+		}
+
+		if priceState.CexSellQuantity != nil && priceState.CexSellQuoteAmount != nil && *priceState.CexSellQuantity != 0 {
+			cexSolPrice = *priceState.CexSellQuoteAmount / *priceState.CexSellQuantity
+		} else {
+			// 处理 nil 或除数为 0 的情况，避免 panic
+			cexSolPrice = 0
+		}
 	}
 
-	var cexSolPrice float64 //SOL/USDT
-	if priceState.CexSolSymbolQuantity != nil && priceState.CexSolSymbolQuoteAmount != nil && *priceState.CexSolSymbolQuantity != 0 {
-		cexSolPrice = *priceState.CexSolSymbolQuoteAmount / *priceState.CexSolSymbolQuantity
-	} else {
-		// 处理 nil 或除数为 0 的情况，避免 panic
-		cexSolPrice = 0
-	}
-
-	//if cexQuotePrice != 0 && cexSolPrice != 0 {
-	//	cexPrice = cexQuotePrice / cexSolPrice
-	//} else {
-	//	// 处理除数为0的情况，避免panic
-	//	cexPrice = 0
-	//}
 	cexPrice = cexQuotePrice
 
 	var dexSolPrice float64 //TRUMP/WSOL
