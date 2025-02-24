@@ -134,3 +134,55 @@ func CheckApiKeyHealth(request *trigger_service.APIConfig) (bool, error) {
 	fmt.Println("校验apikey健康性结果:", isHealthy)
 	return isHealthy, nil
 }
+
+func UpdateProfitTarget(request *trigger_service.ProfitTargetConfig) error {
+	// 获取 gRPC 客户端连接
+	clientConn, err := pool.GetGrpcClient("trigger-service")
+	if err != nil {
+		return fmt.Errorf("获取grpc客户端失败: %w", err)
+	}
+	if clientConn == nil || clientConn.ClientConn == nil { // 再次检查 clientConn 是否为 nil
+		return fmt.Errorf("grpc客户端连接为空")
+	}
+	defer clientConn.Close() // 确保连接在使用后返回连接池
+	// 创建 gRPC 客户端实例
+	c := trigger_service.NewTriggerInstanceClient(clientConn)
+	// 设置超时 Context
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	_, err = c.UpdateProfitTargetConfig(ctx, request)
+	if err != nil {
+		return fmt.Errorf("更新 止盈设置失败: %w", err)
+	}
+
+	// 处理响应
+	fmt.Println("更新trigger 止盈设置成功. Instance ID:", request.InstanceId)
+	return nil
+}
+
+func UpdateExecuteNum(request *trigger_service.ExecuteConfig) error {
+	// 获取 gRPC 客户端连接
+	clientConn, err := pool.GetGrpcClient("trigger-service")
+	if err != nil {
+		return fmt.Errorf("获取grpc客户端失败: %w", err)
+	}
+	if clientConn == nil || clientConn.ClientConn == nil { // 再次检查 clientConn 是否为 nil
+		return fmt.Errorf("grpc客户端连接为空")
+	}
+	defer clientConn.Close() // 确保连接在使用后返回连接池
+	// 创建 gRPC 客户端实例
+	c := trigger_service.NewTriggerInstanceClient(clientConn)
+	// 设置超时 Context
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	_, err = c.UpdateExecuteNum(ctx, request)
+	if err != nil {
+		return fmt.Errorf("更新 执行次数失败: %w", err)
+	}
+
+	// 处理响应
+	fmt.Println("更新trigger 执行次数成功. Instance ID:", request.InstanceId)
+	return nil
+}

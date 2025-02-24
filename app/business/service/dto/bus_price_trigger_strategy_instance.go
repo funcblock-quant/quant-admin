@@ -44,20 +44,27 @@ type TriggerStrategyInstanceGetUserListReq struct {
 }
 
 type BusPriceTriggerStrategyResp struct {
-	Id             string                                     `json:"id"`
-	OpenPrice      string                                     `json:"openPrice"`
-	ClosePrice     string                                     `json:"closePrice"`
-	Amount         string                                     `json:"amount"`
-	Side           string                                     `json:"side"`
-	Symbol         string                                     `json:"symbol"`
-	CloseTime      time.Time                                  `json:"closeTime"`
-	Status         string                                     `json:"status"`
-	ApiConfig      string                                     `json:"apiConfig"`
-	ApiConfigData  models.BusPriceTriggerStrategyApikeyConfig `json:"apiConfigData" gorm:"-"`
-	CreatedAt      time.Time                                  `json:"createdAt"`
-	Details        []models.BusPriceMonitorForOptionHedging   `json:"details" gorm:"-"`
-	Statistical    BusPriceTriggerStrategyStatistical         `json:"statistical" gorm:"-"`
-	ExchangeUserId string                                     `json:"exchangeUserId"`
+	Id                string                                     `json:"id"`
+	OpenPrice         string                                     `json:"openPrice"`
+	ClosePrice        string                                     `json:"closePrice"`
+	Amount            string                                     `json:"amount"`
+	Side              string                                     `json:"side"`
+	Symbol            string                                     `json:"symbol"`
+	CloseTime         time.Time                                  `json:"closeTime"`
+	Status            string                                     `json:"status"`
+	ApiConfig         string                                     `json:"apiConfig"`
+	ApiConfigData     models.BusPriceTriggerStrategyApikeyConfig `json:"apiConfigData" gorm:"-"`
+	CreatedAt         time.Time                                  `json:"createdAt"`
+	Details           []models.BusPriceMonitorForOptionHedging   `json:"details" gorm:"-"`
+	Statistical       BusPriceTriggerStrategyStatistical         `json:"statistical" gorm:"-"`
+	ExchangeUserId    string                                     `json:"exchangeUserId"`
+	ExecuteNum        int                                        `json:"executeNum"`
+	ProfitTargetType  string                                     `json:"profitTargetType"`
+	ProfitTargetPrice string                                     `json:"profitTargetPrice"`
+	LossTargetPrice   string                                     `json:"lossTargetPrice"`
+	CallbackRatio     int                                        `json:"callbackRatio"`
+	CutoffRatio       int                                        `json:"cutoffRatio"`
+	MinProfit         float64                                    `json:"minProfit"`
 }
 
 // BusPriceTriggerStrategyStatistical 价格触发下单的统计数据
@@ -77,6 +84,23 @@ type BusPriceTriggerStrategyInstanceInsertReq struct {
 	ApiConfig      int       `json:"apiConfig" comment:"api配置id"`
 	Status         string    `json:"status" comment:"状态，created, started, stopped, closed"`
 	ExchangeUserId string    `json:"exchangeUserId"`
+	common.ControlBy
+}
+
+type BusPriceTriggerStrategyInstanceUpdateProfitTargetReq struct {
+	Id                int     `json:"id" comment:""` //
+	ProfitTargetType  string  `json:"profitTargetType"`
+	ProfitTargetPrice float64 `json:"profitTargetPrice"`
+	LossTargetPrice   float64 `json:"lossTargetPrice"`
+	CallbackRatio     float64 `json:"callbackRatio"`
+	CutoffRatio       float64 `json:"cutoffRatio"`
+	MinProfit         float64 `json:"minProfit"`
+	common.ControlBy
+}
+
+type BusPriceTriggerStrategyInstanceUpdateExecuteNumReq struct {
+	Id         int `json:"id" comment:""` //
+	ExecuteNum int `json:"executeNum"`
 	common.ControlBy
 }
 
