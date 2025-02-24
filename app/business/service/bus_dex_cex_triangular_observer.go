@@ -575,6 +575,10 @@ func (e *BusDexCexTriangularObserver) MonitorWaterLevelToStopTrader() error {
 		queryReq := &waterLevelPb.InstantId{
 			InstanceId: instanceId,
 		}
+		//TODO 后续要删除的
+		if instance.TargetToken == "TRUMP" {
+			continue
+		}
 		waterLevelState, err := client.GetWaterLevelInstanceState(queryReq)
 		if err != nil {
 			e.Log.Errorf("get WaterLevelInstanceState error: instanceId:%d, error msg:%s \r\n", instance.Id, err)
