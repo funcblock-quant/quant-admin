@@ -2,7 +2,6 @@ package service
 
 import (
 	"errors"
-	"fmt"
 	log "github.com/go-admin-team/go-admin-core/logger"
 	"github.com/go-admin-team/go-admin-core/sdk/config"
 	"github.com/go-admin-team/go-admin-core/sdk/service"
@@ -412,10 +411,10 @@ func (e *BusDexCexTriangularObserver) StartTrader(c *dto.BusDexCexTriangularObse
 		PubKey:                 *data.TokenMint,
 		OwnerProgram:           *data.OwnerProgram,
 		Decimals:               uint32(data.Decimals),
-		AlertThreshold:         fmt.Sprintf("%v", c.AlertThreshold),
-		BuyTriggerThreshold:    fmt.Sprintf("%v", c.BuyTriggerThreshold),
-		TargetBalanceThreshold: fmt.Sprintf("%v", c.TargetBalanceThreshold),
-		SellTriggerThreshold:   fmt.Sprintf("%v", c.SellTriggerThreshold),
+		AlertThreshold:         strconv.FormatFloat(*c.AlertThreshold, 'f', -1, 64),
+		BuyTriggerThreshold:    strconv.FormatFloat(*c.BuyTriggerThreshold, 'f', -1, 64),
+		TargetBalanceThreshold: strconv.FormatFloat(*c.TargetBalanceThreshold, 'f', -1, 64),
+		SellTriggerThreshold:   strconv.FormatFloat(*c.SellTriggerThreshold, 'f', -1, 64),
 	}
 
 	clientRequest := &waterLevelPb.StartInstanceRequest{
