@@ -7,7 +7,7 @@ import "google/protobuf/empty.proto";
 
 // Define the service
 service Arbitrager {
-  rpc Start (StartRequest) returns (InstantId);
+  rpc Start (StartRequest) returns (google.protobuf.Empty);
   rpc Stop (InstantId) returns (google.protobuf.Empty);
   rpc Get (InstantId) returns (BasicInfo);
   rpc List (google.protobuf.Empty) returns (ListResponse);
@@ -23,9 +23,10 @@ service Arbitrager {
 // Message definitions
 
 message StartRequest {
-  required AmberObserverConfig amber_config = 1;
-  required DexConfig dex_config = 2;
-  required ObserverParams params = 3;
+  required string instance_id = 1;
+  required AmberObserverConfig amber_config = 2;
+  required DexConfig dex_config = 3;
+  required ObserverParams params = 4;
 }
 
 message EnableTraderRequest {
@@ -40,8 +41,8 @@ message ListResponse {
 
 message GetStateResponse {
   required int64 timestamp = 1;
-  required ArbitrageState buy_on_dex = 2;
-  required ArbitrageState sell_on_dex = 3;
+  optional ObserverState buy_on_dex = 2;
+  optional ObserverState sell_on_dex = 3;
 }
 
 message UpdateObserverParamsRequest {
@@ -90,18 +91,19 @@ message RayClmmConfig {
 // Params
 
 message ObserverParams {
-  required double sol_amount = 1;
+  required TransactionFee tx_fee = 1;
+  required double min_sol_amount = 2;
+  required double max_sol_amount = 3;
+  required double trigger_profit_quote_amount = 4;
 }
 
 message TraderParams {
   required uint64 slippage_bps = 1;
-  required double min_profit = 2;
-  required TxBuildParam tx_build_param = 3;
 }
 
-message TxBuildParam {
-  optional uint64 priority_fee = 2; // 100_000
-  required uint64 jito_fee = 3; // 100_000
+message TransactionFee {
+  optional uint64 priority_fee = 1; // 100_000
+  required uint64 jito_fee = 2; // 100_000
 }
 
 message BasicInfo {
@@ -113,13 +115,13 @@ message BasicInfo {
   optional AmberTraderConfig amber_trader_config = 6;
 }
 
-message ArbitrageState {
-  required double cex_target_symbol_quantity = 1;
-  required double cex_target_symbol_quote_amount = 2;
-  required double cex_sol_symbol_quantity = 3;
-  required double cex_sol_symbol_quote_amount = 4;
-  required double dex_target_amount = 5;
-  required double dex_sol_amount = 6;
+message ObserverState {
+  required double dex_target_amount = 1;
+  required double dex_sol_amount = 2;
+  required double cex_sell_quantity = 3;
+  required double cex_sell_quote_amount = 4;
+  required double cex_buy_quantity = 5;
+  required double cex_buy_quote_amount = 6;
 }
 
 enum DexType {

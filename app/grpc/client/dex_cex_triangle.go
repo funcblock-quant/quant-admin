@@ -9,14 +9,14 @@ import (
 	"time"
 )
 
-func StartNewArbitragerClient(amberObserverConfig *observer_service.AmberObserverConfig, ammDexConfig *observer_service.DexConfig, observerParams *observer_service.ObserverParams) (string, error) {
+func StartNewArbitragerClient(instanceId *string, amberObserverConfig *observer_service.AmberObserverConfig, ammDexConfig *observer_service.DexConfig, observerParams *observer_service.ObserverParams) error {
 	// 获取 gRPC 客户端连接
 	clientConn, err := pool.GetGrpcClient("solana-observer")
 	if err != nil {
-		return "", fmt.Errorf("获取grpc客户端失败: %w", err)
+		return fmt.Errorf("获取grpc客户端失败: %w", err)
 	}
 	if clientConn == nil || clientConn.ClientConn == nil { // 再次检查 clientConn 是否为 nil
-		return "", fmt.Errorf("grpc客户端连接为空")
+		return fmt.Errorf("grpc客户端连接为空")
 	}
 	defer clientConn.Close() // 确保连接在使用后返回连接池
 
@@ -29,6 +29,7 @@ func StartNewArbitragerClient(amberObserverConfig *observer_service.AmberObserve
 
 	// 构造请求消息
 	req := &observer_service.StartRequest{
+		InstanceId:  instanceId,
 		AmberConfig: amberObserverConfig,
 		DexConfig:   ammDexConfig,
 		Params:      observerParams,
@@ -36,15 +37,14 @@ func StartNewArbitragerClient(amberObserverConfig *observer_service.AmberObserve
 	fmt.Printf("start observer req:%+v\n", req)
 
 	// 发送 gRPC 请求
-	resp, err := c.Start(ctx, req)
+	_, err = c.Start(ctx, req)
 	if err != nil {
-		return "", fmt.Errorf("启动 observer失败: %w", err)
+		return fmt.Errorf("启动 observer失败: %w", err)
 	}
 
 	// 处理响应
-	instanceID := resp.GetInstanceId()
-	fmt.Println("Observer 启动成功. Instance ID:", instanceID)
-	return instanceID, nil
+	fmt.Println("Observer 启动成功. Instance ID:", *instanceId)
+	return nil
 }
 
 func StopArbitragerClient(instanceId string) (err error) {

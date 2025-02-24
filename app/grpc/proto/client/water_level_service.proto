@@ -1,0 +1,61 @@
+// proto/water_level_service.proto
+syntax = "proto3";
+package water_level_service;
+option go_package = "./water_level_service;water_level_service";
+
+import "google/protobuf/empty.proto";
+
+// Define the service
+service Instance {
+  // 开启实例
+  rpc StartInstance (StartInstanceRequest) returns (InstantId);
+  // 暂停实例
+  rpc StopInstance (InstantId) returns (google.protobuf.Empty);
+  // 查看所有启动的实例ids
+  rpc ListInstances (google.protobuf.Empty) returns (InstanceListResponse);
+  // 查看实例实时数据
+  rpc GetInstanceState (InstantId) returns (GetStateResponse);
+
+  rpc UpdateInstanceParams (UpdateInstanceParamsRequest) returns (google.protobuf.Empty);
+}
+
+// Message definitions
+message StartInstanceRequest {
+  string        instance_id = 1; // 中台实例id
+  string        exchange_type = 2; //交易所类型，Binance
+  TokenConfig   token_config = 3; // 水位调节配置
+}
+
+message TokenConfig {
+  string currency = 1; // 交易币种
+  string pub_key = 2; // 交易币种在solana mainnet链上的pubkey，sol留空，其他token必填
+  string owner_program = 3; // 交易币种在solana mainnet链上的owner_program，sol留空，其他token必填
+  uint32 decimals = 4; // 交易币种在solana mainnet链上的decimals，sol留空，其他token必填
+  string alert_threshold = 5; // 最低预警水位线
+  string buy_trigger_threshold = 6; //触发水位调节的低水位线
+  string target_balance_threshold = 7; // 低水位调节的目标阈值
+  string sell_trigger_threshold = 8; // 触发水位调节的高水位线
+}
+
+message InstanceListResponse {
+  repeated string instance_ids = 1;
+}
+
+message InstantId {
+  string instance_id = 1;
+}
+
+message GetStateResponse {
+  bool trader_switch = 1; // 交易开关 true:开 false:关
+  string currency = 2; // 交易币种
+  string cex_account_balance = 3; // 交易所账户该币种余额，空字符表示未获取到余额
+  string chain_wallet_balance = 4; // 链上钱包该币种余额，空字符表示未获取到余额
+}
+
+message UpdateInstanceParamsRequest{
+  string alert_threshold = 1;
+  string buy_trigger_threshold = 2;
+  string target_balance_threshold = 3;
+  string sell_trigger_threshold = 4;
+  string instance_id = 5;
+}

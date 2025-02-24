@@ -39,7 +39,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ArbitragerClient interface {
-	Start(ctx context.Context, in *StartRequest, opts ...grpc.CallOption) (*InstantId, error)
+	Start(ctx context.Context, in *StartRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	Stop(ctx context.Context, in *InstantId, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	Get(ctx context.Context, in *InstantId, opts ...grpc.CallOption) (*BasicInfo, error)
 	List(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ListResponse, error)
@@ -60,8 +60,8 @@ func NewArbitragerClient(cc grpc.ClientConnInterface) ArbitragerClient {
 	return &arbitragerClient{cc}
 }
 
-func (c *arbitragerClient) Start(ctx context.Context, in *StartRequest, opts ...grpc.CallOption) (*InstantId, error) {
-	out := new(InstantId)
+func (c *arbitragerClient) Start(ctx context.Context, in *StartRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, Arbitrager_Start_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -163,7 +163,7 @@ func (c *arbitragerClient) UpdateTraderParams(ctx context.Context, in *UpdateTra
 // All implementations must embed UnimplementedArbitragerServer
 // for forward compatibility
 type ArbitragerServer interface {
-	Start(context.Context, *StartRequest) (*InstantId, error)
+	Start(context.Context, *StartRequest) (*emptypb.Empty, error)
 	Stop(context.Context, *InstantId) (*emptypb.Empty, error)
 	Get(context.Context, *InstantId) (*BasicInfo, error)
 	List(context.Context, *emptypb.Empty) (*ListResponse, error)
@@ -181,7 +181,7 @@ type ArbitragerServer interface {
 type UnimplementedArbitragerServer struct {
 }
 
-func (UnimplementedArbitragerServer) Start(context.Context, *StartRequest) (*InstantId, error) {
+func (UnimplementedArbitragerServer) Start(context.Context, *StartRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Start not implemented")
 }
 func (UnimplementedArbitragerServer) Stop(context.Context, *InstantId) (*emptypb.Empty, error) {
