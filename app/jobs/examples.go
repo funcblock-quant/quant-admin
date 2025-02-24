@@ -265,15 +265,15 @@ func (t DexCexObserverInspection) Exec(arg interface{}) error {
 
 	for _, observer := range observers {
 		log.Infof("observer:%+v\n", observer)
-		if observer.Status == "2" {
+		if observer.Status == "4" {
 			//已停止的直接跳过
-			log.Infof("observer: %s\n status is stopped, skip \r\n", observer.InstanceId)
+			log.Infof("observer: %d\n status is stopped, skip \r\n", observer.Id)
 			continue
 		}
 
-		if containsObserver(observerInfos, observer.InstanceId) {
+		if containsObserver(observerInfos, strconv.Itoa(observer.Id)) {
 			// 服务端已经存在的，直接跳过
-			log.Infof("observer: %s\n is running, skip \r\n", observer.InstanceId)
+			log.Infof("observer: %s\n is running, skip \r\n", strconv.Itoa(observer.Id))
 			continue
 		}
 
