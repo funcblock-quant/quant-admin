@@ -27,6 +27,7 @@ func (e *StrategyDexCexTriangularArbitrageTrades) GetPage(c *dto.StrategyDexCexT
 			cDto.Paginate(c.GetPageSize(), c.GetPageIndex()),
 			actions.Permission(data.TableName(), p),
 		).
+		Where("error IS NULL OR error = ''").
 		Find(list).Limit(-1).Offset(-1).
 		Count(count).Error
 	if err != nil {
