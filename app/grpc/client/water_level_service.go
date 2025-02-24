@@ -28,7 +28,7 @@ func StartWaterLevelInstance(request *pb.StartInstanceRequest) (string, error) {
 	defer cancel()
 
 	// 发送 gRPC 请求
-	fmt.Println("开始请求water level server to start instance")
+	fmt.Printf("开始请求water level server to start instance, req: %v \n", request)
 	resp, err := c.StartInstance(ctx, request)
 	if err != nil {
 		fmt.Println("启动 water_level_server实例失败: %w", err)
