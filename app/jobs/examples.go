@@ -339,13 +339,13 @@ func (t DexCexObserverInspection) Exec(arg interface{}) error {
 			traderParams := &pb.TraderParams{
 				SlippageBps: &slippageBpsUint,
 			}
-			err = client.EnableTrader(observer.InstanceId, amberTraderConfig, traderParams)
+			err = client.EnableTrader(instanceId, amberTraderConfig, traderParams)
 			if err != nil {
-				log.Infof("restart instance: %d trader error: %v\n", observer.InstanceId, err)
+				log.Infof("restart instance: %d trader error: %v\n", instanceId, err)
 				//如果启动trader失败，则将该交易机器人设置为isTrading = false
 				service.UpdateObserverWithTradingStatus(observer.Id, false)
 			} else {
-				log.Infof("restart instance: %d trader success\n", observer.InstanceId)
+				log.Infof("restart instance: %d trader success\n", instanceId)
 			}
 		}
 
