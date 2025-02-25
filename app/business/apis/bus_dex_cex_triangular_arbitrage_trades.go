@@ -44,7 +44,7 @@ func (e StrategyDexCexTriangularArbitrageTrades) GetPage(c *gin.Context) {
 	}
 
 	p := actions.GetPermissionFromContext(c)
-	list := make([]models.StrategyDexCexTriangularArbitrageTrades, 0)
+	list := make([]dto.StrategyDexCexTriangularArbitrageTradesGetPageResp, 0)
 	var count int64
 
 	err = s.GetPage(&req, p, &list, &count)

@@ -10,6 +10,12 @@ type StrategyDexCexTriangularArbitrageOpportunitiesGetPageReq struct {
 	dto.Pagination `search:"-"`
 	InstanceId     string `form:"instanceId"  search:"type:exact;column:instance_id;table:strategy_dex_cex_triangular_arbitrage_opportunities" comment:"实例id"`
 	BuyOnDex       string `form:"buyOnDex"  search:"type:exact;column:buy_on_dex;table:strategy_dex_cex_triangular_arbitrage_opportunities" comment:"买方标识"`
+	Symbol         string `form:"symbol" search:"-"`
+	MinProfit      string `form:"minProfit" search:"-"`
+	MaxProfit      string `form:"maxProfit" search:"-"`
+	BeginTime      string `form:"beginTime" search:"type:gte;column:updated_at;table:strategy_dex_cex_triangular_arbitrage_opportunities"` // >= BeginTime
+	EndTime        string `form:"endTime" search:"type:lte;column:updated_at;table:strategy_dex_cex_triangular_arbitrage_opportunities"`   // <= EndTime
+
 	StrategyDexCexTriangularArbitrageOpportunitiesOrder
 }
 

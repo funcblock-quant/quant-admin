@@ -17,18 +17,34 @@ type StrategyDexCexTriangularArbitrageTrades struct {
 }
 
 // GetPage 获取StrategyDexCexTriangularArbitrageTrades列表
-func (e *StrategyDexCexTriangularArbitrageTrades) GetPage(c *dto.StrategyDexCexTriangularArbitrageTradesGetPageReq, p *actions.DataPermission, list *[]models.StrategyDexCexTriangularArbitrageTrades, count *int64) error {
+func (e *StrategyDexCexTriangularArbitrageTrades) GetPage(c *dto.StrategyDexCexTriangularArbitrageTradesGetPageReq, p *actions.DataPermission, list *[]dto.StrategyDexCexTriangularArbitrageTradesGetPageResp, count *int64) error {
 	var err error
 	var data models.StrategyDexCexTriangularArbitrageTrades
 
-	err = e.Orm.Model(&data).
+	query := e.Orm.Model(&data).
+		Select("strategy_dex_cex_triangular_arbitrage_trades.*, opportunities.cex_target_asset as symbol").
+		Joins("LEFT JOIN strategy_dex_cex_triangular_arbitrage_opportunities AS opportunities ON strategy_dex_cex_triangular_arbitrage_trades.opportunity_id = opportunities.opportunity_id").
 		Scopes(
 			cDto.MakeCondition(c.GetNeedSearch()),
 			cDto.Paginate(c.GetPageSize(), c.GetPageIndex()),
 			actions.Permission(data.TableName(), p),
 		).
-		Where("error IS NULL OR error = ''").
-		Find(list).Limit(-1).Offset(-1).
+		Where("strategy_dex_cex_triangular_arbitrage_trades.error IS NULL OR strategy_dex_cex_triangular_arbitrage_trades.error = ''")
+
+	// 1. Profit 计算字段过滤
+	if c.MinProfit != "" && c.MaxProfit != "" {
+		query = query.Where("(strategy_dex_cex_triangular_arbitrage_trades.cex_sell_quote_amount - strategy_dex_cex_triangular_arbitrage_trades.cex_buy_quote_amount) BETWEEN ? AND ?", c.MinProfit, c.MaxProfit)
+	} else if c.MinProfit != "" {
+		query = query.Where("(strategy_dex_cex_triangular_arbitrage_trades.cex_sell_quote_amount - strategy_dex_cex_triangular_arbitrage_trades.cex_buy_quote_amount) >= ?", c.MinProfit)
+	} else if c.MaxProfit != "" {
+		query = query.Where("(strategy_dex_cex_triangular_arbitrage_trades.cex_sell_quote_amount - strategy_dex_cex_triangular_arbitrage_trades.cex_buy_quote_amount) <= ?", c.MaxProfit)
+	}
+
+	if c.Symbol != "" {
+		query = query.Where("opportunities.cex_target_asset = ?", c.Symbol)
+	}
+
+	err = query.Find(list).Limit(-1).Offset(-1).
 		Count(count).Error
 	if err != nil {
 		e.Log.Errorf("StrategyDexCexTriangularArbitrageTradesService GetPage error:%s \r\n", err)
