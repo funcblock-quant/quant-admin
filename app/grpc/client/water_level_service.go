@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"fmt"
+	"google.golang.org/protobuf/types/known/emptypb"
 	"quanta-admin/app/grpc/pool"
 	pb "quanta-admin/app/grpc/proto/client/water_level_service"
 	"time"
@@ -126,4 +127,30 @@ func GetWaterLevelInstanceState(request *pb.InstantId) (*pb.GetStateResponse, er
 	// 处理响应
 	fmt.Printf("获取water_level 实例数据成功. Resp: %v\r\n", resp)
 	return resp, nil
+}
+
+func ListWaterLevelInstance() (*pb.InstanceListResponse, error) {
+	// 获取 gRPC 客户端连接
+	clientConn, err := pool.GetGrpcClient("water-level-service")
+	if err != nil {
+		return nil, fmt.Errorf("获取grpc客户端失败: %w", err)
+	}
+	if clientConn == nil || clientConn.ClientConn == nil { // 再次检查 clientConn 是否为 nil
+		return nil, fmt.Errorf("grpc客户端连接为空")
+	}
+	defer clientConn.Close() // 确保连接在使用后返回连接池
+
+	// 创建 gRPC 客户端实例
+	c := pb.NewInstanceClient(clientConn)
+
+	// 设置超时 Context
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	resp, err := c.ListInstances(ctx, &emptypb.Empty{})
+	if err != nil {
+		return nil, fmt.Errorf("获取 instance列表失败: %w", err)
+	}
+	return resp, nil
+
 }

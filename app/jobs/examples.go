@@ -11,6 +11,7 @@ import (
 	"quanta-admin/app/grpc/proto/client/instance_service"
 	pb "quanta-admin/app/grpc/proto/client/observer_service"
 	"quanta-admin/app/grpc/proto/client/trigger_service"
+	waterLevelPb "quanta-admin/app/grpc/proto/client/water_level_service"
 	"quanta-admin/config"
 	"quanta-admin/notification/lark"
 	"strconv"
@@ -202,9 +203,18 @@ func contains(instanceIds []string, target string) bool {
 	return false
 }
 
-func containsObserver(observerInfos []*pb.BasicInfo, target string) bool {
+func containsObserver(observerInfos []*pb.BasicInfo, target string) (bool, bool) {
 	for _, info := range observerInfos {
 		if *info.InstanceId == target {
+			return true, *info.TraderEnabled
+		}
+	}
+	return false, false
+}
+
+func containsWaterLevelInstance(waterLevelInstances *waterLevelPb.InstanceListResponse, target string) bool {
+	for _, id := range waterLevelInstances.InstanceIds {
+		if id == target {
 			return true
 		}
 	}
@@ -256,6 +266,9 @@ func (t DexCexObserverInspection) Exec(arg interface{}) error {
 	observerInfos, err := client.ListArbitragerClient()
 	log.Infof("observerInfos:%+v\n", observerInfos)
 
+	waterLevelInstances, err := client.ListWaterLevelInstance()
+	log.Infof("waterLevelInstances:%+v\n", waterLevelInstances)
+
 	observers := make([]models.BusDexCexTriangularObserver, 0)
 	err = service.GetObserverList(&observers)
 	if err != nil {
@@ -271,81 +284,65 @@ func (t DexCexObserverInspection) Exec(arg interface{}) error {
 			continue
 		}
 
-		if containsObserver(observerInfos, strconv.Itoa(observer.Id)) {
-			// 服务端已经存在的，直接跳过
-			log.Infof("observer: %s\n is running, skip \r\n", strconv.Itoa(observer.Id))
-			continue
-		}
-
-		slippageBpsUint, err := strconv.ParseUint(observer.SlippageBps, 10, 32)
-		if err != nil {
-			log.Infof("slippageBps: %v\n", slippageBpsUint)
-			continue
-		}
-
-		maxArraySize := new(uint32)
-		*maxArraySize = uint32(observer.MaxArraySize) //默认5， clmm使用参数
-
-		dexConfig := &pb.DexConfig{}
-		if observer.DexType == "RAY_AMM" {
-			dexConfig.Config = &pb.DexConfig_RayAmm{
-				RayAmm: &pb.RayAmmConfig{
-					Pool:      observer.AmmPoolId,
-					TokenMint: observer.TokenMint,
-				},
+		if observer.Status == "1" {
+			// 已开启observer的，只需要校验是否启动observer
+			log.Infof("observer: %d\n status is 1, check observer \r\n", observer.Id)
+			if exists, _ := containsObserver(observerInfos, strconv.Itoa(observer.Id)); !exists {
+				// 服务端不存在，重启
+				err := restartObserver(&observer)
+				if err != nil {
+					continue
+				}
 			}
-		} else if observer.DexType == "RAY_CLMM" {
-			dexConfig.Config = &pb.DexConfig_RayClmm{
-				RayClmm: &pb.RayClmmConfig{
-					Pool:         observer.AmmPoolId,
-					TokenMint:    observer.TokenMint,
-					MaxArraySize: maxArraySize,
-				},
-			}
-		}
 
-		transactionFee := &pb.TransactionFee{
-			PriorityFee: &observer.PriorityFee,
-			JitoFee:     &observer.JitoFee,
-		}
-
-		arbitrageConfig := &pb.ObserverParams{
-			MinSolAmount:             observer.MinSolAmount,
-			MaxSolAmount:             observer.MaxSolAmount,
-			TriggerProfitQuoteAmount: observer.MinProfit,
-			TxFee:                    transactionFee,
-		}
-
-		amberConfig := &pb.AmberObserverConfig{}
-		GenerateAmberConfig(&observer, amberConfig)
-
-		instanceId := strconv.Itoa(observer.Id)
-		err = client.StartNewArbitragerClient(&instanceId, amberConfig, dexConfig, arbitrageConfig)
-		if err != nil {
-			log.Errorf("create new arbitrager error:%s \r\n", err.Error())
-			continue
-		}
-		log.Infof("restart observer success with params: dexConfig: %+v\n, arbitrageConfig: %+v\n", dexConfig, arbitrageConfig)
-		if observer.IsTrading {
-			// 如果实例开启了交易，还需要启动交易功能
-			trader, err := observer.GetExchangeTypeForTrader()
-			if err != nil {
-				log.Infof("get exchange type for trader failed: %v\n", err)
-				continue
+		} else if observer.Status == "2" {
+			// 水位调节中的，需要校验1. observer是否开启，水位调节是否开启
+			log.Infof("observer: %d\n status is 2, check observer and water level \r\n", observer.Id)
+			if exist, _ := containsObserver(observerInfos, strconv.Itoa(observer.Id)); !exist {
+				// 服务端不存在的，重启
+				err := restartObserver(&observer)
+				if err != nil {
+					//如果重启失败，则不进行下一步水位调节开启
+					continue
+				}
 			}
-			amberTraderConfig := &pb.AmberTraderConfig{
-				ExchangeType: &trader,
+			if !containsWaterLevelInstance(waterLevelInstances, strconv.Itoa(observer.Id)) {
+				// 服务端不存在的，重启
+				err := restartWaterLevel(&observer)
+				if err != nil {
+					//如果重启失败，则不进行下一步水位调节开启
+					continue
+				}
 			}
-			traderParams := &pb.TraderParams{
-				SlippageBps: &slippageBpsUint,
+		} else if observer.Status == "3" {
+			// 中台显示状态为3，启动交易中，但需要根据isTrading字段一起判断
+			log.Infof("observer: %d\n status is: 3, is trading is: %t, check observer, water level, trader \r\n", observer.Id, observer.IsTrading)
+			exist, isTrading := containsObserver(observerInfos, strconv.Itoa(observer.Id))
+			if !exist {
+				// 服务端不存在的，重启
+				err := restartObserver(&observer)
+				if err != nil {
+					//如果重启失败，则不进行下一步水位调节开启
+					continue
+				}
 			}
-			err = client.EnableTrader(instanceId, amberTraderConfig, traderParams)
-			if err != nil {
-				log.Infof("restart instance: %d trader error: %v\n", instanceId, err)
-				//如果启动trader失败，则将该交易机器人设置为isTrading = false
-				service.UpdateObserverWithTradingStatus(observer.Id, false)
-			} else {
-				log.Infof("restart instance: %d trader success\n", instanceId)
+
+			if !containsWaterLevelInstance(waterLevelInstances, strconv.Itoa(observer.Id)) {
+				// 服务端不存在的，重启
+				err := restartWaterLevel(&observer)
+				if err != nil {
+					//如果重启失败，则下次再重启
+					continue
+				}
+			}
+
+			if observer.IsTrading && !isTrading {
+				// 如果实例开启了交易，但是服务端没有启动交易功能，则还需要重启交易功能
+				err := restartTrader(&observer)
+				if err != nil {
+					//如果重启失败，则下次再重启
+					continue
+				}
 			}
 		}
 
@@ -370,5 +367,115 @@ func GenerateAmberConfig(observer *models.BusDexCexTriangularObserver, amberConf
 		amberConfig.BidDepth = proto.Int32(int32(depthInt))
 		amberConfig.AskDepth = proto.Int32(int32(depthInt))
 	}
+	return nil
+}
+
+func restartObserver(observer *models.BusDexCexTriangularObserver) error {
+	slippageBpsUint, err := strconv.ParseUint(observer.SlippageBps, 10, 32)
+	if err != nil {
+		log.Infof("slippageBps: %v\n", slippageBpsUint)
+		return err
+	}
+
+	maxArraySize := new(uint32)
+	*maxArraySize = uint32(observer.MaxArraySize) //默认5， clmm使用参数
+
+	dexConfig := &pb.DexConfig{}
+	if observer.DexType == "RAY_AMM" {
+		dexConfig.Config = &pb.DexConfig_RayAmm{
+			RayAmm: &pb.RayAmmConfig{
+				Pool:      observer.AmmPoolId,
+				TokenMint: observer.TokenMint,
+			},
+		}
+	} else if observer.DexType == "RAY_CLMM" {
+		dexConfig.Config = &pb.DexConfig_RayClmm{
+			RayClmm: &pb.RayClmmConfig{
+				Pool:         observer.AmmPoolId,
+				TokenMint:    observer.TokenMint,
+				MaxArraySize: maxArraySize,
+			},
+		}
+	}
+
+	transactionFee := &pb.TransactionFee{
+		PriorityFee: &observer.PriorityFee,
+		JitoFee:     &observer.JitoFee,
+	}
+
+	arbitrageConfig := &pb.ObserverParams{
+		MinSolAmount:             observer.MinSolAmount,
+		MaxSolAmount:             observer.MaxSolAmount,
+		TriggerProfitQuoteAmount: observer.MinProfit,
+		TxFee:                    transactionFee,
+	}
+
+	amberConfig := &pb.AmberObserverConfig{}
+	GenerateAmberConfig(observer, amberConfig)
+
+	instanceId := strconv.Itoa(observer.Id)
+	log.Infof("restart observer success with params: dexConfig: %+v\n, arbitrageConfig: %+v\n", dexConfig, arbitrageConfig)
+	err = client.StartNewArbitragerClient(&instanceId, amberConfig, dexConfig, arbitrageConfig)
+	if err != nil {
+		log.Infof("restart observer throw grpc error: %v\n", err)
+		return err
+	}
+	return nil
+}
+
+func restartTrader(observer *models.BusDexCexTriangularObserver) error {
+	instanceId := strconv.Itoa(observer.Id)
+	slippageBpsUint, err := strconv.ParseUint(observer.SlippageBps, 10, 32)
+	if err != nil {
+		log.Infof("slippageBps: %v\n", slippageBpsUint)
+		return err
+	}
+
+	trader, err := observer.GetExchangeTypeForTrader()
+	if err != nil {
+		log.Errorf("get exchange type for trader failed: %v\n", err)
+		return err
+	}
+	amberTraderConfig := &pb.AmberTraderConfig{
+		ExchangeType: &trader,
+	}
+	traderParams := &pb.TraderParams{
+		SlippageBps: &slippageBpsUint,
+	}
+	err = client.EnableTrader(instanceId, amberTraderConfig, traderParams)
+	if err != nil {
+		log.Errorf("restart instance: %d trader error: %v\n", instanceId, err)
+		return err
+	} else {
+		log.Infof("restart instance: %d trader success\n", instanceId)
+		return nil
+	}
+}
+
+func restartWaterLevel(observer *models.BusDexCexTriangularObserver) error {
+	tokenConfig := &waterLevelPb.TokenConfig{
+		Currency:               observer.TargetToken,
+		PubKey:                 *observer.TokenMint,
+		OwnerProgram:           *observer.OwnerProgram,
+		Decimals:               uint32(observer.Decimals),
+		AlertThreshold:         strconv.FormatFloat(*observer.AlertThreshold, 'f', -1, 64),
+		BuyTriggerThreshold:    strconv.FormatFloat(*observer.BuyTriggerThreshold, 'f', -1, 64),
+		TargetBalanceThreshold: strconv.FormatFloat(*observer.TargetBalanceThreshold, 'f', -1, 64),
+		SellTriggerThreshold:   strconv.FormatFloat(*observer.SellTriggerThreshold, 'f', -1, 64),
+	}
+
+	clientRequest := &waterLevelPb.StartInstanceRequest{
+		InstanceId:   strconv.Itoa(observer.Id),
+		ExchangeType: observer.ExchangeType,
+		TokenConfig:  tokenConfig,
+	}
+
+	log.Infof("restart water level with req: %v \r\n", clientRequest)
+	_, err := client.StartWaterLevelInstance(clientRequest)
+	if err != nil {
+		log.Errorf("启动水位调节失败:%s \r\n", err)
+		return err
+	}
+	log.Infof("水位调节启动成功")
 	return nil
 }
