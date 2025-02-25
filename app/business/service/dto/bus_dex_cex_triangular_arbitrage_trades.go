@@ -4,12 +4,19 @@ import (
 	"quanta-admin/app/business/models"
 	"quanta-admin/common/dto"
 	common "quanta-admin/common/models"
+	"time"
 )
 
 type StrategyDexCexTriangularArbitrageTradesGetPageReq struct {
 	dto.Pagination `search:"-"`
 	InstanceId     string `form:"instanceId"  search:"type:exact;column:instance_id;table:strategy_dex_cex_triangular_arbitrage_trades" comment:"Arbitrager instance ID"`
 	BuyOnDex       string `form:"buyOnDex"  search:"type:exact;column:buy_on_dex;table:strategy_dex_cex_triangular_arbitrage_trades" comment:"Buy on dex or cex"`
+	Symbol         string `form:"symbol" search:"-"`
+	MinProfit      string `form:"minProfit" search:"-"`
+	MaxProfit      string `form:"maxProfit" search:"-"`
+	BeginTime      string `form:"beginTime" search:"type:gte;column:updated_at;table:strategy_dex_cex_triangular_arbitrage_trades"` // >= BeginTime
+	EndTime        string `form:"endTime" search:"type:lte;column:updated_at;table:strategy_dex_cex_triangular_arbitrage_trades"`   // <= EndTime
+
 	StrategyDexCexTriangularArbitrageTradesOrder
 }
 
@@ -46,6 +53,36 @@ type StrategyDexCexTriangularArbitrageTradesOrder struct {
 
 func (m *StrategyDexCexTriangularArbitrageTradesGetPageReq) GetNeedSearch() interface{} {
 	return *m
+}
+
+type StrategyDexCexTriangularArbitrageTradesGetPageResp struct {
+	InstanceId         string    `json:"instanceId"`
+	Symbol             string    `json:"symbol"` //需要从套利机会表中join
+	OpportunityId      string    `json:"opportunityId"`
+	BuyOnDex           string    `json:"buyOnDex"`
+	Error              string    `json:"error"`
+	DexTrader          string    `json:"dexTrader"`
+	DexSuccess         string    `json:"dexSuccess"`
+	DexTxFee           string    `json:"dexTxFee"`
+	DexTxSig           string    `json:"dexTxSig"`
+	DexSolAmount       string    `json:"dexSolAmount"`
+	DexTargetAmount    string    `json:"dexTargetAmount"`
+	CexAmberAccount    string    `json:"cexAmberAccount"`
+	CexExchangeType    string    `json:"cexExchangeType"`
+	CexSellSuccess     string    `json:"cexSellSuccess"`
+	CexSellOrderId     string    `json:"cexSellOrderId"`
+	CexSellQuantity    string    `json:"cexSellQuantity"`
+	CexSellQuoteAmount string    `json:"cexSellQuoteAmount"`
+	CexSellFeeAsset    string    `json:"cexSellFeeAsset"`
+	CexSellFee         string    `json:"cexSellFee"`
+	CexBuySuccess      string    `json:"cexBuySuccess"`
+	CexBuyOrderId      string    `json:"cexBuyOrderId"`
+	CexBuyQuantity     string    `json:"cexBuyQuantity"`
+	CexBuyQuoteAmount  string    `json:"cexBuyQuoteAmount"`
+	CexBuyFeeAsset     string    `json:"cexBuyFeeAsset"`
+	CexBuyFee          string    `json:"cexBuyFee"`
+	CreatedAt          time.Time `json:"createdAt"`
+	UpdatedAt          time.Time `json:"updatedAt"`
 }
 
 type StrategyDexCexTriangularArbitrageTradesInsertReq struct {
