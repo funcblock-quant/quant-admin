@@ -652,12 +652,25 @@ func (e *BusDexCexTriangularObserver) StopTrader(c *dto.BusDexCexTriangularObser
 			return err
 		}
 
+		stopReq := &waterLevelPb.InstantId{
+			InstanceId: instanceId,
+		}
+		err = client.StopWaterLevelInstance(stopReq)
+		if err != nil {
+			e.Log.Errorf("grpc暂停实例：:%d 水位调节功能失败，异常：%s \r\n", c.InstanceId, err)
+			return err
+		}
 	}
 
 	// 更新observer的isTrading = false
+	updateData := map[string]interface{}{
+		"is_trading": false,
+		"status":     1,
+	}
+
 	err = e.Orm.Model(&data).
 		Where("id = ?", c.InstanceId).
-		Update("is_trading", false).Error
+		Updates(updateData).Error
 	if err != nil {
 		e.Log.Errorf("更新数据库实例:%d 交易状态失败，异常信息：%s \r\n", c.InstanceId, err)
 		return err
