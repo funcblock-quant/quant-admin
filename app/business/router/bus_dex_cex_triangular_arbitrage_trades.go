@@ -24,4 +24,5 @@ func registerStrategyDexCexTriangularArbitrageTradesRouter(v1 *gin.RouterGroup, 
 		r.PUT("/:id", actions.PermissionAction(), api.Update)
 		r.DELETE("", api.Delete)
 	}
+	v1.GET("/getDexCexTriangularTraderStatistics", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.GetDexCexTriangularTraderStatistics)
 }

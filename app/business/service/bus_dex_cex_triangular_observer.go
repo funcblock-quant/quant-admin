@@ -516,7 +516,7 @@ func (e *BusDexCexTriangularObserver) MonitorWaterLevelToStartTrader() error {
 		traderSwitch := waterLevelState.TraderSwitch
 		if traderSwitch {
 			e.Log.Infof("waterlevel state for instancId: %d is: success", instanceId)
-			e.Log.Infof("currency: %s, cex balance:%s,  dex balance: %s", waterLevelState.Currency, waterLevelState.CexAccountBalance, waterLevelState.ChainWalletBalance)
+			e.Log.Infof("currency: %s, cex spot balance:%s, cex margin balance:%s, dex balance: %s", waterLevelState.Currency, waterLevelState.SpotAccountBalance, waterLevelState.MarginAccountBalance, waterLevelState.ChainWalletBalance)
 			//开启交易功能
 
 			err = requestStartTrader(&instance, e)
@@ -591,10 +591,6 @@ func (e *BusDexCexTriangularObserver) MonitorWaterLevelToStopTrader() error {
 		queryReq := &waterLevelPb.InstantId{
 			InstanceId: instanceId,
 		}
-		//TODO 后续要删除的
-		if instance.TargetToken == "TRUMP" {
-			continue
-		}
 		waterLevelState, err := client.GetWaterLevelInstanceState(queryReq)
 		if err != nil {
 			e.Log.Errorf("get WaterLevelInstanceState error: instanceId:%d, error msg:%s \r\n", instance.Id, err)
@@ -602,7 +598,7 @@ func (e *BusDexCexTriangularObserver) MonitorWaterLevelToStopTrader() error {
 		}
 
 		traderSwitch := waterLevelState.TraderSwitch
-		e.Log.Infof("currency: %s, cex balance:%s,  dex balance: %s", waterLevelState.Currency, waterLevelState.CexAccountBalance, waterLevelState.ChainWalletBalance)
+		e.Log.Infof("currency: %s, cex spot balance:%s, cex margin balance:%s, dex balance: %s", waterLevelState.Currency, waterLevelState.SpotAccountBalance, waterLevelState.MarginAccountBalance, waterLevelState.ChainWalletBalance)
 		if !traderSwitch {
 			e.Log.Infof("waterlevel state for instancId: %d is: failed", instanceId)
 			//关闭交易功能
