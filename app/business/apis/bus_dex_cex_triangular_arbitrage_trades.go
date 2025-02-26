@@ -88,6 +88,39 @@ func (e StrategyDexCexTriangularArbitrageTrades) Get(c *gin.Context) {
 	e.OK(object, "查询成功")
 }
 
+// GetDexCexTriangularTraderStatistics 获取DEX-CEX套利记录统计信息
+// @Summary 获取DEX-CEX套利记录统计信息
+// @Description 获取DEX-CEX套利记录统计信息
+// @Tags DEX-CEX套利记录
+// @Param id path int false "id"
+// @Success 200 {object} response.Response{data=models.StrategyDexCexTriangularArbitrageTrades} "{"code": 200, "data": [...]}"
+// @Router /api/v1/GetDexCexTriangularTraderStatistics [get]
+// @Security Bearer
+func (e StrategyDexCexTriangularArbitrageTrades) GetDexCexTriangularTraderStatistics(c *gin.Context) {
+	req := dto.StrategyDexCexTriangularArbitrageTradesGetStatisticsReq{}
+	s := service.StrategyDexCexTriangularArbitrageTrades{}
+	err := e.MakeContext(c).
+		MakeOrm().
+		Bind(&req).
+		MakeService(&s.Service).
+		Errors
+	if err != nil {
+		e.Logger.Error(err)
+		e.Error(500, err, err.Error())
+		return
+	}
+	var object dto.StrategyDexCexTriangularArbitrageTradesGetStatisticsResp
+
+	p := actions.GetPermissionFromContext(c)
+	err = s.GetDexCexTriangularTraderStatistics(&req, p, &object)
+	if err != nil {
+		e.Error(500, err, fmt.Sprintf("获取DEX-CEX套利记录失败，\r\n失败信息 %s", err.Error()))
+		return
+	}
+
+	e.OK(object, "查询成功")
+}
+
 // Insert 创建DEX-CEX套利记录
 // @Summary 创建DEX-CEX套利记录
 // @Description 创建DEX-CEX套利记录

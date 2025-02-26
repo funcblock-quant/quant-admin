@@ -2,6 +2,10 @@ package service
 
 import (
 	"errors"
+	"fmt"
+	"math"
+	"strconv"
+	"time"
 
 	"github.com/go-admin-team/go-admin-core/sdk/service"
 	"gorm.io/gorm"
@@ -113,6 +117,87 @@ func (e *StrategyDexCexTriangularArbitrageTrades) Get(d *dto.StrategyDexCexTrian
 	model.OppoCexBuyQuoteAmount = oppo.CexBuyQuoteAmount
 
 	return nil
+}
+
+// GetDexCexTriangularTraderStatistics 获取StrategyDexCexTriangularArbitrageTrades对象统计信息
+func (e *StrategyDexCexTriangularArbitrageTrades) GetDexCexTriangularTraderStatistics(d *dto.StrategyDexCexTriangularArbitrageTradesGetStatisticsReq, p *actions.DataPermission, model *dto.StrategyDexCexTriangularArbitrageTradesGetStatisticsResp) error {
+	e.Log.Info("开始获取套利交易统计信息")
+
+	// 计算 24 小时前的时间
+	last24Hours := time.Now().Add(-24 * time.Hour)
+	db := e.Orm
+	// **单个查询获取多个统计数据**
+	row := db.Raw(`
+			SELECT 
+				COUNT(*) AS totalTrade,
+				SUM(CASE WHEN dex_success = 1 AND cex_sell_success = 1 AND cex_buy_success = 1 THEN 1 ELSE 0 END) AS totalSuccessTrade,
+				SUM(CASE WHEN created_at >= ? THEN 1 ELSE 0 END) AS dailyTotalTrade,
+				SUM(CASE WHEN dex_success = 1 AND cex_sell_success = 1 AND cex_buy_success = 1 AND created_at >= ? THEN 1 ELSE 0 END) AS dailyTotalSuccessTrade,
+				COALESCE(SUM(cex_sell_quote_amount - cex_buy_quote_amount), 0) AS totalProfit,
+				COALESCE(SUM(CASE WHEN created_at >= ? THEN (cex_sell_quote_amount - cex_buy_quote_amount) ELSE 0 END), 0) AS dailyTotalProfit,
+				COALESCE(SUM(cex_sell_quote_amount + cex_buy_quote_amount), 0) AS totalTradeVolume,
+				COALESCE(SUM(CASE WHEN created_at >= ? THEN (cex_sell_quote_amount + cex_buy_quote_amount) ELSE 0 END), 0) AS dailyTotalTradeVolume
+			FROM strategy_dex_cex_triangular_arbitrage_trades
+		`, last24Hours, last24Hours, last24Hours, last24Hours).Row()
+
+	err := row.Scan(
+		&model.TotalTrade,
+		&model.TotalSuccessTrade,
+		&model.DailyTotalTrade,
+		&model.DailyTotalSuccessTrade,
+		&model.TotalProfit,
+		&model.DailyTotalProfit,
+		&model.TotalTradeVolume,
+		&model.DailyTotalTradeVolume,
+	)
+
+	if err != nil {
+		e.Log.Errorf("db error:%s", err)
+		return err
+	}
+
+	// 失败套利次数计算（总套利 - 成功套利）
+	model.TotalFailedTrade = model.TotalTrade - model.TotalSuccessTrade
+	model.DailyTotalFailedTrade = model.DailyTotalTrade - model.DailyTotalSuccessTrade
+
+	// dailyProfitChangePercent
+	model.DailyProfitChangePercent = calculateDailyProfitChangePercent(model.DailyTotalProfit, model.TotalProfit)
+
+	return nil
+}
+
+func calculateDailyProfitChangePercent(dailyProfitStr, totalProfitStr string) string {
+	// 将 string 转换为 float64
+	dailyProfit, err1 := strconv.ParseFloat(dailyProfitStr, 64)
+	totalProfit, err2 := strconv.ParseFloat(totalProfitStr, 64)
+
+	// 检查转换错误
+	if err1 != nil || err2 != nil {
+		return "error"
+	}
+
+	// 计算前一天的总利润
+	profitBeforeToday := totalProfit - dailyProfit
+
+	// 处理特殊情况：
+	// 1. 总利润和当日利润都为 0（无盈利）
+	// 2. 仅有当日利润，之前利润为 0（新开始）
+	if totalProfit == 0 {
+		return "0"
+	}
+
+	// 避免分母为 0，改用绝对值来计算增长率
+	if profitBeforeToday == 0 {
+		if dailyProfit > 0 {
+			return "100"
+		} else {
+			return "-100"
+		}
+	}
+
+	changePercent := (dailyProfit / math.Abs(profitBeforeToday)) * 100
+
+	return fmt.Sprintf("%.2f", changePercent)
 }
 
 // Insert 创建StrategyDexCexTriangularArbitrageTrades对象

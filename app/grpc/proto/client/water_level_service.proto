@@ -48,8 +48,9 @@ message InstantId {
 message GetStateResponse {
   bool trader_switch = 1; // 交易开关 true:开 false:关
   string currency = 2; // 交易币种
-  string cex_account_balance = 3; // 交易所账户该币种余额，空字符表示未获取到余额
-  string chain_wallet_balance = 4; // 链上钱包该币种余额，空字符表示未获取到余额
+  string margin_account_balance = 3; // 交易所全仓杠杆账户该币种余额，空字符表示未获取到余额
+  string spot_account_balance = 4; // 交易所现货账户该币种余额，空字符表示未获取到余额
+  string chain_wallet_balance = 5; // 链上钱包该币种余额，空字符表示未获取到余额
 }
 
 message UpdateInstanceParamsRequest{

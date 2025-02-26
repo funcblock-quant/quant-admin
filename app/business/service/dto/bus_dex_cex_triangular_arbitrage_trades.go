@@ -275,3 +275,23 @@ type StrategyDexCexTriangularArbitrageTradesDeleteReq struct {
 func (s *StrategyDexCexTriangularArbitrageTradesDeleteReq) GetId() interface{} {
 	return s.Ids
 }
+
+// StrategyDexCexTriangularArbitrageTradesGetStatisticsReq 功能获取请求参数
+type StrategyDexCexTriangularArbitrageTradesGetStatisticsReq struct {
+	TradeResultType int `json:"TradeResultType"` //查询成功还是失败的统计,0-失败，1-成功，2-全部
+}
+
+type StrategyDexCexTriangularArbitrageTradesGetStatisticsResp struct {
+	// 次数统计
+	TotalTrade               int64  `json:"totalTrade" comment:"总套利次数"`
+	TotalSuccessTrade        int64  `json:"totalSuccessTrade" comment:"总套利成功次数"`
+	TotalFailedTrade         int64  `json:"totalFailedTrade" comment:"总套利失败次数"`
+	DailyTotalTrade          int64  `json:"dailyTotalTrade" comment:"24小时套利次数"`
+	DailyTotalSuccessTrade   int64  `json:"dailyTotalSuccessTrade" comment:"24小时套利成功次数"`
+	DailyTotalFailedTrade    int64  `json:"dailyTotalFailedTrade" comment:"24小时套利失败次数"`
+	TotalProfit              string `json:"totalProfit" comment:"总套利利润"`
+	DailyTotalProfit         string `json:"dailyTotalProfit" comment:"24小时套利利润"`
+	DailyProfitChangePercent string `json:"dailyProfitChangePercent" comment:"24小时套利利润变化"`
+	TotalTradeVolume         string `json:"totalTradeVolume" comment:"总套利交易量"`
+	DailyTotalTradeVolume    string `json:"dailyTotalTradeVolume" comment:"24小时套利交易量"`
+}
