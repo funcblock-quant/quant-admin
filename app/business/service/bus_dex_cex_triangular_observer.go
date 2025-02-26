@@ -274,6 +274,7 @@ func (e *BusDexCexTriangularObserver) GetSymbolList(p *actions.DataPermission, l
 	var data models.BusDexCexTriangularObserver
 
 	err = e.Orm.Model(&data).
+		Unscoped().
 		Scopes(
 			actions.Permission(data.TableName(), p),
 		).
