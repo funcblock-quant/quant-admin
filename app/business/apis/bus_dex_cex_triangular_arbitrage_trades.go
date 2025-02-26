@@ -8,7 +8,6 @@ import (
 	"github.com/go-admin-team/go-admin-core/sdk/pkg/jwtauth/user"
 	_ "github.com/go-admin-team/go-admin-core/sdk/pkg/response"
 
-	"quanta-admin/app/business/models"
 	"quanta-admin/app/business/service"
 	"quanta-admin/app/business/service/dto"
 	"quanta-admin/common/actions"
@@ -77,7 +76,7 @@ func (e StrategyDexCexTriangularArbitrageTrades) Get(c *gin.Context) {
 		e.Error(500, err, err.Error())
 		return
 	}
-	var object models.StrategyDexCexTriangularArbitrageTrades
+	var object dto.StrategyDexCexTriangularArbitrageTradesGetDetailResp
 
 	p := actions.GetPermissionFromContext(c)
 	err = s.Get(&req, p, &object)
