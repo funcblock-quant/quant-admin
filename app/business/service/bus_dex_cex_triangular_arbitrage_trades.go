@@ -28,8 +28,7 @@ func (e *StrategyDexCexTriangularArbitrageTrades) GetPage(c *dto.StrategyDexCexT
 			cDto.MakeCondition(c.GetNeedSearch()),
 			cDto.Paginate(c.GetPageSize(), c.GetPageIndex()),
 			actions.Permission(data.TableName(), p),
-		).
-		Where("strategy_dex_cex_triangular_arbitrage_trades.error IS NULL OR strategy_dex_cex_triangular_arbitrage_trades.error = ''")
+		)
 
 	// 1. Profit 计算字段过滤
 	if c.MinProfit != "" && c.MaxProfit != "" {
@@ -38,6 +37,12 @@ func (e *StrategyDexCexTriangularArbitrageTrades) GetPage(c *dto.StrategyDexCexT
 		query = query.Where("(strategy_dex_cex_triangular_arbitrage_trades.cex_sell_quote_amount - strategy_dex_cex_triangular_arbitrage_trades.cex_buy_quote_amount) >= ?", c.MinProfit)
 	} else if c.MaxProfit != "" {
 		query = query.Where("(strategy_dex_cex_triangular_arbitrage_trades.cex_sell_quote_amount - strategy_dex_cex_triangular_arbitrage_trades.cex_buy_quote_amount) <= ?", c.MaxProfit)
+	}
+
+	if c.IsSuccess {
+		query = query.Where("strategy_dex_cex_triangular_arbitrage_trades.dex_success = 1 and strategy_dex_cex_triangular_arbitrage_trades.cex_sell_success = 1 and strategy_dex_cex_triangular_arbitrage_trades.cex_buy_success = 1")
+	} else {
+		query = query.Where("strategy_dex_cex_triangular_arbitrage_trades.dex_success = 0 or strategy_dex_cex_triangular_arbitrage_trades.cex_sell_success = 0 or strategy_dex_cex_triangular_arbitrage_trades.cex_buy_success = 0")
 	}
 
 	if c.Symbol != "" {
@@ -54,14 +59,16 @@ func (e *StrategyDexCexTriangularArbitrageTrades) GetPage(c *dto.StrategyDexCexT
 }
 
 // Get 获取StrategyDexCexTriangularArbitrageTrades对象
-func (e *StrategyDexCexTriangularArbitrageTrades) Get(d *dto.StrategyDexCexTriangularArbitrageTradesGetReq, p *actions.DataPermission, model *models.StrategyDexCexTriangularArbitrageTrades) error {
+func (e *StrategyDexCexTriangularArbitrageTrades) Get(d *dto.StrategyDexCexTriangularArbitrageTradesGetReq, p *actions.DataPermission, model *dto.StrategyDexCexTriangularArbitrageTradesGetDetailResp) error {
 	var data models.StrategyDexCexTriangularArbitrageTrades
+
+	e.Log.Infof("get detail for trade %s \r\n", d.Id)
 
 	err := e.Orm.Model(&data).
 		Scopes(
 			actions.Permission(data.TableName(), p),
 		).
-		First(model, d.GetId()).Error
+		First(&model, d.GetId()).Error
 	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
 		err = errors.New("查看对象不存在或无权查看")
 		e.Log.Errorf("Service GetStrategyDexCexTriangularArbitrageTrades error:%s \r\n", err)
@@ -71,6 +78,40 @@ func (e *StrategyDexCexTriangularArbitrageTrades) Get(d *dto.StrategyDexCexTrian
 		e.Log.Errorf("db error:%s", err)
 		return err
 	}
+
+	e.Log.Infof("get trade %v \r\n", model)
+	var oppo models.StrategyDexCexTriangularArbitrageOpportunities
+	err = e.Orm.Model(&oppo).
+		Scopes(
+			actions.Permission(oppo.TableName(), p),
+		).
+		Where("opportunity_id = ?", model.OpportunityId).
+		First(&oppo).Error
+	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+		err = errors.New("查看对象不存在或无权查看")
+		e.Log.Errorf("Service GetStrategyDexCexTriangularArbitrageTrades error:%s \r\n", err)
+		return err
+	}
+	if err != nil {
+		e.Log.Errorf("db error:%s", err)
+		return err
+	}
+
+	e.Log.Infof("get oppo %v \r\n", oppo)
+
+	model.DexPoolType = oppo.DexPoolType
+	model.DexPoolId = oppo.DexPoolId
+	model.DexTxPriorityFee = oppo.DexTxPriorityFee
+	model.DexTxJitoFee = oppo.DexTxJitoFee
+	model.CexTargetAsset = oppo.CexTargetAsset
+	model.CexQuoteAsset = oppo.CexQuoteAsset
+	model.OppoDexSolAmount = oppo.DexSolAmount
+	model.OppoDexTargetAmount = oppo.DexTargetAmount
+	model.OppoCexSellQuantity = oppo.CexSellQuantity
+	model.OppoCexBuyQuantity = oppo.CexBuyQuantity
+	model.OppoCexSellQuoteAmount = oppo.CexSellQuoteAmount
+	model.OppoCexBuyQuoteAmount = oppo.CexBuyQuoteAmount
+
 	return nil
 }
 
