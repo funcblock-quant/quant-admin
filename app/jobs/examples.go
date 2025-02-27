@@ -398,16 +398,12 @@ func restartObserver(observer *models.BusDexCexTriangularObserver) error {
 		}
 	}
 
-	transactionFee := &pb.TransactionFee{
-		PriorityFee: &observer.PriorityFee,
-		JitoFee:     &observer.JitoFee,
-	}
-
+	triggerHoldingMsUint := uint64(observer.TriggerHoldingMs)
 	arbitrageConfig := &pb.ObserverParams{
-		MinSolAmount:             observer.MinSolAmount,
-		MaxSolAmount:             observer.MaxSolAmount,
+		MinQuoteAmount:           observer.MinQuoteAmount,
+		MaxQuoteAmount:           observer.MaxQuoteAmount,
 		TriggerProfitQuoteAmount: observer.MinProfit,
-		TxFee:                    transactionFee,
+		TriggerHoldingMs:         &triggerHoldingMsUint,
 	}
 
 	amberConfig := &pb.AmberObserverConfig{}
@@ -425,11 +421,12 @@ func restartObserver(observer *models.BusDexCexTriangularObserver) error {
 
 func restartTrader(observer *models.BusDexCexTriangularObserver) error {
 	instanceId := strconv.Itoa(observer.Id)
-	slippageBpsUint, err := strconv.ParseUint(observer.SlippageBps, 10, 32)
+	slippageBpsUint, err := strconv.ParseUint(observer.SlippageBps, 10, 64)
 	if err != nil {
-		log.Infof("slippageBps: %v\n", slippageBpsUint)
-		return err
+		log.Errorf("转换失败: %s", err)
 	}
+	log.Infof("slippageBps: %v\n", slippageBpsUint)
+	slippageBpsFloat := float64(slippageBpsUint) / 10000.0
 
 	trader, err := observer.GetExchangeTypeForTrader()
 	if err != nil {
@@ -439,8 +436,13 @@ func restartTrader(observer *models.BusDexCexTriangularObserver) error {
 	amberTraderConfig := &pb.AmberTraderConfig{
 		ExchangeType: &trader,
 	}
+
+	priorityFee := float64(observer.PriorityFee) / 1_000_000_000
+
 	traderParams := &pb.TraderParams{
-		SlippageBps: &slippageBpsUint,
+		Slippage:    &slippageBpsFloat,
+		PriorityFee: &priorityFee,
+		JitoFeeRate: observer.JitoFeeRate,
 	}
 	err = client.EnableTrader(instanceId, amberTraderConfig, traderParams)
 	if err != nil {

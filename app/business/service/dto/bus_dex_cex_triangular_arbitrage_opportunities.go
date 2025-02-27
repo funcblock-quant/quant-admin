@@ -81,8 +81,6 @@ func (s *StrategyDexCexTriangularArbitrageOpportunitiesInsertReq) Generate(model
 	model.DexPoolId = s.DexPoolId
 	model.DexSolAmount = s.DexSolAmount
 	model.DexTargetAmount = s.DexTargetAmount
-	model.DexTxPriorityFee = s.DexTxPriorityFee
-	model.DexTxJitoFee = s.DexTxJitoFee
 	model.CexExchangeType = s.CexExchangeType
 	model.CexTargetAsset = s.CexTargetAsset
 	model.CexQuoteAsset = s.CexQuoteAsset
@@ -130,8 +128,6 @@ func (s *StrategyDexCexTriangularArbitrageOpportunitiesUpdateReq) Generate(model
 	model.DexPoolId = s.DexPoolId
 	model.DexSolAmount = s.DexSolAmount
 	model.DexTargetAmount = s.DexTargetAmount
-	model.DexTxPriorityFee = s.DexTxPriorityFee
-	model.DexTxJitoFee = s.DexTxJitoFee
 	model.CexExchangeType = s.CexExchangeType
 	model.CexTargetAsset = s.CexTargetAsset
 	model.CexQuoteAsset = s.CexQuoteAsset

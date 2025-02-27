@@ -15,6 +15,7 @@ type StrategyDexCexTriangularArbitrageTrades struct {
 	DexSuccess         string `json:"dexSuccess" gorm:"type:tinyint(1);comment:Is dex trade success"`
 	DexTxFee           string `json:"dexTxFee" gorm:"type:double;comment:Dex trade tx fee"`
 	DexTxSig           string `json:"dexTxSig" gorm:"type:varchar(128);comment:Dex trade tx signature"`
+	DexJitoFee         string `json:"dexJitoFee" gorm:"type:double;comment:Dex trade tx jito fee"`
 	DexSolAmount       string `json:"dexSolAmount" gorm:"type:double;comment:Dex trade SOL amount"`
 	DexTargetAmount    string `json:"dexTargetAmount" gorm:"type:double;comment:Dex trade target amount"`
 	CexAmberAccount    string `json:"cexAmberAccount" gorm:"type:varchar(32);comment:Cex amber account"`

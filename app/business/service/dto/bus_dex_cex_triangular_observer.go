@@ -90,16 +90,15 @@ type BusDexCexTriangularObserverInsertReq struct {
 	SymbolConnector          string   `json:"-"`
 	ExchangeType             string   `json:"exchangeType"`
 	DexType                  string   `json:"dexType"`
-	MinSolAmount             *float32 `json:"minSolAmount"`
-	MaxSolAmount             *float32 `json:"maxSolAmount"`
+	MinQuoteAmount           *float64 `json:"minQuoteAmount"`
+	MaxQuoteAmount           *float64 `json:"maxQuoteAmount"`
 	TakerFee                 *float32 `json:"takerFee"`
 	TokenMint                *string  `json:"tokenMint"`
 	OwnerProgram             *string  `json:"ownerProgram"`
 	Decimals                 int      `json:"decimals"`
 	AmmPoolId                *string  `json:"ammPool"`
 	TriggerProfitQuoteAmount *float64 `json:"triggerProfitQuoteAmount"`
-	PriorityFee              *float64 `json:"priorityFee"`
-	JitoFee                  *float64 `json:"jitoFee"`
+	TriggerHoldingMs         int      `json:"triggerHoldingMs"`
 	Depth                    string   `json:"depth"`
 	Status                   string   `json:"status" comment:"状态"`
 	common.ControlBy
@@ -113,8 +112,8 @@ type BusDexCexTriangularObserverBatchInsertReq struct {
 	SymbolConnector          string   `json:"-"`
 	ExchangeType             string   `json:"exchangeType"`
 	DexType                  string   `json:"dexType"`
-	MinSolAmount             *float64 `json:"minSolAmount"`
-	MaxSolAmount             *float64 `json:"maxSolAmount"`
+	MinQuoteAmount           *float64 `json:"minQuoteAmount"`
+	MaxQuoteAmount           *float64 `json:"maxQuoteAmount"`
 	TakerFee                 *float64 `json:"takerFee"`
 	AmmPoolId                *string  `json:"ammPool"`
 	TokenMint                *string  `json:"tokenMint"`
@@ -122,8 +121,7 @@ type BusDexCexTriangularObserverBatchInsertReq struct {
 	Decimals                 int      `json:"decimals"`
 	MaxArraySize             int      `json:"maxArraySize"`
 	TriggerProfitQuoteAmount *float64 `json:"triggerProfitQuoteAmount"`
-	PriorityFee              *float64 `json:"priorityFee"`
-	JitoFee                  *float64 `json:"jitoFee"`
+	TriggerHoldingMs         int      `json:"triggerHoldingMs"`
 	Depth                    string   `json:"depth"`
 	Status                   string   `json:"status" comment:"状态"`
 
@@ -140,16 +138,13 @@ func (s *BusDexCexTriangularObserverBatchInsertReq) Generate(model *models.BusDe
 	model.ExchangeType = s.ExchangeType
 	model.DexType = s.DexType
 	model.MaxArraySize = s.MaxArraySize
-	model.MinSolAmount = s.MinSolAmount
-	model.MaxSolAmount = s.MaxSolAmount
+	model.MinQuoteAmount = s.MinQuoteAmount
+	model.MaxQuoteAmount = s.MaxQuoteAmount
 	model.TakerFee = s.TakerFee
 	model.TokenMint = s.TokenMint
 	model.OwnerProgram = s.OwnerProgram
 	model.MinProfit = s.TriggerProfitQuoteAmount
-	scaled := *s.PriorityFee * 1_000_000_000
-	model.PriorityFee = uint64(scaled)
-	scaled = *s.JitoFee * 1_000_000_000
-	model.JitoFee = uint64(scaled)
+	model.TriggerHoldingMs = s.TriggerHoldingMs
 	model.Decimals = s.Decimals
 	model.AmmPoolId = s.AmmPoolId
 	model.Depth = s.Depth
@@ -208,17 +203,10 @@ func (s *BusDexCexTriangularObserverBatchInsertReq) GenerateAmberConfig(amberCon
 }
 
 func (s *BusDexCexTriangularObserverBatchInsertReq) GenerateObserverParams(observerParams *pb.ObserverParams) error {
-	observerParams.MinSolAmount = proto.Float64(*s.MinSolAmount)
-	observerParams.MaxSolAmount = proto.Float64(*s.MaxSolAmount)
-	priorityFee := uint64(*s.PriorityFee * 1_000_000_000)
-	jitoFee := uint64(*s.JitoFee * 1_000_000_000)
-	transactionFee := &pb.TransactionFee{
-		PriorityFee: &priorityFee,
-		JitoFee:     &jitoFee,
-	}
-	observerParams.TxFee = transactionFee
+	observerParams.MinQuoteAmount = proto.Float64(*s.MinQuoteAmount)
+	observerParams.MaxQuoteAmount = proto.Float64(*s.MaxQuoteAmount)
 	observerParams.TriggerProfitQuoteAmount = proto.Float64(*s.TriggerProfitQuoteAmount)
-
+	observerParams.TriggerHoldingMs = proto.Uint64(uint64(s.TriggerHoldingMs))
 	return nil
 }
 
@@ -290,9 +278,8 @@ type BusDexCexTriangularObserverStartTraderReq struct {
 	TargetBalanceThreshold *float64 `json:"targetBalanceThreshold"`
 	SellTriggerThreshold   *float64 `json:"sellTriggerThreshold"`
 	SlippageBps            *string  `json:"slippage"`
-	//MinProfit              *float64 `json:"minProfit"`
-	//PriorityFee            *float64 `json:"priorityFee"`
-	//JitoFee                *float64 `json:"jitoFee"`
+	PriorityFee            *float64 `json:"priorityFee"`
+	JitoFeeRate            *float64 `json:"jitoFeeRate"`
 	common.ControlBy
 }
 
@@ -303,30 +290,27 @@ type BusDexCexTriangularObserverStopTraderReq struct {
 
 type BusDexCexTriangularUpdateObserverParamsReq struct {
 	InstanceId               int      `json:"id" comment:"策略端实例id"`
-	MinSolAmount             *float64 `json:"minSolAmount"`
-	MaxSolAmount             *float64 `json:"maxSolAmount"`
+	MinQuoteAmount           *float64 `json:"minQuoteAmount"`
+	MaxQuoteAmount           *float64 `json:"maxQuoteAmount"`
 	TriggerProfitQuoteAmount *float64 `json:"minProfit"`
-	PriorityFee              *float64 `json:"priorityFee"`
-	JitoFee                  *float64 `json:"jitoFee"`
+	TriggerHoldingMs         int      `json:"triggerHoldingMs"`
 	common.ControlBy
 }
 
 func (s *BusDexCexTriangularUpdateObserverParamsReq) Generate(model *models.BusDexCexTriangularObserver) {
 	model.InstanceId = strconv.Itoa(s.InstanceId)
 	model.MinProfit = s.TriggerProfitQuoteAmount
-	scaled := *s.PriorityFee * 1_000_000_000
-	model.PriorityFee = uint64(scaled)
-	scaled = *s.JitoFee * 1_000_000_000
-	model.JitoFee = uint64(scaled)
+	model.MinQuoteAmount = s.MinQuoteAmount
+	model.MaxQuoteAmount = s.MaxQuoteAmount
+	model.TriggerHoldingMs = s.TriggerHoldingMs
 	model.UpdateBy = s.UpdateBy // 添加这而，需要记录是被谁更新的
 }
 
 type BusDexCexTriangularUpdateTraderParamsReq struct {
-	InstanceId  int     `json:"id" comment:"策略端实例id"`
-	SlippageBps *string `json:"slippage"`
-	//MinProfit   *float64 `json:"minProfit"`
-	//PriorityFee *float64 `json:"priorityFee"`
-	//JitoFee     *float64 `json:"jitoFee"`
+	InstanceId  int      `json:"id" comment:"策略端实例id"`
+	SlippageBps *string  `json:"slippage"`
+	PriorityFee *float64 `json:"priorityFee"`
+	JitoFeeRate *float64 `json:"jitoFeeRate"`
 	common.ControlBy
 }
 

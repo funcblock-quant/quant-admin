@@ -91,19 +91,16 @@ message RayClmmConfig {
 // Params
 
 message ObserverParams {
-  required TransactionFee tx_fee = 1;
-  required double min_sol_amount = 2;
-  required double max_sol_amount = 3;
-  required double trigger_profit_quote_amount = 4;
+  required double min_quote_amount = 1;
+  required double max_quote_amount = 2;
+  required double trigger_profit_quote_amount = 3;
+  required uint64 trigger_holding_ms = 4;
 }
 
 message TraderParams {
-  required uint64 slippage_bps = 1;
-}
-
-message TransactionFee {
-  optional uint64 priority_fee = 1; // 100_000
-  required uint64 jito_fee = 2; // 100_000
+  optional double priority_fee = 1;
+  required double jito_fee_rate = 2;
+  required double slippage = 3;
 }
 
 message BasicInfo {

@@ -459,9 +459,7 @@ func (e *BusDexCexTriangularObserver) StartTrader(c *dto.BusDexCexTriangularObse
 	}
 	log.Infof("slippageBps: %v\n", slippageBpsUint)
 
-	//priorityFee := uint64(*c.PriorityFee * 1_000_000_000)
-	//jitoFee := uint64(*c.JitoFee * 1_000_000_000)
-
+	priorityFee := *c.PriorityFee * 1_000_000_000
 	//err = requestStartTrader(c, priorityFee, jitoFee, slippageBpsUint, data, exchangeType, e)
 	//if err != nil {
 	//	return err
@@ -475,6 +473,8 @@ func (e *BusDexCexTriangularObserver) StartTrader(c *dto.BusDexCexTriangularObse
 		"target_balance_threshold": c.TargetBalanceThreshold,
 		"sell_trigger_threshold":   c.SellTriggerThreshold,
 		"slippage_bps":             slippageBpsUint,
+		"priority_fee":             priorityFee,
+		"jito_fee_rate":            c.JitoFeeRate,
 		"status":                   2, // 水位调节中
 	}
 
@@ -555,12 +555,18 @@ func requestStartTrader(instance *models.BusDexCexTriangularObserver, e *BusDexC
 		e.Log.Errorf("转换失败: %s", err)
 	}
 	e.Log.Infof("slippageBps: %v\n", slippageBpsUint)
+	slippageBpsFloat := float64(slippageBpsUint) / 10000.0
 
 	amberTraderConfig := &pb.AmberTraderConfig{
 		ExchangeType: &exchangeType,
 	}
+
+	priorityFee := float64(instance.PriorityFee) / 1_000_000_000
+	jitoFee := instance.JitoFeeRate
 	traderParams := &pb.TraderParams{
-		SlippageBps: &slippageBpsUint,
+		Slippage:    &slippageBpsFloat,
+		PriorityFee: &priorityFee,
+		JitoFeeRate: jitoFee,
 	}
 	if config.ApplicationConfig.Mode != "dev" {
 		instanceId := strconv.Itoa(instance.Id)
@@ -688,18 +694,12 @@ func (e *BusDexCexTriangularObserver) UpdateObserver(c *dto.BusDexCexTriangularU
 		return err
 	}
 
-	priorityFee := uint64(*c.PriorityFee * 1_000_000_000)
-	jitoFee := uint64(*c.JitoFee * 1_000_000_000)
-	transactionFee := &pb.TransactionFee{
-		PriorityFee: &priorityFee,
-		JitoFee:     &jitoFee,
-	}
-
+	triggerHoldingMsUint := uint64(c.TriggerHoldingMs)
 	observerParams := &pb.ObserverParams{
-		MinSolAmount:             c.MinSolAmount,
-		MaxSolAmount:             c.MaxSolAmount,
+		MinQuoteAmount:           c.MinQuoteAmount,
+		MaxQuoteAmount:           c.MaxQuoteAmount,
 		TriggerProfitQuoteAmount: c.TriggerProfitQuoteAmount,
-		TxFee:                    transactionFee,
+		TriggerHoldingMs:         &triggerHoldingMsUint,
 	}
 	if config.ApplicationConfig.Mode != "dev" {
 		// dev环境不调用grpc
@@ -713,11 +713,10 @@ func (e *BusDexCexTriangularObserver) UpdateObserver(c *dto.BusDexCexTriangularU
 
 	// 更新observer的参数
 	updateData := map[string]interface{}{
-		"min_sol_amount": c.MinSolAmount,
-		"max_sol_amount": c.MaxSolAmount,
-		"min_profit":     c.TriggerProfitQuoteAmount,
-		"priority_fee":   priorityFee,
-		"jito_fee":       jitoFee,
+		"min_quote_amount":   c.MinQuoteAmount,
+		"max_quote_amount":   c.MaxQuoteAmount,
+		"min_profit":         c.TriggerProfitQuoteAmount,
+		"trigger_holding_ms": c.TriggerHoldingMs,
 	}
 	err = e.Orm.Model(&data).
 		Where("id = ?", data.Id).
@@ -741,20 +740,18 @@ func (e *BusDexCexTriangularObserver) UpdateTrader(c *dto.BusDexCexTriangularUpd
 		e.Log.Errorf("获取实例失败:%s \r\n", err)
 		return err
 	}
-	//priorityFee := uint64(*c.PriorityFee * 1_000_000_000)
-	//jitoFee := uint64(*c.JitoFee * 1_000_000_000)
-	slippageBpsUint, err := strconv.ParseUint(*c.SlippageBps, 10, 32)
+	slippageBpsUint, err := strconv.ParseUint(*c.SlippageBps, 10, 64)
 	if err != nil {
-		e.Log.Errorf("slippageBps: %v\n", slippageBpsUint)
-		return errors.New("error slippageBps")
+		e.Log.Errorf("转换失败: %s", err)
 	}
-	log.Infof("slippageBps: %v\n", slippageBpsUint)
-	//txBuildParams := &pb.TransactionFee{
-	//	PriorityFee: &priorityFee,
-	//	JitoFee:     &jitoFee,
-	//}
+	e.Log.Infof("slippageBps: %v\n", slippageBpsUint)
+	slippageBpsFloat := float64(slippageBpsUint) / 10000.0
+	priorityFee := *c.PriorityFee * 1_000_000_000
+
 	traderParams := &pb.TraderParams{
-		SlippageBps: &slippageBpsUint,
+		Slippage:    &slippageBpsFloat,
+		PriorityFee: c.PriorityFee,
+		JitoFeeRate: c.JitoFeeRate,
 	}
 	if config.ApplicationConfig.Mode != "dev" {
 		instanceId := strconv.Itoa(data.Id)
@@ -766,7 +763,9 @@ func (e *BusDexCexTriangularObserver) UpdateTrader(c *dto.BusDexCexTriangularUpd
 	}
 
 	updateData := map[string]interface{}{
-		"slippage_bps": slippageBpsUint,
+		"slippage_bps":  slippageBpsUint,
+		"priority_fee":  priorityFee,
+		"jito_fee_rate": *c.JitoFeeRate,
 	}
 	// 更新observer的trader相关参数
 	if err := e.Orm.Model(&models.BusDexCexTriangularObserver{}).
