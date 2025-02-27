@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"errors"
 	log "github.com/go-admin-team/go-admin-core/logger"
 	"github.com/go-admin-team/go-admin-core/sdk/config"
@@ -13,6 +14,7 @@ import (
 	waterLevelPb "quanta-admin/app/grpc/proto/client/water_level_service"
 	"quanta-admin/common/actions"
 	cDto "quanta-admin/common/dto"
+	common "quanta-admin/common/models"
 	"strconv"
 )
 
@@ -421,21 +423,19 @@ func (e *BusDexCexTriangularObserver) StartTrader(c *dto.BusDexCexTriangularObse
 	}
 
 	// step1 先启动水位调节实例
-	tokenConfig := &waterLevelPb.TokenConfig{
-		Currency:               data.TargetToken,
-		PubKey:                 *data.TokenMint,
-		OwnerProgram:           *data.OwnerProgram,
-		Decimals:               uint32(data.Decimals),
-		AlertThreshold:         strconv.FormatFloat(*c.AlertThreshold, 'f', -1, 64),
-		BuyTriggerThreshold:    strconv.FormatFloat(*c.BuyTriggerThreshold, 'f', -1, 64),
-		TargetBalanceThreshold: strconv.FormatFloat(*c.TargetBalanceThreshold, 'f', -1, 64),
-		SellTriggerThreshold:   strconv.FormatFloat(*c.SellTriggerThreshold, 'f', -1, 64),
+	tokenConfig := &waterLevelPb.TokenThresholdConfig{
+		AlertThreshold:       strconv.FormatFloat(*c.AlertThreshold, 'f', -1, 64),
+		BuyTriggerThreshold:  strconv.FormatFloat(*c.BuyTriggerThreshold, 'f', -1, 64),
+		SellTriggerThreshold: strconv.FormatFloat(*c.SellTriggerThreshold, 'f', -1, 64),
 	}
 
 	clientRequest := &waterLevelPb.StartInstanceRequest{
-		InstanceId:   strconv.Itoa(data.Id),
-		ExchangeType: data.ExchangeType,
-		TokenConfig:  tokenConfig,
+		InstanceId:           strconv.Itoa(data.Id),
+		ExchangeType:         data.ExchangeType,
+		Currency:             data.TargetToken,
+		CurrencyType:         0, // token
+		PubKey:               data.TokenMint,
+		TokenThresholdConfig: tokenConfig,
 	}
 
 	e.Log.Infof("water level start req: %v \r\n", clientRequest)
@@ -467,15 +467,14 @@ func (e *BusDexCexTriangularObserver) StartTrader(c *dto.BusDexCexTriangularObse
 
 	// 启动水位调节后，更新数据库中的相关参数
 	updateData := map[string]interface{}{
-		"is_trading":               false,
-		"alert_threshold":          c.AlertThreshold,
-		"buy_trigger_threshold":    c.BuyTriggerThreshold,
-		"target_balance_threshold": c.TargetBalanceThreshold,
-		"sell_trigger_threshold":   c.SellTriggerThreshold,
-		"slippage_bps":             slippageBpsUint,
-		"priority_fee":             priorityFee,
-		"jito_fee_rate":            c.JitoFeeRate,
-		"status":                   2, // 水位调节中
+		"is_trading":             false,
+		"alert_threshold":        c.AlertThreshold,
+		"buy_trigger_threshold":  c.BuyTriggerThreshold,
+		"sell_trigger_threshold": c.SellTriggerThreshold,
+		"slippage_bps":           slippageBpsUint,
+		"priority_fee":           priorityFee,
+		"jito_fee_rate":          c.JitoFeeRate,
+		"status":                 2, // 水位调节中
 	}
 
 	if err := e.Orm.Model(&models.BusDexCexTriangularObserver{}).
@@ -792,12 +791,17 @@ func (e *BusDexCexTriangularObserver) UpdateWaterLevel(c *dto.BusDexCexTriangula
 		return err
 	}
 	instanceId := strconv.Itoa(data.Id)
+
+	tokenConfig := &waterLevelPb.TokenThresholdConfig{
+		AlertThreshold:       strconv.FormatFloat(*c.AlertThreshold, 'f', -1, 64),
+		BuyTriggerThreshold:  strconv.FormatFloat(*c.BuyTriggerThreshold, 'f', -1, 64),
+		SellTriggerThreshold: strconv.FormatFloat(*c.SellTriggerThreshold, 'f', -1, 64),
+	}
+
 	waterLevelParams := &waterLevelPb.UpdateInstanceParamsRequest{
-		InstanceId:             instanceId,
-		AlertThreshold:         strconv.FormatFloat(*c.AlertThreshold, 'f', -1, 64),
-		BuyTriggerThreshold:    strconv.FormatFloat(*c.BuyTriggerThreshold, 'f', -1, 64),
-		TargetBalanceThreshold: strconv.FormatFloat(*c.TargetBalanceThreshold, 'f', -1, 64),
-		SellTriggerThreshold:   strconv.FormatFloat(*c.SellTriggerThreshold, 'f', -1, 64),
+		InstanceId:           instanceId,
+		CurrencyType:         0, //Token
+		TokenThresholdConfig: tokenConfig,
 	}
 	if config.ApplicationConfig.Mode != "dev" {
 
@@ -809,10 +813,9 @@ func (e *BusDexCexTriangularObserver) UpdateWaterLevel(c *dto.BusDexCexTriangula
 	}
 
 	updateData := map[string]interface{}{
-		"alert_threshold":          c.AlertThreshold,
-		"buy_trigger_threshold":    c.BuyTriggerThreshold,
-		"target_balance_threshold": c.TargetBalanceThreshold,
-		"sell_trigger_threshold":   c.SellTriggerThreshold,
+		"alert_threshold":        c.AlertThreshold,
+		"buy_trigger_threshold":  c.BuyTriggerThreshold,
+		"sell_trigger_threshold": c.SellTriggerThreshold,
 	}
 	// 更新observer的trader相关参数
 	if err := e.Orm.Model(&models.BusDexCexTriangularObserver{}).
@@ -824,5 +827,313 @@ func (e *BusDexCexTriangularObserver) UpdateWaterLevel(c *dto.BusDexCexTriangula
 
 	e.Log.Infof("实例：%d 参数已成功更新", data.Id)
 
+	return nil
+}
+
+// GetGlobalWaterLevelState 获取全局WaterLevel 状态及当前参数
+func (e *BusDexCexTriangularObserver) GetGlobalWaterLevelState() (*dto.BusDexCexTriangularGlobalWaterLevelStateResp, error) {
+	var data models.BusCommonConfig
+	resp := &dto.BusDexCexTriangularGlobalWaterLevelStateResp{}
+	//step 1 : 查询sol以及稳定币的水位调节是否启动
+	waterLevelInstances, err := client.ListWaterLevelInstance()
+	if err != nil {
+		e.Log.Errorf("获取水位调节实例失败, %s", err)
+		//return nil, errors.New("水位调节服务不可用，请稍后刷新重试")
+	} else {
+		log.Infof("waterLevelInstances:%+v\n", waterLevelInstances)
+		for _, instanceId := range waterLevelInstances.InstanceIds {
+			if instanceId == "SOLANA" {
+				// solana 已经启动水位调节
+				resp.SolWaterLevelState = true
+			} else if instanceId == "USDT" {
+				// 稳定币 已经启动水位调节
+				resp.StableCoinWaterLevelState = true
+			}
+		}
+	}
+
+	// 如果水位调节服务挂了，返回对应的错误，给到前端水位调节不可用的提示之类的。
+	//step 2 : 封装全局的水位调节启动结果以及配置到响应体
+	err = e.Orm.Model(&models.BusCommonConfig{}).
+		Where("category = ? and config_key = ?", "WATER_LEVEL", common.GLOBAL_SOLANA_WATER_LEVEL_KEY).
+		Order("created_at desc").
+		First(&data).Error
+
+	resp.SolWaterLevelConfig = &dto.BusDexCexTriangularUpdateWaterLevelParamsReq{}
+	if err != nil {
+		e.Log.Errorf("获取solana水位调节参数失败")
+	} else {
+		configJsonStr := data.ConfigJson
+		e.Log.Infof("获取到solana水位调节参数：%s\r\n", configJsonStr)
+		var configMap map[string]interface{}
+
+		// 解析 JSON
+		err := json.Unmarshal([]byte(configJsonStr), &configMap)
+		if err != nil {
+			e.Log.Error("JSON 解析失败:", err)
+		} else {
+			alertThreshold := configMap["alertThreshold"].(float64)
+			buyTriggerThreshold := configMap["buyTriggerThreshold"].(float64)
+			sellTriggerThreshold := configMap["sellTriggerThreshold"].(float64)
+			resp.SolWaterLevelConfig = &dto.BusDexCexTriangularUpdateWaterLevelParamsReq{
+				AlertThreshold:       &alertThreshold,
+				BuyTriggerThreshold:  &buyTriggerThreshold,
+				SellTriggerThreshold: &sellTriggerThreshold,
+			}
+		}
+	}
+
+	var stableData models.BusCommonConfig
+	err = e.Orm.Model(&stableData).
+		Where("category = ? and config_key = ?", "WATER_LEVEL", common.GLOBAL_STABLE_COIN_WATER_LEVEL_KEY).
+		Order("created_at desc").
+		First(&stableData).Error
+
+	resp.StableCoinWaterLevelConfig = &dto.BusDexCexTriangularUpdateWaterLevelParamsReq{}
+	if err != nil {
+		e.Log.Errorf("获取稳定币水位调节参数失败")
+	} else {
+		configJsonStr := stableData.ConfigJson
+		e.Log.Infof("获取到稳定币水位调节参数：%s\r\n", configJsonStr)
+		var configMap map[string]interface{}
+
+		// 解析 JSON
+		err := json.Unmarshal([]byte(configJsonStr), &configMap)
+		if err != nil {
+			e.Log.Error("JSON 解析失败:", err)
+		} else {
+			alertThreshold := configMap["alertThreshold"].(float64)
+			resp.StableCoinWaterLevelConfig = &dto.BusDexCexTriangularUpdateWaterLevelParamsReq{
+				AlertThreshold: &alertThreshold,
+			}
+		}
+	}
+
+	return resp, nil
+}
+
+// UpdateGlobalWaterLevelConfig 更新全局WaterLevel 参数
+func (e *BusDexCexTriangularObserver) UpdateGlobalWaterLevelConfig(req *dto.BusDexCexTriangularUpdateGlobalWaterLevelConfigReq) error {
+	var data models.BusCommonConfig
+
+	solWaterLevelConfigJsonStr, err := json.Marshal(req.SolWaterLevelConfig)
+	if err != nil {
+		e.Log.Errorf("JSON序列化失败,%s", err)
+		return err
+	}
+
+	stableCoinWaterLevelConfigJsonStr, err := json.Marshal(req.StableCoinWaterLevelConfig)
+	if err != nil {
+		e.Log.Errorf("JSON序列化失败,%s", err)
+		return err
+	}
+
+	// 保存配置到数据库
+	err = e.Orm.Model(&data).
+		Where("category = ? and config_key = ?", "WATER_LEVEL", common.GLOBAL_SOLANA_WATER_LEVEL_KEY).
+		Order("created_at desc").
+		First(&data).Error
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			e.Log.Info("当前不存在全局solana水位调节参数")
+			// 如果不存在，则新增
+			data = models.BusCommonConfig{
+				Category:   "WATER_LEVEL",
+				ConfigKey:  common.GLOBAL_SOLANA_WATER_LEVEL_KEY,
+				ConfigJson: string(solWaterLevelConfigJsonStr),
+			}
+			err = e.Orm.Create(&data).Error
+			if err != nil {
+				e.Log.Error("保存solana水位调节参数失败")
+				return err
+			}
+		} else {
+			e.Log.Errorf("db error: %s", err)
+			return err
+		}
+	}
+
+	updateData := map[string]interface{}{
+		"config_json": string(solWaterLevelConfigJsonStr),
+	}
+
+	e.Log.Infof("更新参数：%s\n", string(solWaterLevelConfigJsonStr))
+	err = e.Orm.Model(&data).
+		Where("id = ?", data.Id).
+		Updates(updateData).Error
+
+	var stableData models.BusCommonConfig
+	// 稳定币水位调节参数处理
+	err = e.Orm.Model(&stableData).
+		Where("category = ? and config_key = ?", "WATER_LEVEL", common.GLOBAL_STABLE_COIN_WATER_LEVEL_KEY).
+		Order("created_at desc").
+		First(&stableData).Error
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			e.Log.Info("当前不存在全局稳定币水位调节参数")
+			// 如果不存在，则新增
+			stableData = models.BusCommonConfig{
+				Category:   "WATER_LEVEL",
+				ConfigKey:  common.GLOBAL_STABLE_COIN_WATER_LEVEL_KEY,
+				ConfigJson: string(stableCoinWaterLevelConfigJsonStr),
+			}
+			err = e.Orm.Create(&stableData).Error
+			if err != nil {
+				e.Log.Error("保存稳定币水位调节参数失败")
+				return err
+			}
+		} else {
+			e.Log.Errorf("db error: %s", err)
+			return err
+		}
+	}
+
+	updateData = map[string]interface{}{
+		"config_json": string(stableCoinWaterLevelConfigJsonStr),
+	}
+
+	e.Log.Infof("更新参数：%s\n", string(stableCoinWaterLevelConfigJsonStr))
+	err = e.Orm.Model(&stableData).
+		Where("id = ?", stableData.Id).
+		Updates(updateData).Error
+
+	return nil
+}
+
+// StartGlobalWaterLevel 启动全局水位调整功能
+func (e *BusDexCexTriangularObserver) StartGlobalWaterLevel() error {
+	var data models.BusDexCexTriangularObserver
+	var quoteTokens []string
+	err := e.Orm.Model(&data).
+		Where("status = ? AND is_trading = ?", 3, true).
+		Distinct().
+		Pluck("quote_token", &quoteTokens).
+		Error
+	if err != nil {
+		e.Log.Errorf("获取实例失败:%s \r\n", err)
+		return err
+	}
+
+	if len(quoteTokens) == 0 {
+		e.Log.Infof("没有交易中的币对，不需要启动全局水位调整功能，跳过")
+		return nil
+	}
+
+	var solData models.BusCommonConfig
+	err = e.Orm.Model(&solData).
+		Where("category = ? and config_key = ?", "WATER_LEVEL", common.GLOBAL_SOLANA_WATER_LEVEL_KEY).
+		Order("created_at desc").
+		First(&solData).Error
+
+	var solanaAlertThreshold, solBuyTriggerThreshold, solSellTriggerThreshold, stableCoinAlertThreshold float64
+
+	if err != nil {
+		e.Log.Errorf("获取solana水位调节参数失败, 跳过本次启动全局水位调节任务")
+		return err
+	} else {
+		configJsonStr := solData.ConfigJson
+		e.Log.Infof("获取到solana水位调节参数：%s\r\n", configJsonStr)
+		var configMap map[string]interface{}
+
+		// 解析 JSON
+		err := json.Unmarshal([]byte(configJsonStr), &configMap)
+		if err != nil {
+			e.Log.Error("JSON 解析失败:", err)
+			return err
+		} else {
+			solanaAlertThreshold = configMap["alertThreshold"].(float64)
+			solBuyTriggerThreshold = configMap["buyTriggerThreshold"].(float64)
+			solSellTriggerThreshold = configMap["sellTriggerThreshold"].(float64)
+		}
+	}
+
+	var stableData models.BusCommonConfig
+	err = e.Orm.Model(&stableData).
+		Where("category = ? and config_key = ?", "WATER_LEVEL", common.GLOBAL_STABLE_COIN_WATER_LEVEL_KEY).
+		Order("created_at desc").
+		First(&stableData).Error
+
+	if err != nil {
+		e.Log.Errorf("获取稳定币水位调节参数失败, 跳过本次启动全局水位调节任务")
+		return err
+	} else {
+		configJsonStr := stableData.ConfigJson
+		e.Log.Infof("获取到稳定币水位调节参数：%s\r\n", configJsonStr)
+		var configMap map[string]interface{}
+
+		// 解析 JSON
+		err := json.Unmarshal([]byte(configJsonStr), &configMap)
+		if err != nil {
+			e.Log.Error("JSON 解析失败:", err)
+			return err
+		} else {
+			stableCoinAlertThreshold = configMap["alertThreshold"].(float64)
+		}
+	}
+
+	waterLevelInstances, err := client.ListWaterLevelInstance()
+	if err != nil {
+		e.Log.Errorf("获取水位调节实例失败, %s", err)
+		return err
+	}
+
+	isSolanaStarted := false
+	for _, instanceId := range waterLevelInstances.InstanceIds {
+		if instanceId == "SOLANA" {
+			// solana 已经启动水位调节
+			isSolanaStarted = true
+			break
+		}
+	}
+
+	if !isSolanaStarted {
+		tokenConfig := &waterLevelPb.TokenThresholdConfig{
+			AlertThreshold:       strconv.FormatFloat(solanaAlertThreshold, 'f', -1, 64),
+			BuyTriggerThreshold:  strconv.FormatFloat(solBuyTriggerThreshold, 'f', -1, 64),
+			SellTriggerThreshold: strconv.FormatFloat(solSellTriggerThreshold, 'f', -1, 64),
+		}
+
+		clientRequest := &waterLevelPb.StartInstanceRequest{
+			InstanceId:           "SOLANA",
+			ExchangeType:         "Binance",
+			Currency:             "SOL",
+			CurrencyType:         0, // token
+			TokenThresholdConfig: tokenConfig,
+		}
+
+		e.Log.Infof("启动solana全局水位调节 req: %v \r\n", clientRequest)
+		_, err = client.StartWaterLevelInstance(clientRequest)
+		if err != nil {
+			e.Log.Errorf("启动solana全局水位调节失败:%s \r\n", err)
+			return err
+		}
+		e.Log.Infof("启动solana全局水位调节启动成功")
+	}
+
+	log.Infof("waterLevelInstances:%+v\n", waterLevelInstances)
+
+	for _, quoteToken := range quoteTokens {
+		tokenConfig := &waterLevelPb.TokenThresholdConfig{
+			AlertThreshold: strconv.FormatFloat(stableCoinAlertThreshold, 'f', -1, 64),
+		}
+
+		clientRequest := &waterLevelPb.StartInstanceRequest{
+			InstanceId:           quoteToken,
+			ExchangeType:         "Binance",
+			Currency:             quoteToken,
+			CurrencyType:         1, // 稳定币
+			TokenThresholdConfig: tokenConfig,
+		}
+
+		e.Log.Infof("启动稳定币 %s 全局水位调节 req: %v \r\n", quoteToken, clientRequest)
+		_, err = client.StartWaterLevelInstance(clientRequest)
+		if err != nil {
+			e.Log.Errorf("启动稳定币 %s 全局水位调节 失败:%s \r\n", quoteToken, err)
+			return err
+		}
+		e.Log.Infof("启动稳定币 %s 全局水位调节 成功", quoteToken)
+	}
 	return nil
 }

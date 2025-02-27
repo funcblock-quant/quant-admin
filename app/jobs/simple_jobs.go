@@ -53,6 +53,20 @@ func InitSimpleJob() {
 		}
 	})
 
+	c.AddFunc("@every 5s", func() {
+		// 每1m一次，启动全局水位调整功能
+		fmt.Println("StartGlobalWaterLevelConfig Job running")
+		s := service.BusDexCexTriangularObserver{}
+		orm := sdk.Runtime.GetDbByKey("*")
+		s.Orm = orm
+		log := logger.NewHelper(sdk.Runtime.GetLogger()).WithFields(map[string]interface{}{})
+		s.Log = log
+		err := s.StartGlobalWaterLevel()
+		if err != nil {
+			fmt.Errorf("StartGlobalWaterLevelConfig Job run failed, err:%v\n", err)
+		}
+	})
+
 	c.Start()
 	select {}
 }

@@ -213,6 +213,9 @@ func containsObserver(observerInfos []*pb.BasicInfo, target string) (bool, bool)
 }
 
 func containsWaterLevelInstance(waterLevelInstances *waterLevelPb.InstanceListResponse, target string) bool {
+	if waterLevelInstances == nil {
+		return false
+	}
 	for _, id := range waterLevelInstances.InstanceIds {
 		if id == target {
 			return true
@@ -264,6 +267,10 @@ func (t DexCexObserverInspection) Exec(arg interface{}) error {
 	}
 
 	observerInfos, err := client.ListArbitragerClient()
+	if err != nil {
+		log.Errorf("grpc获取监控实例失败, %+v \n", err)
+	}
+
 	log.Infof("observerInfos:%+v\n", observerInfos)
 
 	waterLevelInstances, err := client.ListWaterLevelInstance()
@@ -455,21 +462,19 @@ func restartTrader(observer *models.BusDexCexTriangularObserver) error {
 }
 
 func restartWaterLevel(observer *models.BusDexCexTriangularObserver) error {
-	tokenConfig := &waterLevelPb.TokenConfig{
-		Currency:               observer.TargetToken,
-		PubKey:                 *observer.TokenMint,
-		OwnerProgram:           *observer.OwnerProgram,
-		Decimals:               uint32(observer.Decimals),
-		AlertThreshold:         strconv.FormatFloat(*observer.AlertThreshold, 'f', -1, 64),
-		BuyTriggerThreshold:    strconv.FormatFloat(*observer.BuyTriggerThreshold, 'f', -1, 64),
-		TargetBalanceThreshold: strconv.FormatFloat(*observer.TargetBalanceThreshold, 'f', -1, 64),
-		SellTriggerThreshold:   strconv.FormatFloat(*observer.SellTriggerThreshold, 'f', -1, 64),
+	tokenConfig := &waterLevelPb.TokenThresholdConfig{
+		AlertThreshold:       strconv.FormatFloat(*observer.AlertThreshold, 'f', -1, 64),
+		BuyTriggerThreshold:  strconv.FormatFloat(*observer.BuyTriggerThreshold, 'f', -1, 64),
+		SellTriggerThreshold: strconv.FormatFloat(*observer.SellTriggerThreshold, 'f', -1, 64),
 	}
 
 	clientRequest := &waterLevelPb.StartInstanceRequest{
-		InstanceId:   strconv.Itoa(observer.Id),
-		ExchangeType: observer.ExchangeType,
-		TokenConfig:  tokenConfig,
+		InstanceId:           strconv.Itoa(observer.Id),
+		ExchangeType:         observer.ExchangeType,
+		Currency:             observer.TargetToken,
+		CurrencyType:         0, // token
+		PubKey:               observer.TokenMint,
+		TokenThresholdConfig: tokenConfig,
 	}
 
 	log.Infof("restart water level with req: %v \r\n", clientRequest)

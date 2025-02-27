@@ -272,14 +272,13 @@ type DexCexTriangularObserverSymbolListResp struct {
 }
 
 type BusDexCexTriangularObserverStartTraderReq struct {
-	InstanceId             int      `json:"id" comment:"策略端实例id"`
-	AlertThreshold         *float64 `json:"alertThreshold"`
-	BuyTriggerThreshold    *float64 `json:"buyTriggerThreshold"`
-	TargetBalanceThreshold *float64 `json:"targetBalanceThreshold"`
-	SellTriggerThreshold   *float64 `json:"sellTriggerThreshold"`
-	SlippageBps            *string  `json:"slippage"`
-	PriorityFee            *float64 `json:"priorityFee"`
-	JitoFeeRate            *float64 `json:"jitoFeeRate"`
+	InstanceId           int      `json:"id" comment:"策略端实例id"`
+	AlertThreshold       *float64 `json:"alertThreshold"`
+	BuyTriggerThreshold  *float64 `json:"buyTriggerThreshold"`
+	SellTriggerThreshold *float64 `json:"sellTriggerThreshold"`
+	SlippageBps          *string  `json:"slippage"`
+	PriorityFee          *float64 `json:"priorityFee"`
+	JitoFeeRate          *float64 `json:"jitoFeeRate"`
 	common.ControlBy
 }
 
@@ -315,10 +314,21 @@ type BusDexCexTriangularUpdateTraderParamsReq struct {
 }
 
 type BusDexCexTriangularUpdateWaterLevelParamsReq struct {
-	InstanceId             int      `json:"id" comment:"策略端实例id"`
-	AlertThreshold         *float64 `json:"alertThreshold"`
-	BuyTriggerThreshold    *float64 `json:"buyTriggerThreshold"`
-	TargetBalanceThreshold *float64 `json:"targetBalanceThreshold"`
-	SellTriggerThreshold   *float64 `json:"sellTriggerThreshold"`
+	InstanceId           int      `json:"id" comment:"策略端实例id"`
+	AlertThreshold       *float64 `json:"alertThreshold"`
+	BuyTriggerThreshold  *float64 `json:"buyTriggerThreshold"`
+	SellTriggerThreshold *float64 `json:"sellTriggerThreshold"`
 	common.ControlBy
+}
+
+type BusDexCexTriangularGlobalWaterLevelStateResp struct {
+	SolWaterLevelState         bool                                          `json:"solWaterLevelState" comment:"sol水位调节状态"`
+	SolWaterLevelConfig        *BusDexCexTriangularUpdateWaterLevelParamsReq `json:"solWaterLevelConfig"`
+	StableCoinWaterLevelState  bool                                          `json:"stableCoinWaterLevelState" comment:"稳定币水位调节状态"`
+	StableCoinWaterLevelConfig *BusDexCexTriangularUpdateWaterLevelParamsReq `json:"stableCoinWaterLevelConfig"`
+}
+
+type BusDexCexTriangularUpdateGlobalWaterLevelConfigReq struct {
+	SolWaterLevelConfig        *BusDexCexTriangularUpdateWaterLevelParamsReq `json:"solWaterLevelConfig"`
+	StableCoinWaterLevelConfig *BusDexCexTriangularUpdateWaterLevelParamsReq `json:"stableCoinWaterLevelConfig"`
 }
