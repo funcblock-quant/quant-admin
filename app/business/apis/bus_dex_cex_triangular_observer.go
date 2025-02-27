@@ -363,3 +363,45 @@ func (e BusDexCexTriangularObserver) UpdateWaterLevel(c *gin.Context) {
 
 	e.OK(nil, "更新成功")
 }
+
+func (e BusDexCexTriangularObserver) GetGlobalWaterLevelState(c *gin.Context) {
+	s := service.BusDexCexTriangularObserver{}
+	err := e.MakeContext(c).
+		MakeOrm().
+		MakeService(&s.Service).
+		Errors
+	if err != nil {
+		e.Logger.Error(err)
+		e.Error(500, err, err.Error())
+		return
+	}
+	resp, err := s.GetGlobalWaterLevelState()
+	if err != nil {
+		e.Error(500, err, fmt.Sprintf("获取全局水位调节 参数失败，\r\n失败信息 %s", err.Error()))
+		return
+	}
+
+	e.OK(resp, "获取全局水位调节参数成功")
+}
+
+func (e BusDexCexTriangularObserver) UpdateGlobalWaterLevel(c *gin.Context) {
+	s := service.BusDexCexTriangularObserver{}
+	req := dto.BusDexCexTriangularUpdateGlobalWaterLevelConfigReq{}
+	err := e.MakeContext(c).
+		MakeOrm().
+		Bind(&req).
+		MakeService(&s.Service).
+		Errors
+	if err != nil {
+		e.Logger.Error(err)
+		e.Error(500, err, err.Error())
+		return
+	}
+	err = s.UpdateGlobalWaterLevelConfig(&req)
+	if err != nil {
+		e.Error(500, err, fmt.Sprintf("更新trader 参数失败，\r\n失败信息 %s", err.Error()))
+		return
+	}
+
+	e.OK(nil, "更新成功")
+}

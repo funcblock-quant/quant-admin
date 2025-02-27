@@ -9,6 +9,8 @@ import "google/protobuf/empty.proto";
 service Instance {
   // 开启实例
   rpc StartInstance (StartInstanceRequest) returns (InstantId);
+  // 更新实例参数
+  rpc UpdateInstanceParams (UpdateInstanceParamsRequest) returns (google.protobuf.Empty);
   // 暂停实例
   rpc StopInstance (InstantId) returns (google.protobuf.Empty);
   // 查看所有启动的实例ids
@@ -16,25 +18,41 @@ service Instance {
   // 查看实例实时数据
   rpc GetInstanceState (InstantId) returns (GetStateResponse);
 
-  rpc UpdateInstanceParams (UpdateInstanceParamsRequest) returns (google.protobuf.Empty);
+}
+
+
+enum CurrencyType {
+  Token = 0;
+  StableCoin = 1;
 }
 
 // Message definitions
 message StartInstanceRequest {
   string        instance_id = 1; // 中台实例id
-  string        exchange_type = 2; //交易所类型，Binance
-  TokenConfig   token_config = 3; // 水位调节配置
+  string        exchange_type = 2; // 目前只有Binance一个值
+  int32        currency_type = 3; // 交易币种类型 0-普通Token(SOL,TRUMP,...) 1-StableCoin(比如USDT,USDC)
+  string        currency = 4; // 交易币种/stable coin name/token name
+  optional string pub_key = 5; // 交易币种在solana mainnet链上的pubkey，SOL留空，其他token必填
+  optional TokenThresholdConfig   token_threshold_config = 6; // 普通币种配置
+  optional StableCoinThresholdConfig stable_coin_threshold_config = 7; // 稳定币配置
 }
 
-message TokenConfig {
-  string currency = 1; // 交易币种
-  string pub_key = 2; // 交易币种在solana mainnet链上的pubkey，sol留空，其他token必填
-  string owner_program = 3; // 交易币种在solana mainnet链上的owner_program，sol留空，其他token必填
-  uint32 decimals = 4; // 交易币种在solana mainnet链上的decimals，sol留空，其他token必填
-  string alert_threshold = 5; // 最低预警水位线
-  string buy_trigger_threshold = 6; //触发水位调节的低水位线
-  string target_balance_threshold = 7; // 低水位调节的目标阈值
-  string sell_trigger_threshold = 8; // 触发水位调节的高水位线
+message TokenThresholdConfig {
+  string alert_threshold = 1;
+  string buy_trigger_threshold = 2;
+  //string target_balance_threshold = 3; // 取消这个字段，改为(buy_trigger_threshold + target_balance_threshold)/2
+  string sell_trigger_threshold = 4;
+}
+
+message StableCoinThresholdConfig {
+  string alert_threshold = 1; // 报警阈值
+}
+
+message UpdateInstanceParamsRequest {
+  string instance_id = 1;
+  int32    currency_type = 2; // 要保持和StartInstanceRequest中的currency_type一致，否则会报错
+  optional TokenThresholdConfig   token_threshold_config = 3; // 普通币种配置
+  optional StableCoinThresholdConfig stable_coin_threshold_config = 4; // 稳定币配置
 }
 
 message InstanceListResponse {
@@ -51,12 +69,4 @@ message GetStateResponse {
   string margin_account_balance = 3; // 交易所全仓杠杆账户该币种余额，空字符表示未获取到余额
   string spot_account_balance = 4; // 交易所现货账户该币种余额，空字符表示未获取到余额
   string chain_wallet_balance = 5; // 链上钱包该币种余额，空字符表示未获取到余额
-}
-
-message UpdateInstanceParamsRequest{
-  string alert_threshold = 1;
-  string buy_trigger_threshold = 2;
-  string target_balance_threshold = 3;
-  string sell_trigger_threshold = 4;
-  string instance_id = 5;
 }
