@@ -119,8 +119,7 @@ type StrategyDexCexTriangularArbitrageTradesGetDetailResp struct {
 	// 交易机会相关字段
 	DexPoolType            string `json:"dexPoolType" gorm:"-"`
 	DexPoolId              string `json:"dexPoolId" gorm:"-"`
-	DexTxPriorityFee       string `json:"dexTxPriorityFee" gorm:"-"`
-	DexTxJitoFee           string `json:"dexTxJitoFee" gorm:"-"`
+	DexJitoFee             string `json:"dexTxJitoFee" gorm:"-"`
 	CexTargetAsset         string `json:"cexTargetAsset" gorm:"-"`
 	CexQuoteAsset          string `json:"cexQuoteAsset" gorm:"-"`
 	DexTargetToken         string `json:"dexTargetToken" gorm:"-"`

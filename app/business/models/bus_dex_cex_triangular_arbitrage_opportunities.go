@@ -15,8 +15,6 @@ type StrategyDexCexTriangularArbitrageOpportunities struct {
 	DexPoolId          string `json:"dexPoolId" gorm:"type:varchar(64);comment:Dex pool pubkey"`
 	DexSolAmount       string `json:"dexSolAmount" gorm:"type:double;comment:Dex trade SOL amount"`
 	DexTargetAmount    string `json:"dexTargetAmount" gorm:"type:double;comment:Dex trade target token amount"`
-	DexTxPriorityFee   string `json:"dexTxPriorityFee" gorm:"type:double;comment:Dex trade tx priority fee"`
-	DexTxJitoFee       string `json:"dexTxJitoFee" gorm:"type:double;comment:Dex trade tx jito fee"`
 	CexExchangeType    string `json:"cexExchangeType" gorm:"type:varchar(32);comment:Cex exchange type"`
 	CexTargetAsset     string `json:"cexTargetAsset" gorm:"type:varchar(32);comment:Cex target asset"`
 	CexQuoteAsset      string `json:"cexQuoteAsset" gorm:"type:varchar(32);comment:Cex quote asset"`

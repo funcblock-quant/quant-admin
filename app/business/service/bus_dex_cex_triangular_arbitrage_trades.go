@@ -105,8 +105,6 @@ func (e *StrategyDexCexTriangularArbitrageTrades) Get(d *dto.StrategyDexCexTrian
 
 	model.DexPoolType = oppo.DexPoolType
 	model.DexPoolId = oppo.DexPoolId
-	model.DexTxPriorityFee = oppo.DexTxPriorityFee
-	model.DexTxJitoFee = oppo.DexTxJitoFee
 	model.CexTargetAsset = oppo.CexTargetAsset
 	model.CexQuoteAsset = oppo.CexQuoteAsset
 	model.OppoDexSolAmount = oppo.DexSolAmount
@@ -130,9 +128,9 @@ func (e *StrategyDexCexTriangularArbitrageTrades) GetDexCexTriangularTraderStati
 	row := db.Raw(`
 			SELECT 
 				COUNT(*) AS totalTrade,
-				SUM(CASE WHEN dex_success = 1 AND cex_sell_success = 1 AND cex_buy_success = 1 THEN 1 ELSE 0 END) AS totalSuccessTrade,
-				SUM(CASE WHEN created_at >= ? THEN 1 ELSE 0 END) AS dailyTotalTrade,
-				SUM(CASE WHEN dex_success = 1 AND cex_sell_success = 1 AND cex_buy_success = 1 AND created_at >= ? THEN 1 ELSE 0 END) AS dailyTotalSuccessTrade,
+				COALESCE(SUM(CASE WHEN dex_success = 1 AND cex_sell_success = 1 AND cex_buy_success = 1 THEN 1 ELSE 0 END),0) AS totalSuccessTrade,
+				COALESCE(SUM(CASE WHEN created_at >= ? THEN 1 ELSE 0 END),0) AS dailyTotalTrade,
+				COALESCE(SUM(CASE WHEN dex_success = 1 AND cex_sell_success = 1 AND cex_buy_success = 1 AND created_at >= ? THEN 1 ELSE 0 END),0) AS dailyTotalSuccessTrade,
 				COALESCE(SUM(cex_sell_quote_amount - cex_buy_quote_amount), 0) AS totalProfit,
 				COALESCE(SUM(CASE WHEN created_at >= ? THEN (cex_sell_quote_amount - cex_buy_quote_amount) ELSE 0 END), 0) AS dailyTotalProfit,
 				COALESCE(SUM(cex_sell_quote_amount + cex_buy_quote_amount), 0) AS totalTradeVolume,
