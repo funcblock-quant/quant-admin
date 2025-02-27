@@ -1115,16 +1115,16 @@ func (e *BusDexCexTriangularObserver) StartGlobalWaterLevel() error {
 	log.Infof("waterLevelInstances:%+v\n", waterLevelInstances)
 
 	for _, quoteToken := range quoteTokens {
-		tokenConfig := &waterLevelPb.TokenThresholdConfig{
+		tokenConfig := &waterLevelPb.StableCoinThresholdConfig{
 			AlertThreshold: strconv.FormatFloat(stableCoinAlertThreshold, 'f', -1, 64),
 		}
 
 		clientRequest := &waterLevelPb.StartInstanceRequest{
-			InstanceId:           quoteToken,
-			ExchangeType:         "Binance",
-			Currency:             quoteToken,
-			CurrencyType:         1, // 稳定币
-			TokenThresholdConfig: tokenConfig,
+			InstanceId:                quoteToken,
+			ExchangeType:              "Binance",
+			Currency:                  quoteToken,
+			CurrencyType:              1, // 稳定币
+			StableCoinThresholdConfig: tokenConfig,
 		}
 
 		e.Log.Infof("启动稳定币 %s 全局水位调节 req: %v \r\n", quoteToken, clientRequest)
