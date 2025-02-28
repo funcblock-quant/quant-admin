@@ -234,7 +234,7 @@ func (e *BusPriceTriggerStrategyInstance) UpdateProfitTarget(req *dto.BusPriceTr
 		profitTargetConfig.Config = &trigger_service.ProfitTargetConfig_LimitConfig{
 			LimitConfig: &trigger_service.LimitTypeConfig{
 				ProfitTargetPrice: req.ProfitTargetPrice,
-				LossTargetPrice:   req.LossTargetPrice,
+				//LossTargetPrice:   req.LossTargetPrice,
 			},
 		}
 	} else if profitTargetType == "FLOATING" {
