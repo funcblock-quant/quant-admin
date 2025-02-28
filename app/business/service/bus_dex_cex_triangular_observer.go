@@ -424,7 +424,7 @@ func (e *BusDexCexTriangularObserver) StartTrader(c *dto.BusDexCexTriangularObse
 
 	data.AlertThreshold = c.AlertThreshold
 	data.ProfitTriggerRate = c.PriorityFeeRate
-	data.BuyTriggerThreshold = c.BuyTriggerThreshold
+	data.SellTriggerThreshold = c.SellTriggerThreshold
 	// step1 先启动水位调节实例
 	err = StartTokenWaterLevelWithCheckExists(&data)
 	if err != nil {
