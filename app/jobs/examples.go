@@ -352,7 +352,7 @@ func (t DexCexObserverInspection) Exec(arg interface{}) error {
 			}
 			if !containsWaterLevelInstance(waterLevelInstances, strconv.Itoa(observer.Id)) {
 				// 服务端不存在的，重启
-				err = businessService.StartObserver(&observer)
+				err = businessService.StartTokenWaterLevel(&observer)
 				if err != nil {
 					//如果重启失败，则不进行下一步水位调节开启
 					continue
