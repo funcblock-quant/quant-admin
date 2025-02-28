@@ -21,6 +21,7 @@ type AMap struct {
 
 type LarkConfig struct {
 	Webhook string `yaml:"webhook"`
+	Secret  string `yaml:"secret"`
 }
 
 func (e *Extend) GetGrpcWithURL(endpoint string) string {

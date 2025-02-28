@@ -53,8 +53,8 @@ func InitSimpleJob() {
 		}
 	})
 
-	c.AddFunc("@every 5s", func() {
-		// 每1m一次，启动全局水位调整功能
+	c.AddFunc("@every 10s", func() {
+		// 每5s一次，启动全局水位调整功能
 		fmt.Println("StartGlobalWaterLevelConfig Job running")
 		s := service.BusDexCexTriangularObserver{}
 		orm := sdk.Runtime.GetDbByKey("*")
@@ -62,6 +62,20 @@ func InitSimpleJob() {
 		log := logger.NewHelper(sdk.Runtime.GetLogger()).WithFields(map[string]interface{}{})
 		s.Log = log
 		err := s.StartGlobalWaterLevel()
+		if err != nil {
+			fmt.Errorf("StartGlobalWaterLevelConfig Job run failed, err:%v\n", err)
+		}
+	})
+
+	c.AddFunc("@every 1m", func() {
+		// 每1m一次，对于交易进行简单封控和告警
+		fmt.Println("Start Scan dex cex trade records Job running")
+		s := service.StrategyDexCexTriangularArbitrageTrades{}
+		orm := sdk.Runtime.GetDbByKey("*")
+		s.Orm = orm
+		log := logger.NewHelper(sdk.Runtime.GetLogger()).WithFields(map[string]interface{}{})
+		s.Log = log
+		err := s.ScanTrades()
 		if err != nil {
 			fmt.Errorf("StartGlobalWaterLevelConfig Job run failed, err:%v\n", err)
 		}
