@@ -842,6 +842,7 @@ func (e *BusDexCexTriangularObserver) GetGlobalWaterLevelState() (*dto.BusDexCex
 // UpdateGlobalWaterLevelConfig 更新全局WaterLevel 参数
 func (e *BusDexCexTriangularObserver) UpdateGlobalWaterLevelConfig(req *dto.BusDexCexTriangularUpdateGlobalWaterLevelConfigReq) error {
 	var data models.BusCommonConfig
+	var instance models.BusDexCexTriangularObserver
 
 	solWaterLevelConfigJsonStr, err := json.Marshal(req.SolWaterLevelConfig)
 	if err != nil {
@@ -863,7 +864,7 @@ func (e *BusDexCexTriangularObserver) UpdateGlobalWaterLevelConfig(req *dto.BusD
 	}
 
 	var quoteTokens []string
-	err = e.Orm.Model(&data).
+	err = e.Orm.Model(&instance).
 		Where("status = ? AND is_trading = ?", 3, true).
 		Distinct().
 		Pluck("quote_token", &quoteTokens).
