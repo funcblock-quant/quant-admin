@@ -424,28 +424,10 @@ func (e *BusDexCexTriangularObserver) StartTrader(c *dto.BusDexCexTriangularObse
 	}
 
 	// step1 先启动水位调节实例
-	tokenConfig := &waterLevelPb.TokenThresholdConfig{
-		AlertThreshold:       strconv.FormatFloat(*c.AlertThreshold, 'f', -1, 64),
-		BuyTriggerThreshold:  strconv.FormatFloat(*c.BuyTriggerThreshold, 'f', -1, 64),
-		SellTriggerThreshold: strconv.FormatFloat(*c.SellTriggerThreshold, 'f', -1, 64),
-	}
-
-	clientRequest := &waterLevelPb.StartInstanceRequest{
-		InstanceId:           strconv.Itoa(data.Id),
-		ExchangeType:         data.ExchangeType,
-		Currency:             data.TargetToken,
-		CurrencyType:         0, // token
-		PubKey:               data.TokenMint,
-		TokenThresholdConfig: tokenConfig,
-	}
-
-	e.Log.Infof("water level start req: %v \r\n", clientRequest)
-	_, err = client.StartWaterLevelInstance(clientRequest)
+	err = StartTokenWaterLevelWithCheckExists(&data)
 	if err != nil {
-		e.Log.Errorf("启动水位调节失败:%s \r\n", err)
 		return err
 	}
-	e.Log.Infof("水位调节启动成功")
 
 	//exchangeType, err := data.GetExchangeTypeForTrader()
 	//if err != nil {
@@ -461,7 +443,7 @@ func (e *BusDexCexTriangularObserver) StartTrader(c *dto.BusDexCexTriangularObse
 	log.Infof("slippageBps: %v\n", slippageBpsUint)
 
 	priorityFee := *c.PriorityFee * 1_000_000_000
-	//err = RequestStartTrader(c, priorityFee, jitoFee, slippageBpsUint, data, exchangeType, e)
+	//err = StartTrader(c, priorityFee, jitoFee, slippageBpsUint, data, exchangeType, e)
 	//if err != nil {
 	//	return err
 	//}
@@ -519,7 +501,7 @@ func (e *BusDexCexTriangularObserver) MonitorWaterLevelToStartTrader() error {
 			e.Log.Infof("currency: %s, cex spot balance:%s, cex margin balance:%s, dex balance: %s", waterLevelState.Currency, waterLevelState.SpotAccountBalance, waterLevelState.MarginAccountBalance, waterLevelState.ChainWalletBalance)
 			//开启交易功能
 
-			err = RequestStartTrader(&instance)
+			err = StartTrader(&instance)
 			if err != nil {
 				e.Log.Errorf("start trader error:%s \r\n", err)
 				return err
@@ -754,26 +736,9 @@ func (e *BusDexCexTriangularObserver) UpdateWaterLevel(c *dto.BusDexCexTriangula
 		e.Log.Errorf("获取实例失败:%s \r\n", err)
 		return err
 	}
-	instanceId := strconv.Itoa(data.Id)
-
-	tokenConfig := &waterLevelPb.TokenThresholdConfig{
-		AlertThreshold:       strconv.FormatFloat(*c.AlertThreshold, 'f', -1, 64),
-		BuyTriggerThreshold:  strconv.FormatFloat(*c.BuyTriggerThreshold, 'f', -1, 64),
-		SellTriggerThreshold: strconv.FormatFloat(*c.SellTriggerThreshold, 'f', -1, 64),
-	}
-
-	waterLevelParams := &waterLevelPb.UpdateInstanceParamsRequest{
-		InstanceId:           instanceId,
-		CurrencyType:         0, //Token
-		TokenThresholdConfig: tokenConfig,
-	}
-	if config.ApplicationConfig.Mode != "dev" {
-
-		err = client.UpdateWaterLevelInstance(waterLevelParams)
-		if err != nil {
-			e.Log.Errorf("grpc更新实例：:%s water level参数失败，异常：%s \r\n", instanceId, err)
-			return err
-		}
+	err = UpdateTokenWaterLevel(&data)
+	if err != nil {
+		return err
 	}
 
 	updateData := map[string]interface{}{
@@ -1102,7 +1067,7 @@ func (e *BusDexCexTriangularObserver) StartGlobalWaterLevel() error {
 	return nil
 }
 
-func RestartObserver(observer *models.BusDexCexTriangularObserver) error {
+func StartObserver(observer *models.BusDexCexTriangularObserver) error {
 	slippageBpsUint, err := strconv.ParseUint(observer.SlippageBps, 10, 32)
 	if err != nil {
 		log.Infof("slippageBps: %v\n", slippageBpsUint)
@@ -1169,7 +1134,7 @@ func GenerateAmberConfig(observer *models.BusDexCexTriangularObserver, amberConf
 	return nil
 }
 
-func RequestStartTrader(instance *models.BusDexCexTriangularObserver) error {
+func StartTrader(instance *models.BusDexCexTriangularObserver) error {
 
 	exchangeType, err := instance.GetExchangeTypeForTrader()
 	if err != nil {
@@ -1206,7 +1171,41 @@ func RequestStartTrader(instance *models.BusDexCexTriangularObserver) error {
 	return nil
 }
 
-func RestartWaterLevel(observer *models.BusDexCexTriangularObserver) error {
+// StartTokenWaterLevelWithCheckExists 启动水位调节，校验是否存在
+func StartTokenWaterLevelWithCheckExists(observer *models.BusDexCexTriangularObserver) error {
+	instances, err := client.ListWaterLevelInstance()
+	if err != nil {
+		log.Errorf("water level 服务不可用，:%s \r\n", err)
+		return err
+	}
+	ids := instances.InstanceIds
+	isExist := false
+	for _, id := range ids {
+		if id == strconv.Itoa(observer.Id) {
+			isExist = true
+			break
+		}
+	}
+	if isExist {
+		//说明已经启动实例了，此时更新实例参数
+		err = UpdateTokenWaterLevel(observer)
+		if err != nil {
+			log.Errorf("grpc启动实例失败，异常信息:%s \r\n", err)
+			return err
+		}
+	} else {
+		//说明未启动实例，此时启动新的实例
+		err = StartTokenWaterLevel(observer)
+		if err != nil {
+			log.Errorf("grpc启动实例失败，异常信息:%s \r\n", err)
+			return err
+		}
+	}
+	return nil
+}
+
+// StartTokenWaterLevel 启动水位调节，不校验是否存在
+func StartTokenWaterLevel(observer *models.BusDexCexTriangularObserver) error {
 	tokenConfig := &waterLevelPb.TokenThresholdConfig{
 		AlertThreshold:       strconv.FormatFloat(*observer.AlertThreshold, 'f', -1, 64),
 		BuyTriggerThreshold:  strconv.FormatFloat(*observer.BuyTriggerThreshold, 'f', -1, 64),
@@ -1229,5 +1228,29 @@ func RestartWaterLevel(observer *models.BusDexCexTriangularObserver) error {
 		return err
 	}
 	log.Infof("水位调节启动成功")
+	return nil
+}
+
+// UpdateTokenWaterLevel 更新水位调节
+func UpdateTokenWaterLevel(observer *models.BusDexCexTriangularObserver) error {
+	instanceId := strconv.Itoa(observer.Id)
+
+	tokenConfig := &waterLevelPb.TokenThresholdConfig{
+		AlertThreshold:       strconv.FormatFloat(*observer.AlertThreshold, 'f', -1, 64),
+		BuyTriggerThreshold:  strconv.FormatFloat(*observer.BuyTriggerThreshold, 'f', -1, 64),
+		SellTriggerThreshold: strconv.FormatFloat(*observer.SellTriggerThreshold, 'f', -1, 64),
+	}
+
+	waterLevelParams := &waterLevelPb.UpdateInstanceParamsRequest{
+		InstanceId:           instanceId,
+		CurrencyType:         0, //Token
+		TokenThresholdConfig: tokenConfig,
+	}
+
+	err := client.UpdateWaterLevelInstance(waterLevelParams)
+	if err != nil {
+		log.Errorf("grpc更新实例：:%s water level参数失败，异常：%s \r\n", instanceId, err)
+		return err
+	}
 	return nil
 }

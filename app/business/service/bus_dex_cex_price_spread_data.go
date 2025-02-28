@@ -523,7 +523,7 @@ func (e *BusDexCexPriceSpreadData) restartObserver(observer models.BusDexCexTria
 	e.Log.Infof("[重启Observer]grpc请求暂停监视器成功")
 
 	// 启动observer
-	err = RestartObserver(&observer)
+	err = StartObserver(&observer)
 	if err != nil {
 		e.Log.Errorf("[重启Observer]启动监视器失败 error:%s \r\n", err)
 		return err
@@ -531,11 +531,11 @@ func (e *BusDexCexPriceSpreadData) restartObserver(observer models.BusDexCexTria
 	log.Infof("[重启Observer]重启监视器成功")
 
 	// 启动水位调节
-	//RestartWaterLevel(&observer)
+	//StartTokenWaterLevel(&observer)
 
 	if isTrading {
 		// 启动交易功能
-		err = RequestStartTrader(&observer)
+		err = StartTrader(&observer)
 		if err != nil {
 			e.Log.Errorf("[重启Observer]启动交易功能失败 error:%s \r\n", err)
 			return err
