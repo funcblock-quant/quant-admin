@@ -739,6 +739,10 @@ func (e *BusDexCexTriangularObserver) UpdateWaterLevel(c *dto.BusDexCexTriangula
 		e.Log.Errorf("获取实例失败:%s \r\n", err)
 		return err
 	}
+
+	data.BuyTriggerThreshold = c.BuyTriggerThreshold
+	data.SellTriggerThreshold = c.SellTriggerThreshold
+	data.AlertThreshold = c.AlertThreshold
 	err = UpdateTokenWaterLevel(&data)
 	if err != nil {
 		return err
