@@ -171,16 +171,53 @@ func (t PriceTriggerInspection) Exec(arg interface{}) error {
 				SecretKey: apiConfig.SecretKey,
 				Exchange:  apiConfig.Exchange,
 			}
-			request := &trigger_service.StartTriggerRequest{
+
+			profitTargetConfig := trigger_service.ProfitTargetConfig{
 				InstanceId: strconv.Itoa(instance.Id),
-				OpenPrice:  instance.OpenPrice,
-				ClosePrice: instance.ClosePrice,
-				Side:       instance.Side,
-				Amount:     instance.Amount,
-				Symbol:     instance.Symbol,
-				StopTime:   strconv.FormatInt(instance.CloseTime.UnixMilli(), 10),
-				ApiConfig:  &apiConfigReq,
-				UserId:     instance.ExchangeUserId,
+			}
+			profitTargetValue, err := strconv.ParseFloat(instance.ProfitTargetPrice, 64)
+			if err != nil {
+				fmt.Println("转换失败:", err)
+				return err
+			}
+
+			if instance.ProfitTargetType == "LIMIT" {
+				//限价止盈
+				profitTargetConfig.ProfitTargetType = trigger_service.ProfitTargetType_LIMIT
+				profitTargetConfig.Config = &trigger_service.ProfitTargetConfig_LimitConfig{
+					LimitConfig: &trigger_service.LimitTypeConfig{
+						ProfitTargetPrice: profitTargetValue,
+						//LossTargetPrice:   req.LossTargetPrice,
+					},
+				}
+			} else if instance.ProfitTargetType == "FLOATING" {
+				//浮动止盈
+				profitTargetConfig.ProfitTargetType = trigger_service.ProfitTargetType_FLOATING
+				profitTargetConfig.Config = &trigger_service.ProfitTargetConfig_FloatingConfig{
+					FloatingConfig: &trigger_service.FloatingTypeConfig{
+						CallbackRatio: *instance.CallbackRatio,
+						CutoffRatio:   *instance.CutoffRatio,
+						MinProfit:     *instance.MinProfit,
+					},
+				}
+			}
+			execConfig := trigger_service.ExecuteConfig{
+				InstanceId: strconv.Itoa(instance.Id),
+				ExecuteNum: uint32(instance.ExecuteNum),
+			}
+
+			request := &trigger_service.StartTriggerRequest{
+				InstanceId:         strconv.Itoa(instance.Id),
+				OpenPrice:          instance.OpenPrice,
+				ClosePrice:         instance.ClosePrice,
+				Side:               instance.Side,
+				Amount:             instance.Amount,
+				Symbol:             instance.Symbol,
+				StopTime:           strconv.FormatInt(instance.CloseTime.UnixMilli(), 10),
+				ApiConfig:          &apiConfigReq,
+				UserId:             instance.ExchangeUserId,
+				ProfitTargetConfig: &profitTargetConfig,
+				ExecuteConfig:      &execConfig,
 			}
 
 			_, err = client.StartTriggerInstance(request)
