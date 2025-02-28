@@ -4,7 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	lark "quanta-admin/common/notification"
+	ext "quanta-admin/config"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-admin-team/go-admin-core/sdk/service"
@@ -245,6 +248,67 @@ func (e *StrategyDexCexTriangularArbitrageTrades) Remove(d *dto.StrategyDexCexTr
 	}
 	if db.RowsAffected == 0 {
 		return errors.New("无权删除该数据")
+	}
+	return nil
+}
+
+func (e *StrategyDexCexTriangularArbitrageTrades) ScanTrades() error {
+	e.Log.Infof("开始扫描订单")
+	var data models.StrategyDexCexTriangularArbitrageTrades
+	var trades []dto.StrategyDexCexTriangularArbitrageTradesGetPageResp
+	// 获取当前时间
+	now := time.Now()
+
+	// 计算 1 分钟前的时间
+	oneMinuteAgo := now.Add(-time.Minute)
+
+	err := e.Orm.Model(&data).
+		Select("strategy_dex_cex_triangular_arbitrage_trades.*, opportunities.cex_target_asset as symbol").
+		Joins("LEFT JOIN strategy_dex_cex_triangular_arbitrage_opportunities AS opportunities ON strategy_dex_cex_triangular_arbitrage_trades.opportunity_id = opportunities.opportunity_id").
+		Where("strategy_dex_cex_triangular_arbitrage_trades.dex_success = 1 and strategy_dex_cex_triangular_arbitrage_trades.cex_sell_success = 1 and strategy_dex_cex_triangular_arbitrage_trades.cex_buy_success = 1 and strategy_dex_cex_triangular_arbitrage_trades.created_at >= ?", oneMinuteAgo).
+		Find(&trades).Error
+
+	if err != nil {
+		e.Log.Errorf("获取订单失败，数据库异常:%+v \n", err)
+		return err
+	}
+
+	if len(trades) == 0 {
+		e.Log.Infof("未成交新订单")
+		return nil
+	}
+
+	var builder strings.Builder
+	builder.WriteString(fmt.Sprintf("新成交 %d 笔套利，交易信息如下：\n", len(trades)))
+
+	for i, trade := range trades {
+		var buySide string
+		if trade.BuyOnDex == "0" {
+			buySide = "CEX"
+		} else {
+			buySide = "DEX"
+		}
+
+		cexSellAmount, err1 := strconv.ParseFloat(trade.CexSellQuoteAmount, 64)
+		cexBuyAmount, err2 := strconv.ParseFloat(trade.CexBuyQuoteAmount, 64)
+		if err1 != nil || err2 != nil {
+			return err
+		}
+
+		builder.WriteString(fmt.Sprintf(
+			"%d. 币对: %s，买方: %s，利润: %.8f USDT，交易时间: %s\n",
+			i+1, trade.Symbol, buySide, cexSellAmount-cexBuyAmount, trade.CreatedAt.Format("2006-01-02 15:04:05"),
+		))
+	}
+
+	notificationMsg := builder.String()
+	config := ext.ExtConfig
+	larkClient := lark.NewLarkRobotAlert(config)
+	e.Log.Infof("lark notificationMsg:%s \n", notificationMsg)
+	err = larkClient.SendLarkAlert(notificationMsg)
+	if err != nil {
+		e.Log.Infof("lark 推送消息失败")
+		return err
 	}
 	return nil
 }
