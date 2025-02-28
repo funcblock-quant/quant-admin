@@ -945,10 +945,10 @@ func (e *BusDexCexTriangularObserver) StartGlobalWaterLevel() error {
 		return err
 	}
 
-	if len(quoteTokens) == 0 {
-		e.Log.Infof("没有交易中的币对，不需要启动全局水位调整功能，跳过")
-		return nil
-	}
+	//if len(quoteTokens) == 0 {
+	//	e.Log.Infof("没有交易中的币对，不需要启动全局水位调整功能，跳过")
+	//	return nil
+	//}
 
 	var solData models.BusCommonConfig
 	err = e.Orm.Model(&solData).
