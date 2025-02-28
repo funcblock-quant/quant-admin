@@ -1236,7 +1236,7 @@ func (e *BusDexCexTriangularObserver) StartGlobalWaterLevel() error {
 		} else {
 			//如果已经在服务端启动了，则需要比对参数，判断要不要更新
 			stableStateReq := &waterLevelPb.InstantId{
-				InstanceId: "SOLANA",
+				InstanceId: quoteToken,
 			}
 			stableState, err := client.GetWaterLevelInstanceState(stableStateReq)
 			if err != nil {
