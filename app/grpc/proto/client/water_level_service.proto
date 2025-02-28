@@ -69,4 +69,7 @@ message GetStateResponse {
   string margin_account_balance = 3; // 交易所全仓杠杆账户该币种余额，空字符表示未获取到余额
   string spot_account_balance = 4; // 交易所现货账户该币种余额，空字符表示未获取到余额
   string chain_wallet_balance = 5; // 链上钱包该币种余额，空字符表示未获取到余额
+  string borrowed_amount = 6; 
+  string max_borrowable_amount = 7;
+  StartInstanceRequest instance_params = 8;
 }

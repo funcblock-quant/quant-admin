@@ -53,7 +53,7 @@ func InitSimpleJob() {
 		}
 	})
 
-	c.AddFunc("@every 10s", func() {
+	c.AddFunc("@every 1m", func() {
 		// 每5s一次，启动全局水位调整功能
 		fmt.Println("StartGlobalWaterLevelConfig Job running")
 		s := service.BusDexCexTriangularObserver{}

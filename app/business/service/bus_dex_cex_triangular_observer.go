@@ -71,7 +71,6 @@ func (e *BusDexCexTriangularObserver) GetPage(c *dto.BusDexCexTriangularObserver
 			dexBuyPrice = 0
 			buyOnDexProfit = 0
 		}
-		e.Log.Infof("[buy on dex price details]: cexPrice: %+v , dexPrice: %+v \r\n", cexSellPrice, dexBuyPrice)
 
 		sellOnDex := state.GetSellOnDex()
 		var cexBuyPrice, dexSellPrice, sellOnDexProfit float64
@@ -84,7 +83,6 @@ func (e *BusDexCexTriangularObserver) GetPage(c *dto.BusDexCexTriangularObserver
 			dexSellPrice = 0
 			sellOnDexProfit = 0
 		}
-		e.Log.Infof("[sell on dex price details]: cexPrice: %+v , dexPrice: %+v \r\n", cexBuyPrice, dexSellPrice)
 
 		if cexSellPrice-dexBuyPrice > 0 {
 			//获取最新的价差记录统计信息，设置价差持续时间
@@ -857,6 +855,75 @@ func (e *BusDexCexTriangularObserver) UpdateGlobalWaterLevelConfig(req *dto.BusD
 		return err
 	}
 
+	//获取当前启动的所有水位调节实例
+	waterLevelInstances, err := client.ListWaterLevelInstance()
+	if err != nil {
+		e.Log.Errorf("获取水位调节实例失败, %s", err)
+		return err
+	}
+
+	var quoteTokens []string
+	err = e.Orm.Model(&data).
+		Where("status = ? AND is_trading = ?", 3, true).
+		Distinct().
+		Pluck("quote_token", &quoteTokens).
+		Error
+	if err != nil {
+		e.Log.Errorf("获取实例失败:%s \r\n", err)
+		return err
+	}
+
+	isSolanaStarted := false
+	for _, instanceId := range waterLevelInstances.InstanceIds {
+		if instanceId == "SOLANA" {
+			// solana 已经启动水位调节
+			isSolanaStarted = true
+			break
+		}
+	}
+
+	if !isSolanaStarted {
+		tokenConfig := &waterLevelPb.TokenThresholdConfig{
+			AlertThreshold:       strconv.FormatFloat(*req.SolWaterLevelConfig.AlertThreshold, 'f', -1, 64),
+			BuyTriggerThreshold:  strconv.FormatFloat(*req.SolWaterLevelConfig.BuyTriggerThreshold, 'f', -1, 64),
+			SellTriggerThreshold: strconv.FormatFloat(*req.SolWaterLevelConfig.SellTriggerThreshold, 'f', -1, 64),
+		}
+
+		clientRequest := &waterLevelPb.StartInstanceRequest{
+			InstanceId:           "SOLANA",
+			ExchangeType:         "Binance",
+			Currency:             "SOL",
+			CurrencyType:         0, // token
+			TokenThresholdConfig: tokenConfig,
+		}
+
+		e.Log.Infof("启动solana全局水位调节 req: %v \r\n", clientRequest)
+		_, err = client.StartWaterLevelInstance(clientRequest)
+		if err != nil {
+			e.Log.Errorf("启动solana全局水位调节失败:%s \r\n", err)
+			return errors.New("更新Solana全局水位调节失败")
+		}
+		e.Log.Infof("启动solana全局水位调节启动成功")
+	} else {
+		//如果已经启动了，要尝试更新
+		tokenConfig := &waterLevelPb.TokenThresholdConfig{
+			AlertThreshold:       strconv.FormatFloat(*req.SolWaterLevelConfig.AlertThreshold, 'f', -1, 64),
+			BuyTriggerThreshold:  strconv.FormatFloat(*req.SolWaterLevelConfig.BuyTriggerThreshold, 'f', -1, 64),
+			SellTriggerThreshold: strconv.FormatFloat(*req.SolWaterLevelConfig.SellTriggerThreshold, 'f', -1, 64),
+		}
+		updateReq := &waterLevelPb.UpdateInstanceParamsRequest{
+			InstanceId:           "SOLANA",
+			CurrencyType:         0, // token
+			TokenThresholdConfig: tokenConfig,
+		}
+		err = client.UpdateWaterLevelInstance(updateReq)
+		if err != nil {
+			e.Log.Errorf("启动solana全局水位调节失败:%s \r\n", err)
+			return errors.New("更新Solana全局水位调节失败")
+		}
+		e.Log.Infof("更新solana全局水位调节启动成功")
+	}
+
 	// 保存配置到数据库
 	err = e.Orm.Model(&data).
 		Where("category = ? and config_key = ?", "WATER_LEVEL", common.GLOBAL_SOLANA_WATER_LEVEL_KEY).
@@ -891,6 +958,55 @@ func (e *BusDexCexTriangularObserver) UpdateGlobalWaterLevelConfig(req *dto.BusD
 	err = e.Orm.Model(&data).
 		Where("id = ?", data.Id).
 		Updates(updateData).Error
+
+	/***********稳定币部分**************/
+	for _, quoteToken := range quoteTokens {
+		isStarted := false
+		for _, instanceId := range waterLevelInstances.InstanceIds {
+			if instanceId == quoteToken {
+				// 该稳定币已经启动水位调节
+				isStarted = true
+				break
+			}
+		}
+		if !isStarted {
+			tokenConfig := &waterLevelPb.StableCoinThresholdConfig{
+				AlertThreshold: strconv.FormatFloat(*req.StableCoinWaterLevelConfig.AlertThreshold, 'f', -1, 64),
+			}
+
+			clientRequest := &waterLevelPb.StartInstanceRequest{
+				InstanceId:                quoteToken,
+				ExchangeType:              "Binance",
+				Currency:                  quoteToken,
+				CurrencyType:              1, // 稳定币
+				StableCoinThresholdConfig: tokenConfig,
+			}
+
+			e.Log.Infof("启动稳定币 %s 全局水位调节 req: %v \r\n", quoteToken, clientRequest)
+			_, err = client.StartWaterLevelInstance(clientRequest)
+			if err != nil {
+				e.Log.Errorf("启动稳定币 %s 全局水位调节 失败:%s \r\n", quoteToken, err)
+				return err
+			}
+			e.Log.Infof("启动稳定币 %s 全局水位调节 成功", quoteToken)
+		} else {
+			//如果已经启动了，要尝试更新
+			tokenConfig := &waterLevelPb.StableCoinThresholdConfig{
+				AlertThreshold: strconv.FormatFloat(*req.StableCoinWaterLevelConfig.AlertThreshold, 'f', -1, 64),
+			}
+			updateReq := &waterLevelPb.UpdateInstanceParamsRequest{
+				InstanceId:                quoteToken,
+				CurrencyType:              1, // 稳定币
+				StableCoinThresholdConfig: tokenConfig,
+			}
+			err = client.UpdateWaterLevelInstance(updateReq)
+			if err != nil {
+				e.Log.Errorf("更新稳定币 %s 全局水位调节 失败:%s \r\n", quoteToken, err)
+				return errors.New("更新稳定币全局水位调节失败")
+			}
+			e.Log.Infof("更新稳定币全局水位调节启动成功")
+		}
+	}
 
 	var stableData models.BusCommonConfig
 	// 稳定币水位调节参数处理
@@ -1039,30 +1155,120 @@ func (e *BusDexCexTriangularObserver) StartGlobalWaterLevel() error {
 			return err
 		}
 		e.Log.Infof("启动solana全局水位调节启动成功")
+	} else {
+		//如果已经启动了，要尝试更新
+		// 先获取当前实例的参数
+		solanaStateReq := &waterLevelPb.InstantId{
+			InstanceId: "SOLANA",
+		}
+		solanaState, err := client.GetWaterLevelInstanceState(solanaStateReq)
+		if err != nil {
+			e.Log.Errorf("获取state 失败，直接更新")
+			tokenConfig := &waterLevelPb.TokenThresholdConfig{
+				AlertThreshold:       strconv.FormatFloat(solanaAlertThreshold, 'f', -1, 64),
+				BuyTriggerThreshold:  strconv.FormatFloat(solBuyTriggerThreshold, 'f', -1, 64),
+				SellTriggerThreshold: strconv.FormatFloat(solSellTriggerThreshold, 'f', -1, 64),
+			}
+			updateReq := &waterLevelPb.UpdateInstanceParamsRequest{
+				InstanceId:           "SOLANA",
+				CurrencyType:         0, // token
+				TokenThresholdConfig: tokenConfig,
+			}
+			client.UpdateWaterLevelInstance(updateReq)
+		} else {
+			e.Log.Infof("从服务端获取到solana水位调节实例参数：%v \n", solanaState)
+			oldParams := solanaState.InstanceParams.TokenThresholdConfig
+			if oldParams.AlertThreshold == strconv.FormatFloat(solanaAlertThreshold, 'f', -1, 64) &&
+				oldParams.BuyTriggerThreshold == strconv.FormatFloat(solBuyTriggerThreshold, 'f', -1, 64) &&
+				oldParams.BuyTriggerThreshold == strconv.FormatFloat(solSellTriggerThreshold, 'f', -1, 64) {
+				// 参数一致，不需要更新
+				e.Log.Infof("solana 全局水位调节参数一致，不需要更新，跳过")
+			} else {
+				// 参数不一致，更新
+				tokenConfig := &waterLevelPb.TokenThresholdConfig{
+					AlertThreshold:       strconv.FormatFloat(solanaAlertThreshold, 'f', -1, 64),
+					BuyTriggerThreshold:  strconv.FormatFloat(solBuyTriggerThreshold, 'f', -1, 64),
+					SellTriggerThreshold: strconv.FormatFloat(solSellTriggerThreshold, 'f', -1, 64),
+				}
+				updateReq := &waterLevelPb.UpdateInstanceParamsRequest{
+					InstanceId:           "SOLANA",
+					CurrencyType:         0, // token
+					TokenThresholdConfig: tokenConfig,
+				}
+				client.UpdateWaterLevelInstance(updateReq)
+			}
+		}
+
 	}
 
 	log.Infof("waterLevelInstances:%+v\n", waterLevelInstances)
 
 	for _, quoteToken := range quoteTokens {
-		tokenConfig := &waterLevelPb.StableCoinThresholdConfig{
-			AlertThreshold: strconv.FormatFloat(stableCoinAlertThreshold, 'f', -1, 64),
+		isStarted := false
+		for _, instanceId := range waterLevelInstances.InstanceIds {
+			if instanceId == quoteToken {
+				// 该稳定币已经启动水位调节
+				isStarted = true
+				break
+			}
+		}
+		if !isStarted {
+			tokenConfig := &waterLevelPb.StableCoinThresholdConfig{
+				AlertThreshold: strconv.FormatFloat(stableCoinAlertThreshold, 'f', -1, 64),
+			}
+
+			clientRequest := &waterLevelPb.StartInstanceRequest{
+				InstanceId:                quoteToken,
+				ExchangeType:              "Binance",
+				Currency:                  quoteToken,
+				CurrencyType:              1, // 稳定币
+				StableCoinThresholdConfig: tokenConfig,
+			}
+
+			e.Log.Infof("启动稳定币 %s 全局水位调节 req: %v \r\n", quoteToken, clientRequest)
+			_, err = client.StartWaterLevelInstance(clientRequest)
+			if err != nil {
+				e.Log.Errorf("启动稳定币 %s 全局水位调节 失败:%s \r\n", quoteToken, err)
+				return err
+			}
+			e.Log.Infof("启动稳定币 %s 全局水位调节 成功", quoteToken)
+		} else {
+			//如果已经在服务端启动了，则需要比对参数，判断要不要更新
+			stableStateReq := &waterLevelPb.InstantId{
+				InstanceId: "SOLANA",
+			}
+			stableState, err := client.GetWaterLevelInstanceState(stableStateReq)
+			if err != nil {
+				e.Log.Errorf("获取state 失败，直接更新")
+				tokenConfig := &waterLevelPb.StableCoinThresholdConfig{
+					AlertThreshold: strconv.FormatFloat(stableCoinAlertThreshold, 'f', -1, 64),
+				}
+				updateReq := &waterLevelPb.UpdateInstanceParamsRequest{
+					InstanceId:                quoteToken,
+					CurrencyType:              1, // token
+					StableCoinThresholdConfig: tokenConfig,
+				}
+				client.UpdateWaterLevelInstance(updateReq)
+			} else {
+				e.Log.Infof("从服务端获取到稳定币： %s 水位调节实例参数：%v \n", quoteToken, stableState)
+				oldParams := stableState.InstanceParams.StableCoinThresholdConfig
+				if oldParams.AlertThreshold == strconv.FormatFloat(stableCoinAlertThreshold, 'f', -1, 64) {
+					// 参数一致，不需要更新
+					e.Log.Infof("稳定币 %s 全局水位调节参数一致，不需要更新，跳过", quoteToken)
+				} else {
+					tokenConfig := &waterLevelPb.StableCoinThresholdConfig{
+						AlertThreshold: strconv.FormatFloat(stableCoinAlertThreshold, 'f', -1, 64),
+					}
+					updateReq := &waterLevelPb.UpdateInstanceParamsRequest{
+						InstanceId:                quoteToken,
+						CurrencyType:              1, // token
+						StableCoinThresholdConfig: tokenConfig,
+					}
+					client.UpdateWaterLevelInstance(updateReq)
+				}
+			}
 		}
 
-		clientRequest := &waterLevelPb.StartInstanceRequest{
-			InstanceId:                quoteToken,
-			ExchangeType:              "Binance",
-			Currency:                  quoteToken,
-			CurrencyType:              1, // 稳定币
-			StableCoinThresholdConfig: tokenConfig,
-		}
-
-		e.Log.Infof("启动稳定币 %s 全局水位调节 req: %v \r\n", quoteToken, clientRequest)
-		_, err = client.StartWaterLevelInstance(clientRequest)
-		if err != nil {
-			e.Log.Errorf("启动稳定币 %s 全局水位调节 失败:%s \r\n", quoteToken, err)
-			return err
-		}
-		e.Log.Infof("启动稳定币 %s 全局水位调节 成功", quoteToken)
 	}
 	return nil
 }
