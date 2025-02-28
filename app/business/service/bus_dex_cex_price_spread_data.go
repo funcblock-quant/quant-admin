@@ -3,11 +3,14 @@ package service
 import (
 	"errors"
 	"fmt"
+	log "github.com/go-admin-team/go-admin-core/logger"
 	"math"
 	"quanta-admin/app/grpc/client"
 	pb "quanta-admin/app/grpc/proto/client/observer_service"
 	"slices"
 	"strconv"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/go-admin-team/go-admin-core/sdk/service"
@@ -17,6 +20,11 @@ import (
 	"quanta-admin/app/business/service/dto"
 	"quanta-admin/common/actions"
 	cDto "quanta-admin/common/dto"
+)
+
+var (
+	dexCexObserverFailures sync.Map // 存储任务失败次数
+	maxFailures            = 3      // 失败阈值
 )
 
 type BusDexCexPriceSpreadData struct {
@@ -271,6 +279,20 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 		e.Log.Infof("get observer state resp:%v \r\n", state)
 		if err != nil {
 			e.Log.Errorf("grpc获取最新价差数据失败， error:%s \r\n", err)
+			if strings.Contains(err.Error(), "NotEnoughTickArrayAccount") {
+				//获取当前失败次数
+				val, _ := dexCexObserverFailures.LoadOrStore(id, 0)
+				failureCount := val.(int) + 1
+				// 更新失败次数
+				dexCexObserverFailures.Store(id, failureCount)
+				e.Log.Errorf("instance: %v get observer state failure count: %d \n", id, failureCount)
+
+				// 检查是否超过阈值
+				if failureCount >= maxFailures {
+					e.Log.Infof("任务 %s 失败次数达到 %d，执行重启...\n", id, maxFailures)
+					e.restartObserver(observer)
+				}
+			}
 			continue
 		}
 		currentTime := time.Now()
@@ -446,6 +468,83 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 		}
 
 	}
+	return nil
+}
+
+func (e *BusDexCexPriceSpreadData) restartObserver(observer models.BusDexCexTriangularObserver) error {
+	log.Infof("开始重启Observer, id: %d, status:%s, isTrading:%t", observer.Id, observer.Status, observer.IsTrading)
+	id := strconv.Itoa(observer.Id)
+	isTrading := observer.IsTrading
+	var data models.BusDexCexTriangularObserver
+	// 先暂停交易功能
+	if isTrading {
+		// 实例交易功能开启，暂停
+		log.Infof("[重启Observer]开始暂停交易功能")
+		err := client.DisableTrader(id)
+		if err != nil {
+			log.Errorf("[重启Observer]grpc暂停实例：:%s 交易功能失败，异常：%s \r\n", id, err)
+			return err
+		}
+
+		log.Infof("[重启Observer]暂停交易功能成功")
+
+		// 关闭水位调节
+		//stopReq := &waterLevelPb.InstantId{
+		//	InstanceId: id,
+		//}
+		//err = client.StopWaterLevelInstance(stopReq)
+		//if err != nil {
+		//	log.Errorf("grpc暂停实例：:%s 水位调节功能失败，异常：%s \r\n", id, err)
+		//	return err
+		//}
+
+		// 更新observer的isTrading = false
+		updateData := map[string]interface{}{
+			"is_trading": false,
+			"status":     1,
+		}
+
+		err = e.Orm.Model(&data).
+			Where("id = ?", id).
+			Updates(updateData).Error
+		if err != nil {
+			e.Log.Errorf("[重启Observer]更新数据库实例:%s 交易状态失败，异常信息：%s \r\n", id, err)
+			return err
+		}
+		log.Info("[重启Observer]更新数据库状态为status = 1 \n")
+	}
+
+	// 关闭observer
+	err := client.StopArbitragerClient(id)
+	if err != nil {
+		e.Log.Errorf("[重启Observer]暂停监视器失败 error:%s \r\n", err)
+		return err
+	}
+	e.Log.Infof("[重启Observer]grpc请求暂停监视器成功")
+
+	// 启动observer
+	err = StartObserver(&observer)
+	if err != nil {
+		e.Log.Errorf("[重启Observer]启动监视器失败 error:%s \r\n", err)
+		return err
+	}
+	log.Infof("[重启Observer]重启监视器成功")
+
+	// 启动水位调节
+	//StartTokenWaterLevel(&observer)
+
+	if isTrading {
+		// 启动交易功能
+		err = StartTrader(&observer)
+		if err != nil {
+			e.Log.Errorf("[重启Observer]启动交易功能失败 error:%s \r\n", err)
+			return err
+		}
+		log.Infof("[重启Observer]重启交易功能成功")
+	}
+
+	// 清空全局异常连接次数
+	dexCexObserverFailures.Delete(id)
 	return nil
 }
 

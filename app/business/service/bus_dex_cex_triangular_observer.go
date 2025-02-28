@@ -6,6 +6,7 @@ import (
 	log "github.com/go-admin-team/go-admin-core/logger"
 	"github.com/go-admin-team/go-admin-core/sdk/config"
 	"github.com/go-admin-team/go-admin-core/sdk/service"
+	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 	"quanta-admin/app/business/models"
 	"quanta-admin/app/business/service/dto"
@@ -423,28 +424,10 @@ func (e *BusDexCexTriangularObserver) StartTrader(c *dto.BusDexCexTriangularObse
 	}
 
 	// step1 先启动水位调节实例
-	tokenConfig := &waterLevelPb.TokenThresholdConfig{
-		AlertThreshold:       strconv.FormatFloat(*c.AlertThreshold, 'f', -1, 64),
-		BuyTriggerThreshold:  strconv.FormatFloat(*c.BuyTriggerThreshold, 'f', -1, 64),
-		SellTriggerThreshold: strconv.FormatFloat(*c.SellTriggerThreshold, 'f', -1, 64),
-	}
-
-	clientRequest := &waterLevelPb.StartInstanceRequest{
-		InstanceId:           strconv.Itoa(data.Id),
-		ExchangeType:         data.ExchangeType,
-		Currency:             data.TargetToken,
-		CurrencyType:         0, // token
-		PubKey:               data.TokenMint,
-		TokenThresholdConfig: tokenConfig,
-	}
-
-	e.Log.Infof("water level start req: %v \r\n", clientRequest)
-	_, err = client.StartWaterLevelInstance(clientRequest)
+	err = StartTokenWaterLevelWithCheckExists(&data)
 	if err != nil {
-		e.Log.Errorf("启动水位调节失败:%s \r\n", err)
 		return err
 	}
-	e.Log.Infof("水位调节启动成功")
 
 	//exchangeType, err := data.GetExchangeTypeForTrader()
 	//if err != nil {
@@ -460,7 +443,7 @@ func (e *BusDexCexTriangularObserver) StartTrader(c *dto.BusDexCexTriangularObse
 	log.Infof("slippageBps: %v\n", slippageBpsUint)
 
 	priorityFee := *c.PriorityFee * 1_000_000_000
-	//err = requestStartTrader(c, priorityFee, jitoFee, slippageBpsUint, data, exchangeType, e)
+	//err = StartTrader(c, priorityFee, jitoFee, slippageBpsUint, data, exchangeType, e)
 	//if err != nil {
 	//	return err
 	//}
@@ -518,7 +501,7 @@ func (e *BusDexCexTriangularObserver) MonitorWaterLevelToStartTrader() error {
 			e.Log.Infof("currency: %s, cex spot balance:%s, cex margin balance:%s, dex balance: %s", waterLevelState.Currency, waterLevelState.SpotAccountBalance, waterLevelState.MarginAccountBalance, waterLevelState.ChainWalletBalance)
 			//开启交易功能
 
-			err = requestStartTrader(&instance, e)
+			err = StartTrader(&instance)
 			if err != nil {
 				e.Log.Errorf("start trader error:%s \r\n", err)
 				return err
@@ -536,43 +519,6 @@ func (e *BusDexCexTriangularObserver) MonitorWaterLevelToStartTrader() error {
 				continue
 			}
 			e.Log.Infof("实例：%s 参数已成功更新", data.InstanceId)
-		}
-	}
-	return nil
-}
-
-func requestStartTrader(instance *models.BusDexCexTriangularObserver, e *BusDexCexTriangularObserver) error {
-
-	exchangeType, err := instance.GetExchangeTypeForTrader()
-	if err != nil {
-		e.Log.Errorf("获取ExchangeType参数异常，:%s \r\n", err)
-		return err
-	}
-
-	slippageBpsUint, err := strconv.ParseUint(instance.SlippageBps, 10, 64)
-	if err != nil {
-		e.Log.Errorf("转换失败: %s", err)
-	}
-	e.Log.Infof("slippageBps: %v\n", slippageBpsUint)
-	slippageBpsFloat := float64(slippageBpsUint) / 10000.0
-
-	amberTraderConfig := &pb.AmberTraderConfig{
-		ExchangeType: &exchangeType,
-	}
-
-	priorityFee := float64(instance.PriorityFee) / 1_000_000_000
-	jitoFee := instance.JitoFeeRate
-	traderParams := &pb.TraderParams{
-		Slippage:    &slippageBpsFloat,
-		PriorityFee: &priorityFee,
-		JitoFeeRate: jitoFee,
-	}
-	if config.ApplicationConfig.Mode != "dev" {
-		instanceId := strconv.Itoa(instance.Id)
-		err := client.EnableTrader(instanceId, amberTraderConfig, traderParams)
-		if err != nil {
-			e.Log.Errorf("GRPC 启动Trader for instanceId:%d 失败，异常:%s \r\n", instance.Id, err)
-			return err
 		}
 	}
 	return nil
@@ -790,26 +736,9 @@ func (e *BusDexCexTriangularObserver) UpdateWaterLevel(c *dto.BusDexCexTriangula
 		e.Log.Errorf("获取实例失败:%s \r\n", err)
 		return err
 	}
-	instanceId := strconv.Itoa(data.Id)
-
-	tokenConfig := &waterLevelPb.TokenThresholdConfig{
-		AlertThreshold:       strconv.FormatFloat(*c.AlertThreshold, 'f', -1, 64),
-		BuyTriggerThreshold:  strconv.FormatFloat(*c.BuyTriggerThreshold, 'f', -1, 64),
-		SellTriggerThreshold: strconv.FormatFloat(*c.SellTriggerThreshold, 'f', -1, 64),
-	}
-
-	waterLevelParams := &waterLevelPb.UpdateInstanceParamsRequest{
-		InstanceId:           instanceId,
-		CurrencyType:         0, //Token
-		TokenThresholdConfig: tokenConfig,
-	}
-	if config.ApplicationConfig.Mode != "dev" {
-
-		err = client.UpdateWaterLevelInstance(waterLevelParams)
-		if err != nil {
-			e.Log.Errorf("grpc更新实例：:%s water level参数失败，异常：%s \r\n", instanceId, err)
-			return err
-		}
+	err = UpdateTokenWaterLevel(&data)
+	if err != nil {
+		return err
 	}
 
 	updateData := map[string]interface{}{
@@ -1134,6 +1063,194 @@ func (e *BusDexCexTriangularObserver) StartGlobalWaterLevel() error {
 			return err
 		}
 		e.Log.Infof("启动稳定币 %s 全局水位调节 成功", quoteToken)
+	}
+	return nil
+}
+
+func StartObserver(observer *models.BusDexCexTriangularObserver) error {
+	slippageBpsUint, err := strconv.ParseUint(observer.SlippageBps, 10, 32)
+	if err != nil {
+		log.Infof("slippageBps: %v\n", slippageBpsUint)
+		return err
+	}
+
+	maxArraySize := new(uint32)
+	*maxArraySize = uint32(observer.MaxArraySize) //默认5， clmm使用参数
+
+	dexConfig := &pb.DexConfig{}
+	if observer.DexType == "RAY_AMM" {
+		dexConfig.Config = &pb.DexConfig_RayAmm{
+			RayAmm: &pb.RayAmmConfig{
+				Pool:      observer.AmmPoolId,
+				TokenMint: observer.TokenMint,
+			},
+		}
+	} else if observer.DexType == "RAY_CLMM" {
+		dexConfig.Config = &pb.DexConfig_RayClmm{
+			RayClmm: &pb.RayClmmConfig{
+				Pool:         observer.AmmPoolId,
+				TokenMint:    observer.TokenMint,
+				MaxArraySize: maxArraySize,
+			},
+		}
+	}
+
+	triggerHoldingMsUint := uint64(observer.TriggerHoldingMs)
+	arbitrageConfig := &pb.ObserverParams{
+		MinQuoteAmount:           observer.MinQuoteAmount,
+		MaxQuoteAmount:           observer.MaxQuoteAmount,
+		TriggerProfitQuoteAmount: observer.MinProfit,
+		TriggerHoldingMs:         &triggerHoldingMsUint,
+	}
+
+	amberConfig := &pb.AmberObserverConfig{}
+	GenerateAmberConfig(observer, amberConfig)
+
+	instanceId := strconv.Itoa(observer.Id)
+	log.Infof("restart observer success with params: dexConfig: %+v\n, arbitrageConfig: %+v\n", dexConfig, arbitrageConfig)
+	err = client.StartNewArbitragerClient(&instanceId, amberConfig, dexConfig, arbitrageConfig)
+	if err != nil {
+		log.Errorf("restart observer throw grpc error: %v\n", err)
+		return err
+	}
+	return nil
+}
+
+func GenerateAmberConfig(observer *models.BusDexCexTriangularObserver, amberConfig *pb.AmberObserverConfig) error {
+	amberConfig.ExchangeType = &observer.ExchangeType
+	amberConfig.TakerFee = proto.Float64(*observer.TakerFee)
+
+	amberConfig.TargetToken = &observer.TargetToken
+	amberConfig.QuoteToken = &observer.QuoteToken
+
+	if observer.Depth != "" {
+		depthInt, err := strconv.Atoi(observer.Depth)
+		if err != nil {
+			depthInt = 20 //默认20档
+		}
+		amberConfig.BidDepth = proto.Int32(int32(depthInt))
+		amberConfig.AskDepth = proto.Int32(int32(depthInt))
+	}
+	return nil
+}
+
+func StartTrader(instance *models.BusDexCexTriangularObserver) error {
+
+	exchangeType, err := instance.GetExchangeTypeForTrader()
+	if err != nil {
+		log.Errorf("获取ExchangeType参数异常，:%s \r\n", err)
+		return err
+	}
+
+	slippageBpsUint, err := strconv.ParseUint(instance.SlippageBps, 10, 64)
+	if err != nil {
+		log.Errorf("转换失败: %s", err)
+	}
+	log.Infof("slippageBps: %v\n", slippageBpsUint)
+	slippageBpsFloat := float64(slippageBpsUint) / 10000.0
+
+	amberTraderConfig := &pb.AmberTraderConfig{
+		ExchangeType: &exchangeType,
+	}
+
+	priorityFee := float64(instance.PriorityFee) / 1_000_000_000
+	jitoFee := instance.JitoFeeRate
+	traderParams := &pb.TraderParams{
+		Slippage:    &slippageBpsFloat,
+		PriorityFee: &priorityFee,
+		JitoFeeRate: jitoFee,
+	}
+	if config.ApplicationConfig.Mode != "dev" {
+		instanceId := strconv.Itoa(instance.Id)
+		err := client.EnableTrader(instanceId, amberTraderConfig, traderParams)
+		if err != nil {
+			log.Errorf("GRPC 启动Trader for instanceId:%d 失败，异常:%s \r\n", instance.Id, err)
+			return err
+		}
+	}
+	return nil
+}
+
+// StartTokenWaterLevelWithCheckExists 启动水位调节，校验是否存在
+func StartTokenWaterLevelWithCheckExists(observer *models.BusDexCexTriangularObserver) error {
+	instances, err := client.ListWaterLevelInstance()
+	if err != nil {
+		log.Errorf("water level 服务不可用，:%s \r\n", err)
+		return err
+	}
+	ids := instances.InstanceIds
+	isExist := false
+	for _, id := range ids {
+		if id == strconv.Itoa(observer.Id) {
+			isExist = true
+			break
+		}
+	}
+	if isExist {
+		//说明已经启动实例了，此时更新实例参数
+		err = UpdateTokenWaterLevel(observer)
+		if err != nil {
+			log.Errorf("grpc启动实例失败，异常信息:%s \r\n", err)
+			return err
+		}
+	} else {
+		//说明未启动实例，此时启动新的实例
+		err = StartTokenWaterLevel(observer)
+		if err != nil {
+			log.Errorf("grpc启动实例失败，异常信息:%s \r\n", err)
+			return err
+		}
+	}
+	return nil
+}
+
+// StartTokenWaterLevel 启动水位调节，不校验是否存在
+func StartTokenWaterLevel(observer *models.BusDexCexTriangularObserver) error {
+	tokenConfig := &waterLevelPb.TokenThresholdConfig{
+		AlertThreshold:       strconv.FormatFloat(*observer.AlertThreshold, 'f', -1, 64),
+		BuyTriggerThreshold:  strconv.FormatFloat(*observer.BuyTriggerThreshold, 'f', -1, 64),
+		SellTriggerThreshold: strconv.FormatFloat(*observer.SellTriggerThreshold, 'f', -1, 64),
+	}
+
+	clientRequest := &waterLevelPb.StartInstanceRequest{
+		InstanceId:           strconv.Itoa(observer.Id),
+		ExchangeType:         observer.ExchangeType,
+		Currency:             observer.TargetToken,
+		CurrencyType:         0, // token
+		PubKey:               observer.TokenMint,
+		TokenThresholdConfig: tokenConfig,
+	}
+
+	log.Infof("restart water level with req: %v \r\n", clientRequest)
+	_, err := client.StartWaterLevelInstance(clientRequest)
+	if err != nil {
+		log.Errorf("启动水位调节失败:%s \r\n", err)
+		return err
+	}
+	log.Infof("水位调节启动成功")
+	return nil
+}
+
+// UpdateTokenWaterLevel 更新水位调节
+func UpdateTokenWaterLevel(observer *models.BusDexCexTriangularObserver) error {
+	instanceId := strconv.Itoa(observer.Id)
+
+	tokenConfig := &waterLevelPb.TokenThresholdConfig{
+		AlertThreshold:       strconv.FormatFloat(*observer.AlertThreshold, 'f', -1, 64),
+		BuyTriggerThreshold:  strconv.FormatFloat(*observer.BuyTriggerThreshold, 'f', -1, 64),
+		SellTriggerThreshold: strconv.FormatFloat(*observer.SellTriggerThreshold, 'f', -1, 64),
+	}
+
+	waterLevelParams := &waterLevelPb.UpdateInstanceParamsRequest{
+		InstanceId:           instanceId,
+		CurrencyType:         0, //Token
+		TokenThresholdConfig: tokenConfig,
+	}
+
+	err := client.UpdateWaterLevelInstance(waterLevelParams)
+	if err != nil {
+		log.Errorf("grpc更新实例：:%s water level参数失败，异常：%s \r\n", instanceId, err)
+		return err
 	}
 	return nil
 }
