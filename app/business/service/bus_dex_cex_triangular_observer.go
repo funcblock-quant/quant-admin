@@ -1310,7 +1310,7 @@ func StartObserver(observer *models.BusDexCexTriangularObserver) error {
 	arbitrageConfig := &pb.ObserverParams{
 		MinQuoteAmount:    observer.MinQuoteAmount,
 		MaxQuoteAmount:    observer.MaxQuoteAmount,
-		SlippageRate:      observer.PriorityFeeRate,
+		SlippageRate:      observer.SlippageBpsRate,
 		ProfitTriggerRate: observer.ProfitTriggerRate,
 		TriggerHoldingMs:  &triggerHoldingMsUint,
 	}
