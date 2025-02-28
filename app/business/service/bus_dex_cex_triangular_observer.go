@@ -318,6 +318,16 @@ func (e *BusDexCexTriangularObserver) BatchInsert(c *dto.BusDexCexTriangularObse
 		//循环创建监听
 
 		c.Generate(&data, baseToken)
+		var slippageBpsUint uint64
+		slippageBpsUint, err = strconv.ParseUint(*c.SlippageBps, 10, 32)
+		if err != nil {
+			e.Log.Errorf("slippageBps: %v\n", slippageBpsUint)
+			return errors.New("error slippageBps")
+		}
+		log.Infof("slippageBps: %v\n", slippageBpsUint)
+		slippageString := strconv.Itoa(int(slippageBpsUint))
+		data.SlippageBps = slippageString
+
 		tx := e.Orm.Begin()
 		err = tx.Create(&data).Error
 		if err != nil {
@@ -433,12 +443,12 @@ func (e *BusDexCexTriangularObserver) StartTrader(c *dto.BusDexCexTriangularObse
 	//	return err
 	//}
 
-	slippageBpsUint, err := strconv.ParseUint(*c.SlippageBps, 10, 32)
-	if err != nil {
-		e.Log.Errorf("slippageBps: %v\n", slippageBpsUint)
-		return errors.New("error slippageBps")
-	}
-	log.Infof("slippageBps: %v\n", slippageBpsUint)
+	//slippageBpsUint, err := strconv.ParseUint(*c.SlippageBps, 10, 32)
+	//if err != nil {
+	//	e.Log.Errorf("slippageBps: %v\n", slippageBpsUint)
+	//	return errors.New("error slippageBps")
+	//}
+	//log.Infof("slippageBps: %v\n", slippageBpsUint)
 
 	priorityFee := *c.PriorityFee * 1_000_000_000
 	//err = StartTrader(c, priorityFee, jitoFee, slippageBpsUint, data, exchangeType, e)
@@ -452,10 +462,10 @@ func (e *BusDexCexTriangularObserver) StartTrader(c *dto.BusDexCexTriangularObse
 		"alert_threshold":        c.AlertThreshold,
 		"buy_trigger_threshold":  c.BuyTriggerThreshold,
 		"sell_trigger_threshold": c.SellTriggerThreshold,
-		"slippage_bps":           slippageBpsUint,
-		"priority_fee":           priorityFee,
-		"jito_fee_rate":          c.JitoFeeRate,
-		"status":                 2, // 水位调节中
+		//"slippage_bps":           slippageBpsUint,
+		"priority_fee":  priorityFee,
+		"jito_fee_rate": c.JitoFeeRate,
+		"status":        2, // 水位调节中
 	}
 
 	if err := e.Orm.Model(&models.BusDexCexTriangularObserver{}).
@@ -637,10 +647,18 @@ func (e *BusDexCexTriangularObserver) UpdateObserver(c *dto.BusDexCexTriangularU
 		return err
 	}
 
+	slippageBpsUint, err := strconv.ParseUint(*c.SlippageBps, 10, 64)
+	if err != nil {
+		log.Errorf("转换失败: %s", err)
+	}
+	log.Infof("slippageBps: %v\n", slippageBpsUint)
+	slippageBpsFloat := float64(slippageBpsUint) / 10000.0
+
 	triggerHoldingMsUint := uint64(c.TriggerHoldingMs)
 	observerParams := &pb.ObserverParams{
 		MinQuoteAmount:           c.MinQuoteAmount,
 		MaxQuoteAmount:           c.MaxQuoteAmount,
+		Slippage:                 &slippageBpsFloat,
 		TriggerProfitQuoteAmount: c.TriggerProfitQuoteAmount,
 		TriggerHoldingMs:         &triggerHoldingMsUint,
 	}
@@ -658,6 +676,7 @@ func (e *BusDexCexTriangularObserver) UpdateObserver(c *dto.BusDexCexTriangularU
 	updateData := map[string]interface{}{
 		"min_quote_amount":   c.MinQuoteAmount,
 		"max_quote_amount":   c.MaxQuoteAmount,
+		"slippage_bps":       &slippageBpsUint,
 		"min_profit":         c.TriggerProfitQuoteAmount,
 		"trigger_holding_ms": c.TriggerHoldingMs,
 	}
@@ -683,16 +702,16 @@ func (e *BusDexCexTriangularObserver) UpdateTrader(c *dto.BusDexCexTriangularUpd
 		e.Log.Errorf("获取实例失败:%s \r\n", err)
 		return err
 	}
-	slippageBpsUint, err := strconv.ParseUint(*c.SlippageBps, 10, 64)
-	if err != nil {
-		e.Log.Errorf("转换失败: %s", err)
-	}
-	e.Log.Infof("slippageBps: %v\n", slippageBpsUint)
-	slippageBpsFloat := float64(slippageBpsUint) / 10000.0
+	//slippageBpsUint, err := strconv.ParseUint(*c.SlippageBps, 10, 64)
+	//if err != nil {
+	//	e.Log.Errorf("转换失败: %s", err)
+	//}
+	//e.Log.Infof("slippageBps: %v\n", slippageBpsUint)
+	//slippageBpsFloat := float64(slippageBpsUint) / 10000.0
 	priorityFee := *c.PriorityFee * 1_000_000_000
 
 	traderParams := &pb.TraderParams{
-		Slippage:    &slippageBpsFloat,
+		//Slippage:    &slippageBpsFloat,
 		PriorityFee: c.PriorityFee,
 		JitoFeeRate: c.JitoFeeRate,
 	}
@@ -706,7 +725,7 @@ func (e *BusDexCexTriangularObserver) UpdateTrader(c *dto.BusDexCexTriangularUpd
 	}
 
 	updateData := map[string]interface{}{
-		"slippage_bps":  slippageBpsUint,
+		//"slippage_bps":  slippageBpsUint,
 		"priority_fee":  priorityFee,
 		"jito_fee_rate": *c.JitoFeeRate,
 	}
@@ -1275,11 +1294,12 @@ func (e *BusDexCexTriangularObserver) StartGlobalWaterLevel() error {
 }
 
 func StartObserver(observer *models.BusDexCexTriangularObserver) error {
-	slippageBpsUint, err := strconv.ParseUint(observer.SlippageBps, 10, 32)
+	slippageBpsUint, err := strconv.ParseUint(observer.SlippageBps, 10, 64)
 	if err != nil {
-		log.Infof("slippageBps: %v\n", slippageBpsUint)
-		return err
+		log.Errorf("转换失败: %s", err)
 	}
+	log.Infof("slippageBps: %v\n", slippageBpsUint)
+	slippageBpsFloat := float64(slippageBpsUint) / 10000.0
 
 	maxArraySize := new(uint32)
 	*maxArraySize = uint32(observer.MaxArraySize) //默认5， clmm使用参数
@@ -1306,6 +1326,7 @@ func StartObserver(observer *models.BusDexCexTriangularObserver) error {
 	arbitrageConfig := &pb.ObserverParams{
 		MinQuoteAmount:           observer.MinQuoteAmount,
 		MaxQuoteAmount:           observer.MaxQuoteAmount,
+		Slippage:                 &slippageBpsFloat,
 		TriggerProfitQuoteAmount: observer.MinProfit,
 		TriggerHoldingMs:         &triggerHoldingMsUint,
 	}
@@ -1349,12 +1370,12 @@ func StartTrader(instance *models.BusDexCexTriangularObserver) error {
 		return err
 	}
 
-	slippageBpsUint, err := strconv.ParseUint(instance.SlippageBps, 10, 64)
-	if err != nil {
-		log.Errorf("转换失败: %s", err)
-	}
-	log.Infof("slippageBps: %v\n", slippageBpsUint)
-	slippageBpsFloat := float64(slippageBpsUint) / 10000.0
+	//slippageBpsUint, err := strconv.ParseUint(instance.SlippageBps, 10, 64)
+	//if err != nil {
+	//	log.Errorf("转换失败: %s", err)
+	//}
+	//log.Infof("slippageBps: %v\n", slippageBpsUint)
+	//slippageBpsFloat := float64(slippageBpsUint) / 10000.0
 
 	amberTraderConfig := &pb.AmberTraderConfig{
 		ExchangeType: &exchangeType,
@@ -1363,7 +1384,7 @@ func StartTrader(instance *models.BusDexCexTriangularObserver) error {
 	priorityFee := float64(instance.PriorityFee) / 1_000_000_000
 	jitoFee := instance.JitoFeeRate
 	traderParams := &pb.TraderParams{
-		Slippage:    &slippageBpsFloat,
+		//Slippage:    &slippageBpsFloat,
 		PriorityFee: &priorityFee,
 		JitoFeeRate: jitoFee,
 	}

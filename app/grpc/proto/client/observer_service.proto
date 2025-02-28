@@ -93,14 +93,14 @@ message RayClmmConfig {
 message ObserverParams {
   required double min_quote_amount = 1;
   required double max_quote_amount = 2;
-  required double trigger_profit_quote_amount = 3;
-  required uint64 trigger_holding_ms = 4;
+  required double slippage = 3; // 0% - 1%
+  required double trigger_profit_quote_amount = 4;
+  required uint64 trigger_holding_ms = 5;
 }
 
 message TraderParams {
   optional double priority_fee = 1;
-  required double jito_fee_rate = 2;
-  required double slippage = 3;
+  required double jito_fee_rate = 2; // 0% - 50%
 }
 
 message BasicInfo {
