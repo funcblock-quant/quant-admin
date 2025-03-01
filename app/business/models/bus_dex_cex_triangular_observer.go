@@ -8,18 +8,18 @@ import (
 type BusDexCexTriangularObserver struct {
 	models.Model
 
-	StrategyInstanceId     string   `gorm:"not null;comment:策略id" json:"strategyInstanceId"`
-	InstanceId             string   `gorm:"not null;comment:观察器id" json:"instanceId"`
-	Symbol                 string   `gorm:"not null;comment:观察币种" json:"symbol"`
-	TargetToken            string   `gorm:"not null" json:"targetToken"`
-	QuoteToken             string   `gorm:"not null" json:"quoteToken"`
-	SymbolConnector        string   `gorm:"not null" json:"symbolConnector"`
-	ExchangeType           string   `gorm:"not null;comment:交易所类型" json:"exchangeType"`
-	DexType                string   `json:"dexType"`
-	MaxArraySize           int      `gorm:"null;default:5" json:"maxArraySize"`
-	MinQuoteAmount         *float64 `gorm:"comment:最小交易量" json:"minQuoteAmount"` // 使用指针类型允许值为null
-	MaxQuoteAmount         *float64 `gorm:"comment:最大交易量" json:"maxQuoteAmount"` // 使用指针类型允许值为null
-	TriggerHoldingMs       int      `gorm:"null;default:0" json:"triggerHoldingMs"`
+	StrategyInstanceId string   `gorm:"not null;comment:策略id" json:"strategyInstanceId"`
+	InstanceId         string   `gorm:"not null;comment:观察器id" json:"instanceId"`
+	Symbol             string   `gorm:"not null;comment:观察币种" json:"symbol"`
+	TargetToken        string   `gorm:"not null" json:"targetToken"`
+	QuoteToken         string   `gorm:"not null" json:"quoteToken"`
+	SymbolConnector    string   `gorm:"not null" json:"symbolConnector"`
+	ExchangeType       string   `gorm:"not null;comment:交易所类型" json:"exchangeType"`
+	DexType            string   `json:"dexType"`
+	MaxArraySize       int      `gorm:"null;default:5" json:"maxArraySize"`
+	MinQuoteAmount     *float64 `gorm:"comment:最小交易量" json:"minQuoteAmount"` // 使用指针类型允许值为null
+	MaxQuoteAmount     *float64 `gorm:"comment:最大交易量" json:"maxQuoteAmount"` // 使用指针类型允许值为null
+	//TriggerHoldingMs       int      `gorm:"null;default:0" json:"triggerHoldingMs"`
 	TakerFee               *float64 `gorm:"not null;comment:交易所taker 费率" json:"takerFee"`
 	AmmPoolId              *string  `gorm:"comment:ammPoolId" json:"ammPoolId"`
 	TokenMint              *string  `gorm:"comment:base token合约" json:"tokenMint"` // 使用指针类型允许值为null
