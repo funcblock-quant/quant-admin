@@ -641,13 +641,13 @@ func (e *BusDexCexTriangularObserver) UpdateObserver(c *dto.BusDexCexTriangularU
 		return err
 	}
 
-	triggerHoldingMsUint := uint64(c.TriggerHoldingMs)
+	//triggerHoldingMsUint := uint64(c.TriggerHoldingMs)
 	observerParams := &pb.ObserverParams{
 		MinQuoteAmount:    c.MinQuoteAmount,
 		MaxQuoteAmount:    c.MaxQuoteAmount,
 		SlippageRate:      c.SlippageBpsRate,
 		ProfitTriggerRate: c.ProfitTriggerRate,
-		TriggerHoldingMs:  &triggerHoldingMsUint,
+		//TriggerHoldingMs:  &triggerHoldingMsUint,
 	}
 	if config.ApplicationConfig.Mode != "dev" {
 		// dev环境不调用grpc
@@ -1306,13 +1306,13 @@ func StartObserver(observer *models.BusDexCexTriangularObserver) error {
 		}
 	}
 
-	triggerHoldingMsUint := uint64(observer.TriggerHoldingMs)
+	//triggerHoldingMsUint := uint64(observer.TriggerHoldingMs)
 	arbitrageConfig := &pb.ObserverParams{
 		MinQuoteAmount:    observer.MinQuoteAmount,
 		MaxQuoteAmount:    observer.MaxQuoteAmount,
 		SlippageRate:      observer.SlippageBpsRate,
 		ProfitTriggerRate: observer.ProfitTriggerRate,
-		TriggerHoldingMs:  &triggerHoldingMsUint,
+		//TriggerHoldingMs:  &triggerHoldingMsUint,
 	}
 
 	amberConfig := &pb.AmberObserverConfig{}

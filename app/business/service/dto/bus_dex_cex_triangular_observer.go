@@ -146,7 +146,7 @@ func (s *BusDexCexTriangularObserverBatchInsertReq) Generate(model *models.BusDe
 	model.TokenMint = s.TokenMint
 	model.OwnerProgram = s.OwnerProgram
 	model.ProfitTriggerRate = s.ProfitTriggerRate // 比例
-	model.TriggerHoldingMs = s.TriggerHoldingMs
+	//model.TriggerHoldingMs = s.TriggerHoldingMs
 	model.SlippageBpsRate = s.SlippageBpsRate
 	model.Decimals = s.Decimals
 	model.AmmPoolId = s.AmmPoolId
@@ -206,7 +206,7 @@ func (s *BusDexCexTriangularObserverBatchInsertReq) GenerateObserverParams(obser
 
 	observerParams.SlippageRate = proto.Float64(*s.SlippageBpsRate)
 	observerParams.ProfitTriggerRate = proto.Float64(*s.ProfitTriggerRate)
-	observerParams.TriggerHoldingMs = proto.Uint64(uint64(s.TriggerHoldingMs))
+	//observerParams.TriggerHoldingMs = proto.Uint64(uint64(s.TriggerHoldingMs))
 	return nil
 }
 
@@ -301,7 +301,7 @@ func (s *BusDexCexTriangularUpdateObserverParamsReq) Generate(model *models.BusD
 	model.ProfitTriggerRate = s.ProfitTriggerRate
 	model.MinQuoteAmount = s.MinQuoteAmount
 	model.MaxQuoteAmount = s.MaxQuoteAmount
-	model.TriggerHoldingMs = s.TriggerHoldingMs
+	//model.TriggerHoldingMs = s.TriggerHoldingMs
 	model.UpdateBy = s.UpdateBy // 添加这而，需要记录是被谁更新的
 }
 

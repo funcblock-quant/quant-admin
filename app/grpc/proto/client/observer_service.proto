@@ -95,7 +95,7 @@ message ObserverParams {
   required double max_quote_amount = 2;
   required double slippage_rate = 3; // 0% - 1%
   required double profit_trigger_rate = 4; // 0% - 1%
-  required uint64 trigger_holding_ms = 5;
+//  required uint64 trigger_holding_ms = 5;
 }
 
 message TraderParams {
