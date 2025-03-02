@@ -643,9 +643,9 @@ func (e *BusDexCexTriangularObserver) UpdateObserver(c *dto.BusDexCexTriangularU
 
 	//triggerHoldingMsUint := uint64(c.TriggerHoldingMs)
 	observerParams := &pb.ObserverParams{
-		MinQuoteAmount:    c.MinQuoteAmount,
-		MaxQuoteAmount:    c.MaxQuoteAmount,
-		SlippageRate:      c.SlippageBpsRate,
+		MinQuoteAmount: c.MinQuoteAmount,
+		MaxQuoteAmount: c.MaxQuoteAmount,
+		//SlippageRate:      c.SlippageBpsRate,
 		ProfitTriggerRate: c.ProfitTriggerRate,
 		//TriggerHoldingMs:  &triggerHoldingMsUint,
 	}
@@ -663,7 +663,6 @@ func (e *BusDexCexTriangularObserver) UpdateObserver(c *dto.BusDexCexTriangularU
 	updateData := map[string]interface{}{
 		"min_quote_amount":    c.MinQuoteAmount,
 		"max_quote_amount":    c.MaxQuoteAmount,
-		"slippage_bps_rate":   c.SlippageBpsRate,
 		"profit_trigger_rate": c.ProfitTriggerRate,
 		"trigger_holding_ms":  c.TriggerHoldingMs,
 	}
@@ -711,7 +710,7 @@ func (e *BusDexCexTriangularObserver) UpdateTrader(c *dto.BusDexCexTriangularUpd
 	}
 
 	updateData := map[string]interface{}{
-		//"slippage_bps":  slippageBpsUint,
+		"slippage_bps_rate": c.SlippageBpsRate,
 		"priority_fee_rate": c.PriorityFeeRate,
 		"jito_fee_rate":     *c.JitoFeeRate,
 	}
@@ -1308,9 +1307,9 @@ func StartObserver(observer *models.BusDexCexTriangularObserver) error {
 
 	//triggerHoldingMsUint := uint64(observer.TriggerHoldingMs)
 	arbitrageConfig := &pb.ObserverParams{
-		MinQuoteAmount:    observer.MinQuoteAmount,
-		MaxQuoteAmount:    observer.MaxQuoteAmount,
-		SlippageRate:      observer.SlippageBpsRate,
+		MinQuoteAmount: observer.MinQuoteAmount,
+		MaxQuoteAmount: observer.MaxQuoteAmount,
+		//SlippageRate:      observer.SlippageBpsRate,
 		ProfitTriggerRate: observer.ProfitTriggerRate,
 		//TriggerHoldingMs:  &triggerHoldingMsUint,
 	}
@@ -1368,6 +1367,7 @@ func StartTrader(instance *models.BusDexCexTriangularObserver) error {
 	jitoFee := instance.JitoFeeRate
 	traderParams := &pb.TraderParams{
 		//Slippage:    &slippageBpsFloat,
+		SlippageRate:    instance.SlippageBpsRate,
 		PriorityFeeRate: instance.PriorityFeeRate,
 		JitoFeeRate:     jitoFee,
 	}

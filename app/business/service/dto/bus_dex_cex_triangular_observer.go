@@ -99,9 +99,9 @@ type BusDexCexTriangularObserverInsertReq struct {
 	AmmPoolId          *string  `json:"ammPool"`
 	ProfitTriggerRate  *float64 `json:"profitTriggerRate"`
 	TriggerHoldingMs   int      `json:"triggerHoldingMs"`
-	SlippageBpsRate    *string  `json:"slippageRate"`
-	Depth              string   `json:"depth"`
-	Status             string   `json:"status" comment:"状态"`
+	//SlippageBpsRate    *string  `json:"slippageRate"`
+	Depth  string `json:"depth"`
+	Status string `json:"status" comment:"状态"`
 	common.ControlBy
 }
 
@@ -123,9 +123,9 @@ type BusDexCexTriangularObserverBatchInsertReq struct {
 	MaxArraySize       int      `json:"maxArraySize"`
 	ProfitTriggerRate  *float64 `json:"profitTriggerRate"`
 	TriggerHoldingMs   int      `json:"triggerHoldingMs"`
-	SlippageBpsRate    *float64 `json:"slippageBpsRate"`
-	Depth              string   `json:"depth"`
-	Status             string   `json:"status" comment:"状态"`
+	//SlippageBpsRate    *float64 `json:"slippageBpsRate"`
+	Depth  string `json:"depth"`
+	Status string `json:"status" comment:"状态"`
 
 	common.ControlBy
 }
@@ -147,7 +147,7 @@ func (s *BusDexCexTriangularObserverBatchInsertReq) Generate(model *models.BusDe
 	model.OwnerProgram = s.OwnerProgram
 	model.ProfitTriggerRate = s.ProfitTriggerRate // 比例
 	//model.TriggerHoldingMs = s.TriggerHoldingMs
-	model.SlippageBpsRate = s.SlippageBpsRate
+	//model.SlippageBpsRate = s.SlippageBpsRate
 	model.Decimals = s.Decimals
 	model.AmmPoolId = s.AmmPoolId
 	model.Depth = s.Depth
@@ -204,7 +204,7 @@ func (s *BusDexCexTriangularObserverBatchInsertReq) GenerateObserverParams(obser
 	observerParams.MinQuoteAmount = proto.Float64(*s.MinQuoteAmount)
 	observerParams.MaxQuoteAmount = proto.Float64(*s.MaxQuoteAmount)
 
-	observerParams.SlippageRate = proto.Float64(*s.SlippageBpsRate)
+	//observerParams.SlippageRate = proto.Float64(*s.SlippageBpsRate)
 	observerParams.ProfitTriggerRate = proto.Float64(*s.ProfitTriggerRate)
 	//observerParams.TriggerHoldingMs = proto.Uint64(uint64(s.TriggerHoldingMs))
 	return nil
@@ -276,6 +276,7 @@ type BusDexCexTriangularObserverStartTraderReq struct {
 	AlertThreshold       *float64 `json:"alertThreshold"`
 	BuyTriggerThreshold  *float64 `json:"buyTriggerThreshold"`
 	SellTriggerThreshold *float64 `json:"sellTriggerThreshold"`
+	SlippageBpsRate      *float64 `json:"slippageBpsRate"`
 	PriorityFeeRate      *float64 `json:"priorityFeeRate"`
 	JitoFeeRate          *float64 `json:"jitoFeeRate"`
 	common.ControlBy
@@ -292,7 +293,6 @@ type BusDexCexTriangularUpdateObserverParamsReq struct {
 	MaxQuoteAmount    *float64 `json:"maxQuoteAmount"`
 	ProfitTriggerRate *float64 `json:"profitTriggerRate"`
 	TriggerHoldingMs  int      `json:"triggerHoldingMs"`
-	SlippageBpsRate   *float64 `json:"slippageBpsRate"`
 	common.ControlBy
 }
 
@@ -307,6 +307,7 @@ func (s *BusDexCexTriangularUpdateObserverParamsReq) Generate(model *models.BusD
 
 type BusDexCexTriangularUpdateTraderParamsReq struct {
 	InstanceId      int      `json:"id" comment:"策略端实例id"`
+	SlippageBpsRate *float64 `json:"slippageBpsRate"`
 	PriorityFeeRate *float64 `json:"priorityFeeRate"`
 	JitoFeeRate     *float64 `json:"jitoFeeRate"`
 	common.ControlBy
