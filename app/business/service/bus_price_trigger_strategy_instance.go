@@ -391,7 +391,7 @@ func (e *BusPriceTriggerStrategyInstance) MonitorExecuteNum() error {
 	}
 	for _, instance := range data {
 		err = e.Orm.Model(&models.BusPriceMonitorForOptionHedging{}).
-			Where("strategy_instance_id =?", instance.Id).
+			Where("strategy_instance_id =? and extra is NULL", instance.Id).
 			Count(&count).Error
 		if err != nil {
 			e.Log.Errorf("BusPriceTriggerStrategyInstance MonitorExecuteNum error:%s \r\n", err)
