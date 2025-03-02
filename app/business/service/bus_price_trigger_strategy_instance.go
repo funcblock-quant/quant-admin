@@ -192,7 +192,6 @@ func (e *BusPriceTriggerStrategyInstance) StopInstance(req *dto.StopTriggerInsta
 		InstanceId: strconv.Itoa(data.Id),
 	}
 	err = client.StopTriggerInstance(&request)
-	err = nil
 	if err != nil {
 		e.Log.Errorf("Service StopInstance throw grpc error:%s \r\n", err)
 		return err
