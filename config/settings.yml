@@ -47,8 +47,8 @@ settings:
     frontpath: ../quanta-admin-ui/src
   extend: # 扩展项使用说明
     lark:
-      webhook: ${LARK_WEBHOOK}
-      secret: ${LARK_SECRET}
+      webhook: https://open.larksuite.com/open-apis/bot/v2/hook/2264a2cd-0acf-4a11-85a0-5fab1bf510be
+      secret: PC8UjZAbQw3IA4za7bIKOg
     grpc:
       solana-observer: 172.31.47.132:8000
       market-making: 172.31.45.8:8000
