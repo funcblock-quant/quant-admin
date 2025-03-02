@@ -697,6 +697,7 @@ func (e *BusDexCexTriangularObserver) UpdateTrader(c *dto.BusDexCexTriangularUpd
 
 	traderParams := &pb.TraderParams{
 		//Slippage:    &slippageBpsFloat,
+		SlippageRate:    c.SlippageBpsRate,
 		PriorityFeeRate: c.PriorityFeeRate,
 		JitoFeeRate:     c.JitoFeeRate,
 	}
