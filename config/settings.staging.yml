@@ -48,6 +48,7 @@ settings:
   extend: # 扩展项使用说明
     lark:
       webhook: ${LARK_WEBHOOK}
+      secret: ${LARK_SECRET}
     grpc:
 #      solana-observer: 172.31.47.132:8000
 #      market-making: 172.31.45.8:8000
