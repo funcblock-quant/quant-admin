@@ -2,10 +2,11 @@ package lark
 
 import (
 	"fmt"
-	log "github.com/go-admin-team/go-admin-core/logger"
-	"github.com/go-lark/lark"
 	ext "quanta-admin/config"
 	"time"
+
+	log "github.com/go-admin-team/go-admin-core/logger"
+	"github.com/go-lark/lark"
 )
 
 type LarkRobotAlert struct {
@@ -21,6 +22,7 @@ func NewLarkRobotAlert(larkBotConf ext.Extend) *LarkRobotAlert {
 }
 
 func (a LarkRobotAlert) SendLarkAlert(text string) error {
+	log.Infof("lark webhook: %v, lark secret: %v", a.webhook, a.secret)
 	bot := lark.NewNotificationBot(a.webhook)
 	secret := a.secret
 	message := lark.NewMsgBuffer(lark.MsgText)
