@@ -20,8 +20,8 @@ type BusPriceTriggerStrategyInstance struct {
 	ExchangeUserId    string    `json:"exchangeUserId" gorm:"type:varchar(255);comment:交易所userId"`
 	ExecuteNum        int       `json:"executeNum" gorm:"type:int;comment:执行次数"`
 	ProfitTargetType  string    `json:"profitTargetType" gorm:"type:varchar(32);comment:止盈类型"`
-	ProfitTargetPrice string    `json:"profitTargetPrice" gorm:"type:decimal(32,16);comment:限价止盈价格"`
-	LossTargetPrice   string    `json:"lossTargetPrice" gorm:"type:decimal(32,16);comment:限价止盈价格"`
+	ProfitTargetPrice string    `json:"profitTargetPrice" gorm:"default:0;type:float;comment:限价止盈价格"`
+	LossTargetPrice   string    `json:"lossTargetPrice" gorm:"default:0;type:float;comment:限价止盈价格"`
 	CallbackRatio     *float64  `json:"callbackRatio" gorm:"type:float;comment:浮动止盈回调比例"`
 	CutoffRatio       *float64  `json:"cutoffRatio" gorm:"type:float;comment:浮动止盈止盈比例"`
 	MinProfit         *float64  `json:"minProfit" gorm:"type:float;comment:浮动止盈最低利润"`

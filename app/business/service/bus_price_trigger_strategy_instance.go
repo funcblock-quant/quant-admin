@@ -3,10 +3,6 @@ package service
 import (
 	"errors"
 	"fmt"
-	"github.com/go-admin-team/go-admin-core/sdk/config"
-	"github.com/go-admin-team/go-admin-core/sdk/service"
-	"github.com/shopspring/decimal"
-	"gorm.io/gorm"
 	"quanta-admin/app/business/models"
 	"quanta-admin/app/business/service/dto"
 	"quanta-admin/app/grpc/client"
@@ -14,6 +10,11 @@ import (
 	"quanta-admin/common/actions"
 	cDto "quanta-admin/common/dto"
 	"strconv"
+
+	"github.com/go-admin-team/go-admin-core/sdk/config"
+	"github.com/go-admin-team/go-admin-core/sdk/service"
+	"github.com/shopspring/decimal"
+	"gorm.io/gorm"
 )
 
 type BusPriceTriggerStrategyInstance struct {
@@ -240,10 +241,11 @@ func (e *BusPriceTriggerStrategyInstance) UpdateProfitTarget(req *dto.BusPriceTr
 	} else if profitTargetType == "FLOATING" {
 		//浮动止盈
 		profitTargetConfig.ProfitTargetType = trigger_service.ProfitTargetType_FLOATING
+		cutOffRatio := float64(1)
 		profitTargetConfig.Config = &trigger_service.ProfitTargetConfig_FloatingConfig{
 			FloatingConfig: &trigger_service.FloatingTypeConfig{
 				CallbackRatio: req.CallbackRatio,
-				CutoffRatio:   req.CutoffRatio,
+				CutoffRatio:   cutOffRatio,
 				MinProfit:     req.MinProfit,
 			},
 		}
@@ -265,7 +267,7 @@ func (e *BusPriceTriggerStrategyInstance) UpdateProfitTarget(req *dto.BusPriceTr
 			"profit_target_price": fmt.Sprintf("%.16f", req.ProfitTargetPrice),
 			"loss_target_price":   fmt.Sprintf("%.16f", req.LossTargetPrice),
 			"callback_ratio":      req.CallbackRatio,
-			"cutoff_ratio":        req.CutoffRatio,
+			"cutoff_ratio":        1,
 			"min_profit":          req.MinProfit,
 		}).Error
 
@@ -371,6 +373,49 @@ func (e *BusPriceTriggerStrategyInstance) GetSymbolList(list *[]dto.BusPriceTrig
 	if err != nil {
 		e.Log.Errorf("BusPriceTriggerStrategyInstance GetSymbolList error:%s \r\n", err)
 		return err
+	}
+	return nil
+}
+
+func (e *BusPriceTriggerStrategyInstance) MonitorExecuteNum() error {
+	// 获取所有运行中的实例，并统计他们的执行次数
+	var data []models.BusPriceTriggerStrategyInstance
+	var count int64
+
+	err := e.Orm.Model(&models.BusPriceTriggerStrategyInstance{}).
+		Where("status = ?", "started").
+		Find(&data).Error
+	if err != nil {
+		e.Log.Errorf("BusPriceTriggerStrategyInstance MonitorExecuteNum error:%s \r\n", err)
+		return err
+	}
+	for _, instance := range data {
+		err = e.Orm.Model(&models.BusPriceMonitorForOptionHedging{}).
+			Where("strategy_instance_id =?", instance.Id).
+			Count(&count).Error
+		if err != nil {
+			e.Log.Errorf("BusPriceTriggerStrategyInstance MonitorExecuteNum error:%s \r\n", err)
+			continue
+		}
+		if count >= int64(instance.ExecuteNum) {
+			// 如果执行次数达到上限，暂停实例
+			request := &trigger_service.StopTriggerRequest{
+				InstanceId: strconv.Itoa(instance.Id),
+			}
+			err = client.StopTriggerInstance(request)
+			if err != nil {
+				e.Log.Errorf("BusPriceTriggerStrategyInstance MonitorExecuteNum stop instance error:%s \r\n", err)
+				continue
+			}
+
+			err = e.Orm.Model(&models.BusPriceTriggerStrategyInstance{}).
+				Where("id = ?", instance.Id).
+				Update("status", "stopped").Error
+			if err != nil {
+				e.Log.Errorf("BusPriceTriggerStrategyInstance MonitorExecuteNum error:%s \r\n", err)
+				continue
+			}
+		}
 	}
 	return nil
 }
