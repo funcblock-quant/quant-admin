@@ -63,9 +63,9 @@ type BusPriceTriggerStrategyResp struct {
 	ProfitTargetType  string                                     `json:"profitTargetType"`
 	ProfitTargetPrice string                                     `json:"profitTargetPrice"`
 	LossTargetPrice   string                                     `json:"lossTargetPrice"`
-	CallbackRatio     int                                        `json:"callbackRatio"`
-	CutoffRatio       int                                        `json:"cutoffRatio"`
-	MinProfit         float64                                    `json:"minProfit"`
+	CallbackRatio     float64                                    `json:"callbackRatio"`
+	// CutoffRatio       int                                        `json:"cutoffRatio"`
+	MinProfit float64 `json:"minProfit"`
 }
 
 // BusPriceTriggerStrategyStatistical 价格触发下单的统计数据
@@ -90,8 +90,8 @@ type BusPriceTriggerStrategyInstanceInsertReq struct {
 	ProfitTargetPrice float64   `json:"profitTargetPrice"`
 	LossTargetPrice   float64   `json:"lossTargetPrice"`
 	CallbackRatio     float64   `json:"callbackRatio"`
-	CutoffRatio       float64   `json:"cutoffRatio"`
-	MinProfit         float64   `json:"minProfit"`
+	// CutoffRatio       float64   `json:"cutoffRatio"`
+	MinProfit float64 `json:"minProfit"`
 	common.ControlBy
 }
 
@@ -101,8 +101,8 @@ type BusPriceTriggerStrategyInstanceUpdateProfitTargetReq struct {
 	ProfitTargetPrice float64 `json:"profitTargetPrice"`
 	LossTargetPrice   float64 `json:"lossTargetPrice"`
 	CallbackRatio     float64 `json:"callbackRatio"`
-	CutoffRatio       float64 `json:"cutoffRatio"`
-	MinProfit         float64 `json:"minProfit"`
+	// CutoffRatio       float64 `json:"cutoffRatio"`
+	MinProfit float64 `json:"minProfit"`
 	common.ControlBy
 }
 
@@ -137,7 +137,8 @@ func (s *BusPriceTriggerStrategyInstanceInsertReq) Generate(model *models.BusPri
 		model.LossTargetPrice = strconv.FormatFloat(s.LossTargetPrice, 'f', -1, 64)
 	} else if s.ProfitTargetType == "FLOATING" {
 		model.CallbackRatio = &s.CallbackRatio
-		model.CutoffRatio = &s.CutoffRatio
+		cutoffRatio := 1.0 // 目前这块，策略端要求不接受前端传值，后端写死
+		model.CutoffRatio = &cutoffRatio
 		model.MinProfit = &s.MinProfit
 	}
 }

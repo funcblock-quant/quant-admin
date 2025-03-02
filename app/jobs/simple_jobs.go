@@ -2,10 +2,11 @@ package jobs
 
 import (
 	"fmt"
+	"quanta-admin/app/business/service"
+
 	"github.com/go-admin-team/go-admin-core/logger"
 	"github.com/go-admin-team/go-admin-core/sdk"
 	"github.com/robfig/cron/v3"
-	"quanta-admin/app/business/service"
 )
 
 func InitSimpleJob() {
@@ -79,6 +80,21 @@ func InitSimpleJob() {
 		if err != nil {
 			fmt.Errorf("StartGlobalWaterLevelConfig Job run failed, err:%v\n", err)
 		}
+	})
+
+	c.AddFunc("@every 5s", func() {
+		// 每5s一次，查看期权下单策略的执行次数是否到期
+		fmt.Println("Monitor Price Trigger ExecuteNum Job running")
+		s := service.BusPriceTriggerStrategyInstance{}
+		orm := sdk.Runtime.GetDbByKey("*")
+		s.Orm = orm
+		log := logger.NewHelper(sdk.Runtime.GetLogger()).WithFields(map[string]interface{}{})
+		s.Log = log
+		err := s.MonitorExecuteNum()
+		if err != nil {
+			fmt.Errorf("Monitor Price Trigger ExecuteNum Job run failed, err:%v\n", err)
+		}
+
 	})
 
 	c.Start()
