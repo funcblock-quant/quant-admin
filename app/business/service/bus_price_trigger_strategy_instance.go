@@ -396,7 +396,8 @@ func (e *BusPriceTriggerStrategyInstance) MonitorExecuteNum() error {
 			e.Log.Errorf("BusPriceTriggerStrategyInstance MonitorExecuteNum error:%s \r\n", err)
 			continue
 		}
-		if count >= int64(instance.ExecuteNum) {
+		if count/2 >= int64(instance.ExecuteNum) {
+
 			// 如果执行次数达到上限，暂停实例
 			request := &trigger_service.StopTriggerRequest{
 				InstanceId: strconv.Itoa(instance.Id),
