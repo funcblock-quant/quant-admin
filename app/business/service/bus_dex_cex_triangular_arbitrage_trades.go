@@ -296,7 +296,7 @@ func (e *StrategyDexCexTriangularArbitrageTrades) ScanTrades() error {
 		}
 
 		builder.WriteString(fmt.Sprintf(
-			"%d. 币对: %s，买方: %s，利润: %.8f USDT，交易时间: %s\n",
+			"%d. 币对: %s，买方: %s，利润: %.8f USDT，交易时间(UTC): %s\n",
 			i+1, trade.Symbol, buySide, cexSellAmount-cexBuyAmount, trade.CreatedAt.Format("2006-01-02 15:04:05"),
 		))
 	}
