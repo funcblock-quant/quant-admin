@@ -163,6 +163,7 @@ func (e *StrategyDexCexTriangularArbitrageTrades) GetDexCexTriangularTraderStati
 
 	// dailyProfitChangePercent
 	model.DailyProfitChangePercent = calculateDailyProfitChangePercent(model.DailyTotalProfit, model.TotalProfit)
+	model.DailyVolumeChangePercent = calculateDailyProfitChangePercent(model.DailyTotalTradeVolume, model.TotalTradeVolume)
 
 	return nil
 }
