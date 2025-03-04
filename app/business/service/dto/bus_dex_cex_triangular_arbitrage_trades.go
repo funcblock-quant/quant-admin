@@ -293,4 +293,5 @@ type StrategyDexCexTriangularArbitrageTradesGetStatisticsResp struct {
 	DailyProfitChangePercent string `json:"dailyProfitChangePercent" comment:"24小时套利利润变化"`
 	TotalTradeVolume         string `json:"totalTradeVolume" comment:"总套利交易量"`
 	DailyTotalTradeVolume    string `json:"dailyTotalTradeVolume" comment:"24小时套利交易量"`
+	DailyVolumeChangePercent string `json:"dailyVolumeChangePercent" comment:"24小时交易量变化"`
 }
