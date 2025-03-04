@@ -8,15 +8,17 @@ import (
 )
 
 type StrategyDexCexTriangularArbitrageTradesGetPageReq struct {
-	dto.Pagination `search:"-"`
-	InstanceId     string `form:"instanceId"  search:"type:exact;column:instance_id;table:strategy_dex_cex_triangular_arbitrage_trades" comment:"Arbitrager instance ID"`
-	BuyOnDex       string `form:"buyOnDex"  search:"type:exact;column:buy_on_dex;table:strategy_dex_cex_triangular_arbitrage_trades" comment:"Buy on dex or cex"`
-	Symbol         string `form:"symbol" search:"-"`
-	IsSuccess      bool   `form:"isSuccess" search:"-"`
-	MinProfit      string `form:"minProfit" search:"-"`
-	MaxProfit      string `form:"maxProfit" search:"-"`
-	BeginTime      string `form:"beginTime" search:"type:gte;column:updated_at;table:strategy_dex_cex_triangular_arbitrage_trades"` // >= BeginTime
-	EndTime        string `form:"endTime" search:"type:lte;column:updated_at;table:strategy_dex_cex_triangular_arbitrage_trades"`   // <= EndTime
+	dto.Pagination   `search:"-"`
+	InstanceId       string `form:"instanceId"  search:"type:exact;column:instance_id;table:strategy_dex_cex_triangular_arbitrage_trades" comment:"Arbitrager instance ID"`
+	BuyOnDex         string `form:"buyOnDex"  search:"type:exact;column:buy_on_dex;table:strategy_dex_cex_triangular_arbitrage_trades" comment:"Buy on dex or cex"`
+	Symbol           string `form:"symbol" search:"-"`
+	IsSuccess        bool   `form:"isSuccess" search:"-"`
+	MinProfit        string `form:"minProfit" search:"-"`
+	MaxProfit        string `form:"maxProfit" search:"-"`
+	MinProfitPercent string `form:"minProfitPercent" search:"-"`
+	MaxProfitPercent string `form:"maxProfitPercent" search:"-"`
+	BeginTime        string `form:"beginTime" search:"type:gte;column:updated_at;table:strategy_dex_cex_triangular_arbitrage_trades"` // >= BeginTime
+	EndTime          string `form:"endTime" search:"type:lte;column:updated_at;table:strategy_dex_cex_triangular_arbitrage_trades"`   // <= EndTime
 
 	StrategyDexCexTriangularArbitrageTradesOrder
 }

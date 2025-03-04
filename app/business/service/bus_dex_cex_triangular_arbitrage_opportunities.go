@@ -36,6 +36,14 @@ func (e *StrategyDexCexTriangularArbitrageOpportunities) GetPage(c *dto.Strategy
 		query = query.Where("(strategy_dex_cex_triangular_arbitrage_opportunities.cex_sell_quote_amount - strategy_dex_cex_triangular_arbitrage_opportunities.cex_buy_quote_amount) <= ?", c.MaxProfit)
 	}
 
+	if c.MinProfitPercent != "" && c.MaxProfitPercent != "" {
+		query = query.Where("((strategy_dex_cex_triangular_arbitrage_opportunities.cex_sell_quote_amount - strategy_dex_cex_triangular_arbitrage_opportunities.cex_buy_quote_amount)/strategy_dex_cex_triangular_arbitrage_opportunities.cex_buy_quote_amount) BETWEEN ? AND ?", c.MinProfitPercent, c.MaxProfitPercent)
+	} else if c.MinProfitPercent != "" {
+		query = query.Where("((strategy_dex_cex_triangular_arbitrage_opportunities.cex_sell_quote_amount - strategy_dex_cex_triangular_arbitrage_opportunities.cex_buy_quote_amount)/strategy_dex_cex_triangular_arbitrage_opportunities.cex_buy_quote_amount) >= ?", c.MinProfitPercent)
+	} else if c.MaxProfitPercent != "" {
+		query = query.Where("((strategy_dex_cex_triangular_arbitrage_opportunities.cex_sell_quote_amount - strategy_dex_cex_triangular_arbitrage_opportunities.cex_buy_quote_amount)/strategy_dex_cex_triangular_arbitrage_opportunities.cex_buy_quote_amount) <= ?", c.MaxProfitPercent)
+	}
+
 	if c.Symbol != "" {
 		query = query.Where("strategy_dex_cex_triangular_arbitrage_opportunities.cex_target_asset = ?", c.Symbol)
 	}
