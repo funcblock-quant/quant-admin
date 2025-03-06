@@ -760,15 +760,19 @@ func (e *BusDexCexTriangularObserver) UpdateWaterLevel(c *dto.BusDexCexTriangula
 	data.BuyTriggerThreshold = c.BuyTriggerThreshold
 	data.SellTriggerThreshold = c.SellTriggerThreshold
 	data.AlertThreshold = c.AlertThreshold
+	data.MinDepositAmountThreshold = C.MinDepositAmountThreshold
+	data.MinWithdrawAmountThreshold = c.MinWithdrawAmountThreshold
 	err = UpdateTokenWaterLevel(&data)
 	if err != nil {
 		return err
 	}
 
 	updateData := map[string]interface{}{
-		"alert_threshold":        c.AlertThreshold,
-		"buy_trigger_threshold":  c.BuyTriggerThreshold,
-		"sell_trigger_threshold": c.SellTriggerThreshold,
+		"alert_threshold":               c.AlertThreshold,
+		"buy_trigger_threshold":         c.BuyTriggerThreshold,
+		"sell_trigger_threshold":        c.SellTriggerThreshold,
+		"min_deposit_amount_threshold":  c.MinDepositAmountThreshold,
+		"min_withdraw_amount_threshold": c.MinWithdrawAmountThreshold,
 	}
 	// 更新observer的trader相关参数
 	if err := e.Orm.Model(&models.BusDexCexTriangularObserver{}).
@@ -825,13 +829,27 @@ func (e *BusDexCexTriangularObserver) GetGlobalWaterLevelState() (*dto.BusDexCex
 		if err != nil {
 			e.Log.Error("JSON 解析失败:", err)
 		} else {
+			var solMinDepositAmountThreshold, solMinWithdrawAmountThreshold float64
 			alertThreshold := configMap["alertThreshold"].(float64)
 			buyTriggerThreshold := configMap["buyTriggerThreshold"].(float64)
 			sellTriggerThreshold := configMap["sellTriggerThreshold"].(float64)
+			if v, ok := configMap["minDepositAmountThreshold"].(float64); ok {
+				solMinDepositAmountThreshold = v
+			} else {
+				solMinDepositAmountThreshold = 0
+			}
+
+			if v, ok := configMap["minWithdrawAmountThreshold"].(float64); ok {
+				solMinWithdrawAmountThreshold = v
+			} else {
+				solMinWithdrawAmountThreshold = 0
+			}
 			resp.SolWaterLevelConfig = &dto.BusDexCexTriangularUpdateWaterLevelParamsReq{
-				AlertThreshold:       &alertThreshold,
-				BuyTriggerThreshold:  &buyTriggerThreshold,
-				SellTriggerThreshold: &sellTriggerThreshold,
+				AlertThreshold:             &alertThreshold,
+				BuyTriggerThreshold:        &buyTriggerThreshold,
+				SellTriggerThreshold:       &sellTriggerThreshold,
+				MinDepositAmountThreshold:  &solMinDepositAmountThreshold,
+				MinWithdrawAmountThreshold: &solMinWithdrawAmountThreshold,
 			}
 		}
 	}
