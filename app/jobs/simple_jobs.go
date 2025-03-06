@@ -106,7 +106,7 @@ func InitSimpleJob() {
 
 	}))
 
-	c.AddFunc("@every 1m", safeWrapper("", func() {
+	c.AddFunc("@every 5s", safeWrapper("", func() {
 		jobLock.Lock()
 		defer jobLock.Unlock()
 
