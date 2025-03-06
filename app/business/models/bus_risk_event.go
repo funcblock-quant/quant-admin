@@ -15,9 +15,9 @@ type BusRiskEvent struct {
 	RiskScope          int        `json:"riskScope" gorm:"type:tinyint;comment:风控范围"`
 	AssetSymbol        string     `json:"assetSymbol" gorm:"type:varchar(50);comment:风控币种"`
 	RiskLevel          int        `json:"riskLevel" gorm:"type:tinyint;comment:风控级别"`
-	ManualRecover      bool       `json:"manualRecover" gorm:"type:bool;comment:是否需要人工恢复"`
+	ManualRecover      int        `json:"manualRecover" gorm:"type:tinyint;comment:是否需要人工恢复"`
 	AutoRecoverTime    *time.Time `json:"autoRecoverTime" gorm:"type:timestamp;comment:自动恢复时间"`
-	IsRecovered        bool       `json:"isRecovered" gorm:"type:bool;comment:是否已恢复"`
+	IsRecovered        int        `json:"isRecovered" gorm:"type:tinyint;comment:是否已恢复"`
 	RecoveredBy        string     `json:"recoveredBy" gorm:"type:bigint;default:0;comment:审核人"`
 	RecoveredAt        *time.Time `json:"recoveredAt" gorm:"type:timestamp;comment:恢复时间"`
 	TriggerRule        string     `json:"triggerRule" gorm:"type:varchar(255);comment:触发的风控规则"`

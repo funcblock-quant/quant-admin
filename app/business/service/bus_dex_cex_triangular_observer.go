@@ -1897,10 +1897,10 @@ func (e BusDexCexTriangularObserver) AbsoluteLossThresholdCheck(absoluteLossThre
 
 				riskEvent.RiskScope = common.RISK_SCOPE_SINGLE_TOKEN
 				riskEvent.RiskLevel = common.RISK_LEVEL_MIDDLE
-				riskEvent.IsRecovered = false
-				manualRecover := actionDetail["manualResume"].(bool)
+				riskEvent.IsRecovered = 0
+				manualRecover := actionDetail["manualResume"].(int)
 				riskEvent.ManualRecover = manualRecover
-				if !manualRecover {
+				if manualRecover != 0 {
 					pauseDuration := actionDetail["pauseDuration"].(int64)
 					if pauseDuration == -1 {
 						// 第二天0点恢复
@@ -1938,7 +1938,7 @@ func (e BusDexCexTriangularObserver) AbsoluteLossThresholdCheck(absoluteLossThre
 				// }
 
 				var recoverMethod string
-				if manualRecover {
+				if manualRecover == 1 {
 					recoverMethod = "手动恢复"
 				} else {
 					recoverMethod = "自动恢复"
@@ -1951,10 +1951,10 @@ func (e BusDexCexTriangularObserver) AbsoluteLossThresholdCheck(absoluteLossThre
 				afterAction = 0
 				riskEvent.RiskScope = common.RISK_SCOPE_SINGLE_TOKEN
 				riskEvent.RiskLevel = common.RISK_LEVEL_LOW
-				riskEvent.IsRecovered = true // 预警类的不需要进行恢复，不阻断流程
+				riskEvent.IsRecovered = 1 // 预警类的不需要进行恢复，不阻断流程
 				nowTime := time.Now()
 				riskEvent.RecoveredAt = &nowTime
-				riskEvent.ManualRecover = false
+				riskEvent.ManualRecover = 0
 				riskEvent.AutoRecoverTime = &nowTime
 				riskEvent.RecoveredBy = "-1"
 
@@ -2011,10 +2011,10 @@ func (e BusDexCexTriangularObserver) RelativeLossThresholdCheck(relativeLossThre
 				afterAction = 2
 				riskEvent.RiskScope = common.RISK_SCOPE_SINGLE_TOKEN
 				riskEvent.RiskLevel = common.RISK_LEVEL_MIDDLE
-				riskEvent.IsRecovered = false
-				manualRecover := actionDetail["manualResume"].(bool)
+				riskEvent.IsRecovered = 0
+				manualRecover := actionDetail["manualResume"].(int)
 				riskEvent.ManualRecover = manualRecover
-				if !manualRecover {
+				if manualRecover != 1 {
 					pauseDuration := actionDetail["pauseDuration"].(int64)
 					if pauseDuration == -1 {
 						// 第二天0点恢复
@@ -2053,7 +2053,7 @@ func (e BusDexCexTriangularObserver) RelativeLossThresholdCheck(relativeLossThre
 				// }
 
 				var recoverMethod string
-				if manualRecover {
+				if manualRecover == 1 {
 					recoverMethod = "手动恢复"
 				} else {
 					recoverMethod = "自动恢复"
@@ -2066,10 +2066,10 @@ func (e BusDexCexTriangularObserver) RelativeLossThresholdCheck(relativeLossThre
 				afterAction = 1
 				riskEvent.RiskScope = common.RISK_SCOPE_SINGLE_TOKEN
 				riskEvent.RiskLevel = common.RISK_LEVEL_LOW
-				riskEvent.IsRecovered = true // 预警类的不需要进行恢复，不阻断流程
+				riskEvent.IsRecovered = 1 // 预警类的不需要进行恢复，不阻断流程
 				nowTime := time.Now()
 				riskEvent.RecoveredAt = &nowTime
-				riskEvent.ManualRecover = false
+				riskEvent.ManualRecover = 0
 				riskEvent.AutoRecoverTime = &nowTime
 				riskEvent.RecoveredBy = "-1"
 
