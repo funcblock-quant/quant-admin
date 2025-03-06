@@ -1869,7 +1869,7 @@ func (e BusDexCexTriangularObserver) AbsoluteLossThresholdCheck(absoluteLossThre
 
 		thresholdMap := threshold.(map[string]interface{})
 		thresholdValue := thresholdMap["threshold"].(float64)
-		action := thresholdMap["action"].(float64)
+		action := thresholdMap["action"].(int)
 		actionDetail := thresholdMap["actionDetail"].(map[string]interface{})
 
 		cexSellAmount, err1 := strconv.ParseFloat(trade.CexSellQuoteAmount, 64)
@@ -1880,6 +1880,7 @@ func (e BusDexCexTriangularObserver) AbsoluteLossThresholdCheck(absoluteLossThre
 		}
 
 		profitAmount := cexSellAmount - cexBuyAmount
+		e.Log.Infof("[Risk Control Check] profit:%f , threshold:%f \n", profitAmount, thresholdValue)
 		if profitAmount < -thresholdValue {
 			// 亏损金额超过阈值
 			// 生成风控事件
@@ -1983,7 +1984,7 @@ func (e BusDexCexTriangularObserver) RelativeLossThresholdCheck(relativeLossThre
 
 		thresholdMap := threshold.(map[string]interface{})
 		thresholdValue := thresholdMap["threshold"].(float64)
-		action := thresholdMap["action"].(float64)
+		action := thresholdMap["action"].(int)
 		actionDetail := thresholdMap["actionDetail"].(map[string]interface{})
 
 		cexSellAmount, err1 := strconv.ParseFloat(trade.CexSellQuoteAmount, 64)
