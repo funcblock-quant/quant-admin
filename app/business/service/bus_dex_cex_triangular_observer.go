@@ -1637,7 +1637,7 @@ func (e BusDexCexTriangularObserver) CheckRiskControl() error {
 
 	// 单笔最大亏损金额阈值
 	var absoluteLossThreshold []interface{}
-	if v, ok := configMap["relativeLossThreshold"]; ok {
+	if v, ok := configMap["absoluteLossThreshold"]; ok {
 		if list, valid := v.([]interface{}); valid {
 			absoluteLossThreshold = list
 		}
