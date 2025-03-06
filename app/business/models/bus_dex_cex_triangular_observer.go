@@ -20,22 +20,25 @@ type BusDexCexTriangularObserver struct {
 	MinQuoteAmount     *float64 `gorm:"comment:最小交易量" json:"minQuoteAmount"` // 使用指针类型允许值为null
 	MaxQuoteAmount     *float64 `gorm:"comment:最大交易量" json:"maxQuoteAmount"` // 使用指针类型允许值为null
 	//TriggerHoldingMs       int      `gorm:"null;default:0" json:"triggerHoldingMs"`
-	TakerFee               *float64 `gorm:"not null;comment:交易所taker 费率" json:"takerFee"`
-	AmmPoolId              *string  `gorm:"comment:ammPoolId" json:"ammPoolId"`
-	TokenMint              *string  `gorm:"comment:base token合约" json:"tokenMint"` // 使用指针类型允许值为null
-	SlippageBpsRate        *float64 `gorm:"null;default:0;comment:滑点bps" json:"slippageBpsRate"`
-	Depth                  string   `gorm:"not null;default:20;comment:深度" json:"depth"`
-	IsTrading              bool     `gorm:"default:false;comment:是否启动交易" json:"isTrading"`
-	ProfitTriggerRate      *float64 `gorm:"null;comment:最小利润" json:"profitTriggerRate"`
-	PriorityFeeRate        *float64 `gorm:"null;comment:交易优先费" json:"priorityFeeRate"`
-	JitoFeeRate            *float64 `gorm:"null;comment:jito交易费比例" json:"jitoFeeRate"`
-	Status                 string   `gorm:"not null;comment:状态，0-新增，1-已开启观察，2-水位调节中，3-已启动交易，4-已停止" json:"status"` // 使用 uint8 更合适
-	OwnerProgram           *string  `gorm:"null;" json:"ownerProgram"`                                            // 使用 uint8 更合适
-	Decimals               int      `gorm:"null;comment:币种精度" json:"decimals"`
-	AlertThreshold         *float64 `gorm:"null;comment:最低预警水位" json:"alertThreshold"`
-	BuyTriggerThreshold    *float64 `gorm:"null;comment:触发水位调节的低水位线" json:"buyTriggerThreshold"`
-	TargetBalanceThreshold *float64 `gorm:"null;comment:低水位调节的目标值" json:"targetBalanceThreshold"`
-	SellTriggerThreshold   *float64 `gorm:"null;comment:触发水位调节的高水位线" json:"sellTriggerThreshold"`
+	TakerFee                   *float64 `gorm:"not null;comment:交易所taker 费率" json:"takerFee"`
+	AmmPoolId                  *string  `gorm:"comment:ammPoolId" json:"ammPoolId"`
+	TokenMint                  *string  `gorm:"comment:base token合约" json:"tokenMint"` // 使用指针类型允许值为null
+	SlippageBpsRate            *float64 `gorm:"null;default:0;comment:滑点bps" json:"slippageBpsRate"`
+	Depth                      string   `gorm:"not null;default:20;comment:深度" json:"depth"`
+	IsTrading                  bool     `gorm:"default:false;comment:是否启动交易" json:"isTrading"`
+	ProfitTriggerRate          *float64 `gorm:"null;comment:最小利润" json:"profitTriggerRate"`
+	PriorityFeeRate            *float64 `gorm:"null;comment:交易优先费" json:"priorityFeeRate"`
+	JitoFeeRate                *float64 `gorm:"null;comment:jito交易费比例" json:"jitoFeeRate"`
+	Status                     string   `gorm:"not null;comment:状态，0-新增，1-已开启观察，2-水位调节中，3-已启动交易，4-已停止" json:"status"` // 使用 uint8 更合适
+	OwnerProgram               *string  `gorm:"null;" json:"ownerProgram"`                                            // 使用 uint8 更合适
+	Decimals                   int      `gorm:"null;comment:币种精度" json:"decimals"`
+	AlertThreshold             *float64 `gorm:"null;comment:最低预警水位" json:"alertThreshold"`
+	BuyTriggerThreshold        *float64 `gorm:"null;comment:触发水位调节的低水位线" json:"buyTriggerThreshold"`
+	TargetBalanceThreshold     *float64 `gorm:"null;comment:低水位调节的目标值" json:"targetBalanceThreshold"`
+	SellTriggerThreshold       *float64 `gorm:"null;comment:触发水位调节的高水位线" json:"sellTriggerThreshold"`
+	MinDepositAmountThreshold  *float64 `gorm:"null;comment:最低充值金额阈值" json:"minDepositAmountThreshold"`
+	MinWithdrawAmountThreshold *float64 `gorm:"null;comment:最低提现金额阈值" json:"minWithdrawAmountThreshold"`
+	IsTradingBlocked           bool     `gorm:"null;comment:交易功能是否被风控" json:"isTradingBlocked"`
 
 	models.ModelTime
 	models.ControlBy

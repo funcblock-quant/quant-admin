@@ -3,11 +3,7 @@ package service
 import (
 	"encoding/json"
 	"errors"
-	log "github.com/go-admin-team/go-admin-core/logger"
-	"github.com/go-admin-team/go-admin-core/sdk/config"
-	"github.com/go-admin-team/go-admin-core/sdk/service"
-	"google.golang.org/protobuf/proto"
-	"gorm.io/gorm"
+	"fmt"
 	"quanta-admin/app/business/models"
 	"quanta-admin/app/business/service/dto"
 	"quanta-admin/app/grpc/client"
@@ -16,7 +12,19 @@ import (
 	"quanta-admin/common/actions"
 	cDto "quanta-admin/common/dto"
 	common "quanta-admin/common/models"
+	lark "quanta-admin/common/notification"
+	ext "quanta-admin/config"
+	"sort"
 	"strconv"
+	"time"
+
+	"github.com/go-admin-team/go-admin-core/sdk"
+
+	log "github.com/go-admin-team/go-admin-core/logger"
+	"github.com/go-admin-team/go-admin-core/sdk/config"
+	"github.com/go-admin-team/go-admin-core/sdk/service"
+	"google.golang.org/protobuf/proto"
+	"gorm.io/gorm"
 )
 
 type BusDexCexTriangularObserver struct {
@@ -422,9 +430,17 @@ func (e *BusDexCexTriangularObserver) StartTrader(c *dto.BusDexCexTriangularObse
 		return nil
 	}
 
+	// 判断是否被风控
+	if data.IsTradingBlocked {
+		e.Log.Infof("实例：%s 已被风控，跳过grpc调用", data.InstanceId)
+		return errors.New("实例已被风控,请前往风控中心手动处理或等风控自动解除")
+	}
+
 	data.AlertThreshold = c.AlertThreshold
 	data.BuyTriggerThreshold = c.BuyTriggerThreshold
 	data.SellTriggerThreshold = c.SellTriggerThreshold
+	data.MinDepositAmountThreshold = c.MinDepositAmountThreshold
+	data.MinWithdrawAmountThreshold = c.MinWithdrawAmountThreshold
 	// step1 先启动水位调节实例
 	err = StartTokenWaterLevelWithCheckExists(&data)
 	if err != nil {
@@ -580,7 +596,7 @@ func (e *BusDexCexTriangularObserver) MonitorWaterLevelToStopTrader() error {
 }
 
 // StopTrader 停止交易功能
-func (e *BusDexCexTriangularObserver) StopTrader(c *dto.BusDexCexTriangularObserverStopTraderReq) error {
+func (e *BusDexCexTriangularObserver) StopTrader(c *dto.BusDexCexTriangularObserverStopTraderReq, isTradingBlocked bool) error {
 	var data models.BusDexCexTriangularObserver
 
 	err := e.Orm.Model(&data).
@@ -614,8 +630,9 @@ func (e *BusDexCexTriangularObserver) StopTrader(c *dto.BusDexCexTriangularObser
 
 	// 更新observer的isTrading = false
 	updateData := map[string]interface{}{
-		"is_trading": false,
-		"status":     1,
+		"is_trading":         false,
+		"status":             1,
+		"is_trading_blocked": isTradingBlocked,
 	}
 
 	err = e.Orm.Model(&data).
@@ -791,7 +808,7 @@ func (e *BusDexCexTriangularObserver) GetGlobalWaterLevelState() (*dto.BusDexCex
 	// 如果水位调节服务挂了，返回对应的错误，给到前端水位调节不可用的提示之类的。
 	//step 2 : 封装全局的水位调节启动结果以及配置到响应体
 	err = e.Orm.Model(&models.BusCommonConfig{}).
-		Where("category = ? and config_key = ?", "WATER_LEVEL", common.GLOBAL_SOLANA_WATER_LEVEL_KEY).
+		Where("category = ? and config_key = ?", common.WATER_LEVEL, common.GLOBAL_SOLANA_WATER_LEVEL_KEY).
 		Order("created_at desc").
 		First(&data).Error
 
@@ -821,7 +838,7 @@ func (e *BusDexCexTriangularObserver) GetGlobalWaterLevelState() (*dto.BusDexCex
 
 	var stableData models.BusCommonConfig
 	err = e.Orm.Model(&stableData).
-		Where("category = ? and config_key = ?", "WATER_LEVEL", common.GLOBAL_STABLE_COIN_WATER_LEVEL_KEY).
+		Where("category = ? and config_key = ?", common.WATER_LEVEL, common.GLOBAL_STABLE_COIN_WATER_LEVEL_KEY).
 		Order("created_at desc").
 		First(&stableData).Error
 
@@ -894,9 +911,11 @@ func (e *BusDexCexTriangularObserver) UpdateGlobalWaterLevelConfig(req *dto.BusD
 
 	if !isSolanaStarted {
 		tokenConfig := &waterLevelPb.TokenThresholdConfig{
-			AlertThreshold:       strconv.FormatFloat(*req.SolWaterLevelConfig.AlertThreshold, 'f', -1, 64),
-			BuyTriggerThreshold:  strconv.FormatFloat(*req.SolWaterLevelConfig.BuyTriggerThreshold, 'f', -1, 64),
-			SellTriggerThreshold: strconv.FormatFloat(*req.SolWaterLevelConfig.SellTriggerThreshold, 'f', -1, 64),
+			AlertThreshold:             strconv.FormatFloat(*req.SolWaterLevelConfig.AlertThreshold, 'f', -1, 64),
+			BuyTriggerThreshold:        strconv.FormatFloat(*req.SolWaterLevelConfig.BuyTriggerThreshold, 'f', -1, 64),
+			SellTriggerThreshold:       strconv.FormatFloat(*req.SolWaterLevelConfig.SellTriggerThreshold, 'f', -1, 64),
+			MinDepositAmountThreshold:  strconv.FormatFloat(*req.SolWaterLevelConfig.MinDepositAmountThreshold, 'f', -1, 64),
+			MinWithdrawAmountThreshold: strconv.FormatFloat(*req.SolWaterLevelConfig.MinWithdrawAmountThreshold, 'f', -1, 64),
 		}
 
 		clientRequest := &waterLevelPb.StartInstanceRequest{
@@ -917,9 +936,11 @@ func (e *BusDexCexTriangularObserver) UpdateGlobalWaterLevelConfig(req *dto.BusD
 	} else {
 		//如果已经启动了，要尝试更新
 		tokenConfig := &waterLevelPb.TokenThresholdConfig{
-			AlertThreshold:       strconv.FormatFloat(*req.SolWaterLevelConfig.AlertThreshold, 'f', -1, 64),
-			BuyTriggerThreshold:  strconv.FormatFloat(*req.SolWaterLevelConfig.BuyTriggerThreshold, 'f', -1, 64),
-			SellTriggerThreshold: strconv.FormatFloat(*req.SolWaterLevelConfig.SellTriggerThreshold, 'f', -1, 64),
+			AlertThreshold:             strconv.FormatFloat(*req.SolWaterLevelConfig.AlertThreshold, 'f', -1, 64),
+			BuyTriggerThreshold:        strconv.FormatFloat(*req.SolWaterLevelConfig.BuyTriggerThreshold, 'f', -1, 64),
+			SellTriggerThreshold:       strconv.FormatFloat(*req.SolWaterLevelConfig.SellTriggerThreshold, 'f', -1, 64),
+			MinDepositAmountThreshold:  strconv.FormatFloat(*req.SolWaterLevelConfig.MinDepositAmountThreshold, 'f', -1, 64),
+			MinWithdrawAmountThreshold: strconv.FormatFloat(*req.SolWaterLevelConfig.MinWithdrawAmountThreshold, 'f', -1, 64),
 		}
 		updateReq := &waterLevelPb.UpdateInstanceParamsRequest{
 			InstanceId:           "SOLANA",
@@ -936,7 +957,7 @@ func (e *BusDexCexTriangularObserver) UpdateGlobalWaterLevelConfig(req *dto.BusD
 
 	// 保存配置到数据库
 	err = e.Orm.Model(&data).
-		Where("category = ? and config_key = ?", "WATER_LEVEL", common.GLOBAL_SOLANA_WATER_LEVEL_KEY).
+		Where("category = ? and config_key = ?", common.WATER_LEVEL, common.GLOBAL_SOLANA_WATER_LEVEL_KEY).
 		Order("created_at desc").
 		First(&data).Error
 
@@ -945,7 +966,7 @@ func (e *BusDexCexTriangularObserver) UpdateGlobalWaterLevelConfig(req *dto.BusD
 			e.Log.Info("当前不存在全局solana水位调节参数")
 			// 如果不存在，则新增
 			data = models.BusCommonConfig{
-				Category:   "WATER_LEVEL",
+				Category:   common.WATER_LEVEL,
 				ConfigKey:  common.GLOBAL_SOLANA_WATER_LEVEL_KEY,
 				ConfigJson: string(solWaterLevelConfigJsonStr),
 			}
@@ -1021,7 +1042,7 @@ func (e *BusDexCexTriangularObserver) UpdateGlobalWaterLevelConfig(req *dto.BusD
 	var stableData models.BusCommonConfig
 	// 稳定币水位调节参数处理
 	err = e.Orm.Model(&stableData).
-		Where("category = ? and config_key = ?", "WATER_LEVEL", common.GLOBAL_STABLE_COIN_WATER_LEVEL_KEY).
+		Where("category = ? and config_key = ?", common.WATER_LEVEL, common.GLOBAL_STABLE_COIN_WATER_LEVEL_KEY).
 		Order("created_at desc").
 		First(&stableData).Error
 
@@ -1030,7 +1051,7 @@ func (e *BusDexCexTriangularObserver) UpdateGlobalWaterLevelConfig(req *dto.BusD
 			e.Log.Info("当前不存在全局稳定币水位调节参数")
 			// 如果不存在，则新增
 			stableData = models.BusCommonConfig{
-				Category:   "WATER_LEVEL",
+				Category:   common.WATER_LEVEL,
 				ConfigKey:  common.GLOBAL_STABLE_COIN_WATER_LEVEL_KEY,
 				ConfigJson: string(stableCoinWaterLevelConfigJsonStr),
 			}
@@ -1057,6 +1078,88 @@ func (e *BusDexCexTriangularObserver) UpdateGlobalWaterLevelConfig(req *dto.BusD
 	return nil
 }
 
+// GetGlobalRiskConfigState 获取全局风控 状态及当前参数
+func (e *BusDexCexTriangularObserver) GetGlobalRiskConfigState() (*dto.BusDexCexTriangularUpdateGlobalRiskConfig, error) {
+	var data models.BusCommonConfig
+	resp := &dto.BusDexCexTriangularUpdateGlobalRiskConfig{}
+	//step 2 : 封装全局的风控参数配置到响应体
+	err := e.Orm.Model(&models.BusCommonConfig{}).
+		Where("category = ? and config_key = ?", common.DEX_CEX_RISK_COTROL, common.RISK_CONTROL_CONFIG_KEY).
+		Order("created_at desc").
+		First(&data).Error
+
+	if err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			e.Log.Errorf("获取风控参数失败:%s \r\n", err)
+			return nil, err
+		}
+		e.Log.Errorf("不存在全局风控参数")
+	} else {
+		configJsonStr := data.ConfigJson
+		e.Log.Infof("获取到全局风控参数：%s\r\n", configJsonStr)
+
+		// 解析 JSON
+		err := json.Unmarshal([]byte(configJsonStr), resp)
+		if err != nil {
+			e.Log.Error("JSON 解析失败:", err)
+			return nil, err
+		}
+	}
+
+	return resp, nil
+}
+
+// UpdateGlobalRiskConfig 更新全局风控 参数
+func (e *BusDexCexTriangularObserver) UpdateGlobalRiskConfig(req *dto.BusDexCexTriangularUpdateGlobalRiskConfig) error {
+	var data models.BusCommonConfig
+
+	riskConfigJsonStr, err := json.Marshal(req)
+	if err != nil {
+		e.Log.Errorf("JSON序列化失败,%s", err)
+		return err
+	}
+
+	// 保存配置到数据库
+	err = e.Orm.Model(&data).
+		Where("category = ? and config_key = ?", common.DEX_CEX_RISK_COTROL, common.RISK_CONTROL_CONFIG_KEY).
+		Order("created_at desc").
+		First(&data).Error
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			e.Log.Info("当前不存在全局风控参数")
+			// 如果不存在，则新增
+			data = models.BusCommonConfig{
+				Category:   common.DEX_CEX_RISK_COTROL,
+				ConfigKey:  common.RISK_CONTROL_CONFIG_KEY,
+				ConfigJson: string(riskConfigJsonStr),
+			}
+			err = e.Orm.Create(&data).Error
+			if err != nil {
+				e.Log.Error("更新全局风控失败")
+				return err
+			}
+		} else {
+			e.Log.Errorf("db error: %s", err)
+			return err
+		}
+	}
+
+	updateData := map[string]interface{}{
+		"config_json": string(riskConfigJsonStr),
+	}
+
+	e.Log.Infof("更新参数：%s\n", string(riskConfigJsonStr))
+	err = e.Orm.Model(&data).
+		Where("id = ?", data.Id).
+		Updates(updateData).Error
+	if err != nil {
+		e.Log.Errorf("更新全局风控参数失败：%s", err)
+		return err
+	}
+	return nil
+}
+
 // StartGlobalWaterLevel 启动全局水位调整功能
 func (e *BusDexCexTriangularObserver) StartGlobalWaterLevel() error {
 	var data models.BusDexCexTriangularObserver
@@ -1078,11 +1181,11 @@ func (e *BusDexCexTriangularObserver) StartGlobalWaterLevel() error {
 
 	var solData models.BusCommonConfig
 	err = e.Orm.Model(&solData).
-		Where("category = ? and config_key = ?", "WATER_LEVEL", common.GLOBAL_SOLANA_WATER_LEVEL_KEY).
+		Where("category = ? and config_key = ?", common.WATER_LEVEL, common.GLOBAL_SOLANA_WATER_LEVEL_KEY).
 		Order("created_at desc").
 		First(&solData).Error
 
-	var solanaAlertThreshold, solBuyTriggerThreshold, solSellTriggerThreshold, stableCoinAlertThreshold float64
+	var solanaAlertThreshold, solBuyTriggerThreshold, solSellTriggerThreshold, stableCoinAlertThreshold, solMinDepositAmountThreshold, solMinWithdrawAmountThreshold float64
 
 	if err != nil {
 		e.Log.Errorf("获取solana水位调节参数失败, 跳过本次启动全局水位调节任务")
@@ -1101,12 +1204,14 @@ func (e *BusDexCexTriangularObserver) StartGlobalWaterLevel() error {
 			solanaAlertThreshold = configMap["alertThreshold"].(float64)
 			solBuyTriggerThreshold = configMap["buyTriggerThreshold"].(float64)
 			solSellTriggerThreshold = configMap["sellTriggerThreshold"].(float64)
+			solMinDepositAmountThreshold = configMap["minDepositAmountThreshold"].(float64)
+			solMinWithdrawAmountThreshold = configMap["minWithdrawAmountThreshold"].(float64)
 		}
 	}
 
 	var stableData models.BusCommonConfig
 	err = e.Orm.Model(&stableData).
-		Where("category = ? and config_key = ?", "WATER_LEVEL", common.GLOBAL_STABLE_COIN_WATER_LEVEL_KEY).
+		Where("category = ? and config_key = ?", common.WATER_LEVEL, common.GLOBAL_STABLE_COIN_WATER_LEVEL_KEY).
 		Order("created_at desc").
 		First(&stableData).Error
 
@@ -1145,9 +1250,11 @@ func (e *BusDexCexTriangularObserver) StartGlobalWaterLevel() error {
 
 	if !isSolanaStarted {
 		tokenConfig := &waterLevelPb.TokenThresholdConfig{
-			AlertThreshold:       strconv.FormatFloat(solanaAlertThreshold, 'f', -1, 64),
-			BuyTriggerThreshold:  strconv.FormatFloat(solBuyTriggerThreshold, 'f', -1, 64),
-			SellTriggerThreshold: strconv.FormatFloat(solSellTriggerThreshold, 'f', -1, 64),
+			AlertThreshold:             strconv.FormatFloat(solanaAlertThreshold, 'f', -1, 64),
+			BuyTriggerThreshold:        strconv.FormatFloat(solBuyTriggerThreshold, 'f', -1, 64),
+			SellTriggerThreshold:       strconv.FormatFloat(solSellTriggerThreshold, 'f', -1, 64),
+			MinDepositAmountThreshold:  strconv.FormatFloat(solMinDepositAmountThreshold, 'f', -1, 64),
+			MinWithdrawAmountThreshold: strconv.FormatFloat(solMinWithdrawAmountThreshold, 'f', -1, 64),
 		}
 
 		clientRequest := &waterLevelPb.StartInstanceRequest{
@@ -1175,9 +1282,11 @@ func (e *BusDexCexTriangularObserver) StartGlobalWaterLevel() error {
 		if err != nil {
 			e.Log.Errorf("获取state 失败，直接更新")
 			tokenConfig := &waterLevelPb.TokenThresholdConfig{
-				AlertThreshold:       strconv.FormatFloat(solanaAlertThreshold, 'f', -1, 64),
-				BuyTriggerThreshold:  strconv.FormatFloat(solBuyTriggerThreshold, 'f', -1, 64),
-				SellTriggerThreshold: strconv.FormatFloat(solSellTriggerThreshold, 'f', -1, 64),
+				AlertThreshold:             strconv.FormatFloat(solanaAlertThreshold, 'f', -1, 64),
+				BuyTriggerThreshold:        strconv.FormatFloat(solBuyTriggerThreshold, 'f', -1, 64),
+				SellTriggerThreshold:       strconv.FormatFloat(solSellTriggerThreshold, 'f', -1, 64),
+				MinDepositAmountThreshold:  strconv.FormatFloat(solMinDepositAmountThreshold, 'f', -1, 64),
+				MinWithdrawAmountThreshold: strconv.FormatFloat(solMinWithdrawAmountThreshold, 'f', -1, 64),
 			}
 			updateReq := &waterLevelPb.UpdateInstanceParamsRequest{
 				InstanceId:           "SOLANA",
@@ -1190,15 +1299,19 @@ func (e *BusDexCexTriangularObserver) StartGlobalWaterLevel() error {
 			oldParams := solanaState.InstanceParams.TokenThresholdConfig
 			if oldParams.AlertThreshold == strconv.FormatFloat(solanaAlertThreshold, 'f', -1, 64) &&
 				oldParams.BuyTriggerThreshold == strconv.FormatFloat(solBuyTriggerThreshold, 'f', -1, 64) &&
-				oldParams.BuyTriggerThreshold == strconv.FormatFloat(solSellTriggerThreshold, 'f', -1, 64) {
+				oldParams.BuyTriggerThreshold == strconv.FormatFloat(solSellTriggerThreshold, 'f', -1, 64) &&
+				oldParams.MinDepositAmountThreshold == strconv.FormatFloat(solMinDepositAmountThreshold, 'f', -1, 64) &&
+				oldParams.MinWithdrawAmountThreshold == strconv.FormatFloat(solMinWithdrawAmountThreshold, 'f', -1, 64) {
 				// 参数一致，不需要更新
 				e.Log.Infof("solana 全局水位调节参数一致，不需要更新，跳过")
 			} else {
 				// 参数不一致，更新
 				tokenConfig := &waterLevelPb.TokenThresholdConfig{
-					AlertThreshold:       strconv.FormatFloat(solanaAlertThreshold, 'f', -1, 64),
-					BuyTriggerThreshold:  strconv.FormatFloat(solBuyTriggerThreshold, 'f', -1, 64),
-					SellTriggerThreshold: strconv.FormatFloat(solSellTriggerThreshold, 'f', -1, 64),
+					AlertThreshold:             strconv.FormatFloat(solanaAlertThreshold, 'f', -1, 64),
+					BuyTriggerThreshold:        strconv.FormatFloat(solBuyTriggerThreshold, 'f', -1, 64),
+					SellTriggerThreshold:       strconv.FormatFloat(solSellTriggerThreshold, 'f', -1, 64),
+					MinDepositAmountThreshold:  strconv.FormatFloat(solMinDepositAmountThreshold, 'f', -1, 64),
+					MinWithdrawAmountThreshold: strconv.FormatFloat(solMinWithdrawAmountThreshold, 'f', -1, 64),
 				}
 				updateReq := &waterLevelPb.UpdateInstanceParamsRequest{
 					InstanceId:           "SOLANA",
@@ -1419,9 +1532,11 @@ func StartTokenWaterLevelWithCheckExists(observer *models.BusDexCexTriangularObs
 // StartTokenWaterLevel 启动水位调节，不校验是否存在
 func StartTokenWaterLevel(observer *models.BusDexCexTriangularObserver) error {
 	tokenConfig := &waterLevelPb.TokenThresholdConfig{
-		AlertThreshold:       strconv.FormatFloat(*observer.AlertThreshold, 'f', -1, 64),
-		BuyTriggerThreshold:  strconv.FormatFloat(*observer.BuyTriggerThreshold, 'f', -1, 64),
-		SellTriggerThreshold: strconv.FormatFloat(*observer.SellTriggerThreshold, 'f', -1, 64),
+		AlertThreshold:             strconv.FormatFloat(*observer.AlertThreshold, 'f', -1, 64),
+		BuyTriggerThreshold:        strconv.FormatFloat(*observer.BuyTriggerThreshold, 'f', -1, 64),
+		SellTriggerThreshold:       strconv.FormatFloat(*observer.SellTriggerThreshold, 'f', -1, 64),
+		MinDepositAmountThreshold:  strconv.FormatFloat(*observer.MinDepositAmountThreshold, 'f', -1, 64),
+		MinWithdrawAmountThreshold: strconv.FormatFloat(*observer.MinWithdrawAmountThreshold, 'f', -1, 64),
 	}
 
 	clientRequest := &waterLevelPb.StartInstanceRequest{
@@ -1448,9 +1563,11 @@ func UpdateTokenWaterLevel(observer *models.BusDexCexTriangularObserver) error {
 	instanceId := strconv.Itoa(observer.Id)
 
 	tokenConfig := &waterLevelPb.TokenThresholdConfig{
-		AlertThreshold:       strconv.FormatFloat(*observer.AlertThreshold, 'f', -1, 64),
-		BuyTriggerThreshold:  strconv.FormatFloat(*observer.BuyTriggerThreshold, 'f', -1, 64),
-		SellTriggerThreshold: strconv.FormatFloat(*observer.SellTriggerThreshold, 'f', -1, 64),
+		AlertThreshold:             strconv.FormatFloat(*observer.AlertThreshold, 'f', -1, 64),
+		BuyTriggerThreshold:        strconv.FormatFloat(*observer.BuyTriggerThreshold, 'f', -1, 64),
+		SellTriggerThreshold:       strconv.FormatFloat(*observer.SellTriggerThreshold, 'f', -1, 64),
+		MinDepositAmountThreshold:  strconv.FormatFloat(*observer.MinDepositAmountThreshold, 'f', -1, 64),
+		MinWithdrawAmountThreshold: strconv.FormatFloat(*observer.MinWithdrawAmountThreshold, 'f', -1, 64),
 	}
 
 	waterLevelParams := &waterLevelPb.UpdateInstanceParamsRequest{
@@ -1465,4 +1582,792 @@ func UpdateTokenWaterLevel(observer *models.BusDexCexTriangularObserver) error {
 		return err
 	}
 	return nil
+}
+
+// CheckRiskControl 风控校验，当前采用的是定时任务，最佳实现应该是使用事件驱动
+func (e BusDexCexTriangularObserver) CheckRiskControl() error {
+	// 获取实例的风控参数
+	var riskConfig models.BusCommonConfig
+	err := e.Orm.Model(&models.BusCommonConfig{}).
+		Where("category = ? and config_key = ?", common.DEX_CEX_RISK_COTROL, common.RISK_CONTROL_CONFIG_KEY).
+		Order("created_at desc").
+		First(&riskConfig).Error
+	if err != nil {
+		e.Log.Errorf("[Risk Control Check] 获取风控参数失败:%s \r\n", err)
+		return err
+	}
+
+	configJsonStr := riskConfig.ConfigJson
+	e.Log.Infof("[Risk Control Check] 获取到链上链下风控参数：%s\r\n", configJsonStr)
+	var configMap map[string]interface{}
+
+	// 解析 JSON
+	err = json.Unmarshal([]byte(configJsonStr), &configMap)
+	if err != nil {
+		e.Log.Error("[Risk Control Check] JSON 解析失败:", err)
+		return err
+	}
+
+	// 单笔最大亏损金额阈值
+	absoluteLossThreshold, ok := configMap["absoluteLossThreshold"].([]interface{})
+	if !ok {
+		e.Log.Error("[Risk Control Check] JSON 解析失败:", err)
+		return err
+	}
+	// 单笔最大亏损比例阈值
+	relativeLossThreshold, ok := configMap["relativeLossThreshold"].([]interface{})
+	if !ok {
+		e.Log.Error("[Risk Control Check] JSON 解析失败:", err)
+		return err
+	}
+
+	// 排序，按照 action 从大到小排序
+	sort.Slice(absoluteLossThreshold, func(i, j int) bool {
+		return absoluteLossThreshold[i].(map[string]interface{})["action"].(float64) > absoluteLossThreshold[j].(map[string]interface{})["action"].(float64)
+	})
+
+	sort.Slice(relativeLossThreshold, func(i, j int) bool {
+		return relativeLossThreshold[i].(map[string]interface{})["action"].(float64) > relativeLossThreshold[j].(map[string]interface{})["action"].(float64)
+	})
+
+	// 从交易中，获取成功的交易记录，并且未完成风控校验的记录。
+	var riskCheckProgress models.BusRiskCheckProgress
+	err = e.Orm.Model(&models.BusRiskCheckProgress{}).
+		Where("strategy_id = ?", common.STRATEGY_DEX_CEX_TRIANGULAR_ARBITRAGE).
+		Where("business_type = ?", common.BUSINESS_TYPE_DEX_CEX_TRIANGULAR_ARBITRAGE).
+		Where("trade_table =?", common.STRATEGY_DEX_CEX_TRIANGULAR_ARBITRAGE_TRADES_TABLE).
+		Order("created_at desc").
+		First(&riskCheckProgress).Error
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			e.Log.Info("[Risk Control Check] 当前不存在风控校验进度")
+			// 如果不存在，则新增
+			riskCheckProgress = models.BusRiskCheckProgress{
+				StrategyId:         common.STRATEGY_DEX_CEX_TRIANGULAR_ARBITRAGE,
+				BusinessType:       common.BUSINESS_TYPE_DEX_CEX_TRIANGULAR_ARBITRAGE,
+				TradeTable:         common.STRATEGY_DEX_CEX_TRIANGULAR_ARBITRAGE_TRADES_TABLE,
+				LastCheckedTradeId: 0,
+				LastCheckedAt:      time.Now(),
+				Status:             0, // 未启动
+			}
+			err = e.Orm.Create(&riskCheckProgress).Error
+			if err != nil {
+				e.Log.Error("[Risk Control Check] 保存风控校验进度失败")
+				return err
+			}
+		} else {
+			e.Log.Errorf("[Risk Control Check] db error: %+v", err)
+			return err
+		}
+	}
+
+	if riskCheckProgress.Status == common.RISK_CHECK_STATUS_PROCESSING {
+		e.Log.Infof("[Risk Control Check] 风控校验正在进行中，跳过")
+		return nil
+	}
+
+	var trades []dto.StrategyDexCexTriangularArbitrageTradesGetPageResp
+	err = e.Orm.Model(&models.StrategyDexCexTriangularArbitrageTrades{}).
+		Select("strategy_dex_cex_triangular_arbitrage_trades.*, opportunities.cex_target_asset as symbol").
+		Joins("LEFT JOIN strategy_dex_cex_triangular_arbitrage_opportunities AS opportunities ON strategy_dex_cex_triangular_arbitrage_trades.opportunity_id = opportunities.opportunity_id").
+		Where("strategy_dex_cex_triangular_arbitrage_trades.id > ?", riskCheckProgress.LastCheckedTradeId).
+		Order("strategy_dex_cex_triangular_arbitrage_trades.created_at desc").
+		Limit(20). // 每5s处理最多20条记录
+		Find(&trades).Error
+
+	if err != nil {
+		e.Log.Errorf("[Risk Control Check] 获取套利记录失败:%s \r\n", err)
+		return err
+	}
+
+	config := ext.ExtConfig
+	larkClient := lark.NewLarkRobotAlert(config)
+
+	// 开始风控校验
+	err = e.Orm.Model(&riskCheckProgress).
+		Where("id =?", riskCheckProgress.Id).
+		Updates(map[string]interface{}{
+			"status": common.RISK_CHECK_STATUS_PROCESSING,
+		}).Error
+	if err != nil {
+		e.Log.Errorf("[Risk Control Check] 保存风控校验状态失败:%s \r\n", err)
+		return err
+	}
+
+	var errOccurred error
+	for _, trade := range trades {
+		e.Log.Infof("[Risk Control Check] 交易订单:%d \r\n", trade.Id)
+		maxAfterAction := 0
+		// 1. 单笔最大亏损金额阈值
+		maxAfterAction, err := e.AbsoluteLossThresholdCheck(absoluteLossThreshold, trade, *larkClient)
+		if err != nil {
+			e.Log.Errorf("[Risk Control Check] 单笔最大亏损金额阈值校验失败:%s \r\n", err)
+			SendRiskCheckFailMessage(common.TRIGGER_RULE_ABSOLUTE_LOSS_THRESHOLD, *larkClient)
+			errOccurred = err
+			break
+		}
+
+		// 2. 单笔最大亏损比例阈值
+		afterAction, err := e.RelativeLossThresholdCheck(relativeLossThreshold, trade, *larkClient)
+		if err != nil {
+			SendRiskCheckFailMessage(common.TRIGGER_RULE_RELATIVE_LOSS_THRESHOLD, *larkClient)
+			e.Log.Errorf("[Risk Control Check] 单笔最大亏损比例阈值校验失败:%s \r\n", err)
+			errOccurred = err
+			break
+		}
+
+		if afterAction > maxAfterAction {
+			maxAfterAction = afterAction
+		}
+
+		// TODO 3. 单币种单日累计亏损金额阈值
+
+		// TODO 4. 全币种单日累计亏损金额阈值
+
+		// 全部完成风控校验后，更新风控进度表的最后校验ID
+		err = e.Orm.Model(&riskCheckProgress).
+			Where("id = ?", riskCheckProgress.Id).
+			Updates(map[string]interface{}{
+				"last_checked_trade_id": trade.Id,
+				"last_checked_at":       time.Now(),
+			}).Error
+		if err != nil {
+			e.Log.Errorf("[Risk Control Check] 保存风控校验进度失败:%s \r\n", err)
+			errOccurred = err
+			break
+		}
+
+		// 最后根据执行动作完成下一步动作
+		if maxAfterAction == 1 {
+			// do nothing
+			continue
+		}
+		if maxAfterAction == 2 {
+			//暂停该笔trade对应的instance的交易功能
+
+			stopTradeReq := dto.BusDexCexTriangularObserverStopTraderReq{
+				InstanceId: trade.Id,
+			}
+
+			//  暂停交易如果报错了，要如何补偿？定时任务补偿？
+			err = e.StopTrader(&stopTradeReq, true)
+			if err != nil {
+				e.Log.Errorf("[Risk Control Check] 暂停交易失败:%s \r\n", err)
+				message := fmt.Sprintf(`
+				❌ 风控触发, 暂停交易失败, instanceId: %s, 操作时间: %s, 定时任务会进行补偿, 请注意风险。
+				`, trade.InstanceId, time.Now().Format("2006-01-02 15:04:05"))
+				larkClient.SendLarkAlert(message)
+				continue
+			}
+
+			continue
+		}
+
+		if maxAfterAction == 3 {
+			// 暂停全部交易
+			// 暂停全部交易行为暂不支持
+			continue
+		}
+
+	}
+
+	// 全部订单都检查完后，更新风控校验状态
+	err = e.Orm.Model(&riskCheckProgress).
+		Where("id =?", riskCheckProgress.Id).
+		Updates(map[string]interface{}{
+			"status": common.RISK_CHECK_STATUS_FINISHED,
+		}).Error
+	if err != nil {
+		e.Log.Errorf("[Risk Control Check] 保存风控校验状态失败:%s \r\n", err)
+		return err
+	}
+
+	// **如果中间发生错误，则返回错误**
+	if errOccurred != nil {
+		return errOccurred
+	}
+
+	return nil
+
+}
+
+/*
+*
+
+	{
+		"absoluteLossThreshold": [
+			{
+				"threshold": 10,
+				"action": 1,
+				"action_detail": {
+					"notify": true
+				}
+			},
+			{
+				"threshold": 20,
+				"action": 2,
+				"action_detail": {
+					"pause_duration": 3600, // -1的话，表示为次日0点恢复
+					"manual_resume": false
+				}
+			}
+		],
+		"relativeLossThreshold":[
+			{
+				"threshold": 0.1,
+				"action": 1,
+				"action_detail": {
+					"notify": true
+				}
+			},
+			{
+				"threshold": 0.2,
+				"action": 2,
+				"action_detail": {
+					"pause_duration": 3600, // -1的话，表示为次日0点恢复
+					"manual_resume": false
+				}
+			}
+		]
+	}
+*/
+func (e BusDexCexTriangularObserver) AbsoluteLossThresholdCheck(absoluteLossThreshold []interface{}, trade dto.StrategyDexCexTriangularArbitrageTradesGetPageResp, larkClient lark.LarkRobotAlert) (int, error) {
+	afterAction := 0
+	for _, threshold := range absoluteLossThreshold {
+
+		thresholdMap := threshold.(map[string]interface{})
+		thresholdValue := thresholdMap["threshold"].(float64)
+		action := thresholdMap["action"].(float64)
+		actionDetail := thresholdMap["actionDetail"].(map[string]interface{})
+
+		cexSellAmount, err1 := strconv.ParseFloat(trade.CexSellQuoteAmount, 64)
+		cexBuyAmount, err2 := strconv.ParseFloat(trade.CexBuyQuoteAmount, 64)
+		if err1 != nil || err2 != nil {
+			e.Log.Errorf("[Risk Control Check] 交易订单金额解析失败:%s \r\n")
+			return 0, errors.New("交易订单金额解析失败")
+		}
+
+		profitAmount := cexSellAmount - cexBuyAmount
+		if profitAmount < -thresholdValue {
+			// 亏损金额超过阈值
+			// 生成风控事件
+			riskEvent := models.BusRiskEvent{
+				StrategyId:         common.STRATEGY_DEX_CEX_TRIANGULAR_ARBITRAGE,
+				StrategyInstanceId: trade.InstanceId,
+				AssetSymbol:        trade.Symbol,
+				TriggerRule:        common.TRIGGER_RULE_ABSOLUTE_LOSS_THRESHOLD,
+				TriggerValue:       strconv.FormatFloat(profitAmount, 'f', -1, 64),
+				TradeId:            trade.Id,
+			}
+			if action == 3 {
+				// 暂停全部交易，单笔交易亏损触发暂不支持暂停全部交易行为
+				e.Log.Errorf("[Risk Control Check] 单笔交易亏损触发暂不支持暂停全部交易行为 \r\n")
+				return afterAction, errors.New("单笔交易亏损触发暂不支持暂停全部交易行为")
+			} else if action == 2 {
+				// 暂停当前策略实例的交易功能
+				afterAction = 2
+
+				riskEvent.RiskScope = common.RISK_SCOPE_SINGLE_TOKEN
+				riskEvent.RiskLevel = common.RISK_LEVEL_MIDDLE
+				riskEvent.IsRecovered = false
+				manualRecover := actionDetail["manualResume"].(bool)
+				riskEvent.ManualRecover = manualRecover
+				if !manualRecover {
+					pauseDuration := actionDetail["pauseDuration"].(int64)
+					if pauseDuration == -1 {
+						// 第二天0点恢复
+						now := time.Now()
+						tomorrow := now.AddDate(0, 0, 1)
+						tomorrowZero := time.Date(tomorrow.Year(), tomorrow.Month(), tomorrow.Day(), 0, 0, 0, 0, tomorrow.Location())
+						riskEvent.AutoRecoverTime = &tomorrowZero
+					} else {
+						// 按指定暂停时长
+						recoverTime := time.Now().Add(time.Duration(pauseDuration) * time.Second)
+						riskEvent.AutoRecoverTime = &recoverTime
+					}
+				}
+
+				err := e.Orm.Create(&riskEvent).Error
+				if err != nil {
+					e.Log.Errorf("[Risk Control Check] 生成风控事件失败:%s \r\n")
+					return 0, errors.New("生成风控事件失败")
+				}
+
+				// 暂停交易
+				// InstanceIdInt, err := strconv.Atoi(trade.InstanceId)
+				// if err != nil {
+				// 	e.Log.Errorf("[Risk Control Check] 实例ID解析失败:%s \r\n")
+				// 	return false, errors.New("实例ID解析失败")
+				// }
+
+				// stopTradeReq := dto.BusDexCexTriangularObserverStopTraderReq{
+				// 	InstanceId: InstanceIdInt,
+				// }
+				// // TODO 暂停交易如果报错了，要如何补偿？定时任务补偿？
+				// err = e.StopTrader(&stopTradeReq)
+				// if err != nil {
+				// 	e.Log.Errorf("[Risk Control Check] 暂停交易失败:%s \r\n", err)
+				// }
+
+				var recoverMethod string
+				if manualRecover {
+					recoverMethod = "手动恢复"
+				} else {
+					recoverMethod = "自动恢复"
+				}
+
+				SendMiddleNotification(trade.Symbol, trade.InstanceId, strconv.Itoa(trade.Id), common.TRIGGER_RULE_ABSOLUTE_LOSS_THRESHOLD, strconv.FormatFloat(thresholdValue, 'f', -1, 64), strconv.FormatFloat(profitAmount, 'f', -1, 64), recoverMethod, larkClient)
+
+			} else if action == 1 {
+				// 预警
+				afterAction = 0
+				riskEvent.RiskScope = common.RISK_SCOPE_SINGLE_TOKEN
+				riskEvent.RiskLevel = common.RISK_LEVEL_LOW
+				riskEvent.IsRecovered = true // 预警类的不需要进行恢复，不阻断流程
+				nowTime := time.Now()
+				riskEvent.RecoveredAt = &nowTime
+				riskEvent.ManualRecover = false
+				riskEvent.AutoRecoverTime = &nowTime
+				riskEvent.RecoveredBy = "-1"
+
+				err := e.Orm.Create(&riskEvent).Error
+				if err != nil {
+					e.Log.Errorf("[Risk Control Check] 生成风控事件失败:%s \r\n")
+					return 0, errors.New("生成风控事件失败")
+				}
+
+				SendWarningNotification(trade.Symbol, trade.InstanceId, strconv.Itoa(trade.Id), common.TRIGGER_RULE_ABSOLUTE_LOSS_THRESHOLD, strconv.FormatFloat(thresholdValue, 'f', -1, 64), strconv.FormatFloat(profitAmount, 'f', -1, 64), larkClient)
+			}
+			//只要触发了高级别的风控策略，就不会再匹配同类型下的低级别风控规则
+			return afterAction, nil
+		}
+	}
+	return afterAction, nil
+}
+
+func (e BusDexCexTriangularObserver) RelativeLossThresholdCheck(relativeLossThreshold []interface{}, trade dto.StrategyDexCexTriangularArbitrageTradesGetPageResp, larkClient lark.LarkRobotAlert) (int, error) {
+	afterAction := 0
+	for _, threshold := range relativeLossThreshold {
+
+		thresholdMap := threshold.(map[string]interface{})
+		thresholdValue := thresholdMap["threshold"].(float64)
+		action := thresholdMap["action"].(float64)
+		actionDetail := thresholdMap["actionDetail"].(map[string]interface{})
+
+		cexSellAmount, err1 := strconv.ParseFloat(trade.CexSellQuoteAmount, 64)
+		cexBuyAmount, err2 := strconv.ParseFloat(trade.CexBuyQuoteAmount, 64)
+		if err1 != nil || err2 != nil {
+			e.Log.Errorf("[Risk Control Check] 交易订单金额解析失败:%s \r\n")
+			return 0, errors.New("交易订单金额解析失败")
+		}
+
+		profitPercent := (cexSellAmount - cexBuyAmount) / cexBuyAmount
+		profitPercentStr := strconv.FormatFloat(profitPercent*100, 'f', 2, 64) + "%"
+		if profitPercent < -thresholdValue {
+			// 亏损比例超过阈值
+			// 生成风控事件
+			riskEvent := models.BusRiskEvent{
+				StrategyId:         common.STRATEGY_DEX_CEX_TRIANGULAR_ARBITRAGE,
+				StrategyInstanceId: trade.InstanceId,
+				TradeId:            trade.Id,
+				AssetSymbol:        trade.Symbol,
+				TriggerRule:        common.TRIGGER_RULE_RELATIVE_LOSS_THRESHOLD,
+				TriggerValue:       profitPercentStr,
+			}
+			if action == 3 {
+				// 暂停全部交易，单笔交易亏损触发暂不支持暂停全部交易行为
+				e.Log.Errorf("[Risk Control Check] 单笔交易亏损比例触发暂不支持暂停全部交易行为 \r\n")
+				return 0, errors.New("单笔交易亏损比例触发暂不支持暂停全部交易行为")
+			} else if action == 2 {
+				// 暂停当前策略实例
+				afterAction = 2
+				riskEvent.RiskScope = common.RISK_SCOPE_SINGLE_TOKEN
+				riskEvent.RiskLevel = common.RISK_LEVEL_MIDDLE
+				riskEvent.IsRecovered = false
+				manualRecover := actionDetail["manualResume"].(bool)
+				riskEvent.ManualRecover = manualRecover
+				if !manualRecover {
+					pauseDuration := actionDetail["pauseDuration"].(int64)
+					if pauseDuration == -1 {
+						// 第二天0点恢复
+						now := time.Now()
+						tomorrow := now.AddDate(0, 0, 1)
+						tomorrowZero := time.Date(tomorrow.Year(), tomorrow.Month(), tomorrow.Day(), 0, 0, 0, 0, tomorrow.Location())
+						riskEvent.AutoRecoverTime = &tomorrowZero
+					} else {
+						// 按指定暂停时长
+						recoverTime := time.Now().Add(time.Duration(pauseDuration) * time.Second)
+						riskEvent.AutoRecoverTime = &recoverTime
+					}
+				}
+
+				err := e.Orm.Create(&riskEvent).Error
+				if err != nil {
+					e.Log.Errorf("[Risk Control Check] 生成风控事件失败:%s \r\n")
+					return 0, errors.New("生成风控事件失败")
+				}
+
+				// 暂停交易
+				// InstanceIdInt, err := strconv.Atoi(trade.InstanceId)
+				// if err != nil {
+				// 	e.Log.Errorf("[Risk Control Check] 实例ID解析失败:%s \r\n")
+				// 	return needStopTrade, errors.New("实例ID解析失败")
+				// }
+
+				// stopTradeReq := dto.BusDexCexTriangularObserverStopTraderReq{
+				// 	InstanceId: InstanceIdInt,
+				// }
+
+				// // TODO 暂停交易如果报错了，要如何补偿？定时任务补偿？
+				// err = e.StopTrader(&stopTradeReq)
+				// if err != nil {
+				// 	e.Log.Errorf("[Risk Control Check] 暂停交易失败:%s \r\n", err)
+				// }
+
+				var recoverMethod string
+				if manualRecover {
+					recoverMethod = "手动恢复"
+				} else {
+					recoverMethod = "自动恢复"
+				}
+
+				SendMiddleNotification(trade.Symbol, trade.InstanceId, strconv.Itoa(trade.Id), common.TRIGGER_RULE_RELATIVE_LOSS_THRESHOLD, strconv.FormatFloat(thresholdValue, 'f', -1, 64), profitPercentStr, recoverMethod, larkClient)
+
+			} else if action == 1 {
+				// 预警
+				afterAction = 1
+				riskEvent.RiskScope = common.RISK_SCOPE_SINGLE_TOKEN
+				riskEvent.RiskLevel = common.RISK_LEVEL_LOW
+				riskEvent.IsRecovered = true // 预警类的不需要进行恢复，不阻断流程
+				nowTime := time.Now()
+				riskEvent.RecoveredAt = &nowTime
+				riskEvent.ManualRecover = false
+				riskEvent.AutoRecoverTime = &nowTime
+				riskEvent.RecoveredBy = "-1"
+
+				err := e.Orm.Create(&riskEvent).Error
+				if err != nil {
+					e.Log.Errorf("[Risk Control Check] 生成风控事件失败:%s \r\n", err)
+					return 0, errors.New("生成风控事件失败")
+				}
+
+				SendWarningNotification(trade.Symbol, trade.InstanceId, strconv.Itoa(trade.Id), common.TRIGGER_RULE_RELATIVE_LOSS_THRESHOLD, strconv.FormatFloat(thresholdValue, 'f', -1, 64), profitPercentStr, larkClient)
+			}
+			//只要触发了高级别的风控策略，就不会再匹配同类型下的低级别风控规则
+			return afterAction, nil
+		}
+	}
+	return afterAction, nil
+}
+
+func (e BusDexCexTriangularObserver) CheckExistRiskEvent() error {
+	// 1. 查询出所有未恢复的全局风控事件
+	var highestRiskEvents []models.BusRiskEvent
+	err := e.Orm.Model(models.BusRiskEvent{}).
+		Where("is_recovered =?", false).
+		Where("strategy_id =?", common.STRATEGY_DEX_CEX_TRIANGULAR_ARBITRAGE).
+		Where("risk_scope =? and risk_level > ?", common.RISK_SCOPE_GOLBAL, common.RISK_LEVEL_MIDDLE).
+		Find(&highestRiskEvents).Error
+	if err != nil {
+		e.Log.Errorf("查询风控事件失败:%s \r\n", err)
+		return err
+	}
+
+	// 查询出所有交易开启中以及水位调节中的实例
+	var instances []models.BusDexCexTriangularObserver
+	err = e.Orm.Model(models.BusDexCexTriangularObserver{}).
+		Where("status IN ?", []int{2, 3}).
+		Find(&instances).Error
+	if err != nil {
+		e.Log.Errorf("查询实例失败:%s \r\n", err)
+		return err
+	}
+
+	if len(highestRiskEvents) == 0 {
+		e.Log.Infof("当前不存在未恢复的风控事件 \r\n")
+	} else {
+		e.Log.Infof("存在全局中断交易的事件,暂停全部实例交易功能")
+
+		// 关闭所有实例
+		for _, instance := range instances {
+			stopTradeReq := dto.BusDexCexTriangularObserverStopTraderReq{
+				InstanceId: instance.Id,
+			}
+
+			if instance.Status == "2" { //水位调节中
+				stopReq := &waterLevelPb.InstantId{
+					InstanceId: strconv.Itoa(instance.Id),
+				}
+				err = client.StopWaterLevelInstance(stopReq)
+				if err != nil {
+					e.Log.Errorf("grpc暂停实例：:%d 水位调节功能失败，异常：%s \r\n", instance.Id, err)
+					continue
+				}
+				// 更新observer的status =1
+				updateData := map[string]interface{}{
+					"status":             1,
+					"is_trading_blocked": true,
+				}
+
+				err = e.Orm.Model(&models.BusDexCexTriangularObserver{}).
+					Where("id = ?", instance.Id).
+					Updates(updateData).Error
+				if err != nil {
+					e.Log.Errorf("更新实例状态失败, 异常：%s \r\n", err)
+					continue
+				}
+
+			} else if instance.Status == "3" { //交易开启中
+				err = e.StopTrader(&stopTradeReq, true)
+				if err != nil {
+					e.Log.Errorf("关闭实例%d失败:%s \r\n", instance.Id, err)
+				} else {
+					e.Log.Infof("关闭实例%d成功 \r\n", instance.Id)
+				}
+			}
+			continue
+		}
+		e.Log.Infof("完成暂停全部实例交易功能")
+		return nil
+	}
+
+	// 2. 查出所有未恢复的单币种风控事件
+	var singleTokenRiskEvents []models.BusRiskEvent
+	err = e.Orm.Model(models.BusRiskEvent{}).
+		Where("is_recovered =?", false).
+		Where("strategy_id =?", common.STRATEGY_DEX_CEX_TRIANGULAR_ARBITRAGE).
+		Where("risk_scope =? and risk_level =?", common.RISK_SCOPE_SINGLE_TOKEN, common.RISK_LEVEL_MIDDLE).
+		Find(&singleTokenRiskEvents).Error
+
+	if err != nil {
+		e.Log.Errorf("查询单币种风控事件失败:%s \r\n", err)
+		return err
+	}
+
+	if len(singleTokenRiskEvents) == 0 {
+		e.Log.Infof("当前不存在未恢复的单币种风控事件 \r\n")
+		return nil
+	}
+
+	// 暂停所有单币种风控事件对应的实例
+	for _, instance := range instances {
+		e.Log.Infof("当前存在未恢复的单币种风控事件 \r\n")
+		for _, riskEvent := range singleTokenRiskEvents {
+			if riskEvent.StrategyInstanceId == strconv.Itoa(instance.Id) {
+				stopTradeReq := dto.BusDexCexTriangularObserverStopTraderReq{
+					InstanceId: instance.Id,
+				}
+
+				if instance.Status == "2" { //水位调节中
+					stopReq := &waterLevelPb.InstantId{
+						InstanceId: strconv.Itoa(instance.Id),
+					}
+					err = client.StopWaterLevelInstance(stopReq)
+					if err != nil {
+						e.Log.Errorf("grpc暂停实例：:%d 水位调节功能失败，异常：%s \r\n", instance.Id, err)
+						continue
+					}
+					// 更新observer的status =1
+					updateData := map[string]interface{}{
+						"status":             1,
+						"is_trading_blocked": true,
+					}
+
+					err = e.Orm.Model(&models.BusDexCexTriangularObserver{}).
+						Where("id = ?", instance.Id).
+						Updates(updateData).Error
+					if err != nil {
+						e.Log.Errorf("更新实例状态失败, 异常：%s \r\n", err)
+						continue
+					}
+
+				} else if instance.Status == "3" { //交易开启中
+					err = e.StopTrader(&stopTradeReq, true)
+					if err != nil {
+						e.Log.Errorf("关闭实例%d失败:%s \r\n", instance.Id, err)
+					} else {
+						e.Log.Infof("关闭实例%d成功 \r\n", instance.Id)
+					}
+				}
+			}
+		}
+
+	}
+
+	return nil
+}
+
+func (e BusDexCexTriangularObserver) CheckBlockingInstance() error {
+	// 1. 查询出所有未恢复的全局风控事件
+	var highestRiskEvents []models.BusRiskEvent
+	err := e.Orm.Model(models.BusRiskEvent{}).
+		Where("is_recovered =?", false).
+		Where("strategy_id =?", common.STRATEGY_DEX_CEX_TRIANGULAR_ARBITRAGE).
+		Where("risk_scope =? and risk_level > ?", common.RISK_SCOPE_GOLBAL, common.RISK_LEVEL_MIDDLE).
+		Find(&highestRiskEvents).Error
+	if err != nil {
+		e.Log.Errorf("查询风控事件失败:%s \r\n", err)
+		return err
+	}
+
+	// 查询出所有交易开启中以及水位调节中的实例
+	var instances []models.BusDexCexTriangularObserver
+	err = e.Orm.Model(models.BusDexCexTriangularObserver{}).
+		Where("status = ?", 1).
+		Where("is_trading_blocked = true").
+		Find(&instances).Error
+	if err != nil {
+		e.Log.Errorf("查询实例失败:%s \r\n", err)
+		return err
+	}
+
+	if len(highestRiskEvents) > 0 {
+		e.Log.Infof("当前存在未恢复的全局风控事件 \r\n")
+		//直接结束
+		return nil
+	}
+
+	e.Log.Infof("不存在全局中断交易的事件")
+
+	// 2. 查出所有未恢复的单币种风控事件
+	var singleTokenRiskEvents []models.BusRiskEvent
+	err = e.Orm.Model(models.BusRiskEvent{}).
+		Where("is_recovered =?", false).
+		Where("strategy_id =?", common.STRATEGY_DEX_CEX_TRIANGULAR_ARBITRAGE).
+		Where("risk_scope =? and risk_level =?", common.RISK_SCOPE_SINGLE_TOKEN, common.RISK_LEVEL_MIDDLE).
+		Find(&singleTokenRiskEvents).Error
+
+	if err != nil {
+		e.Log.Errorf("查询单币种风控事件失败:%s \r\n", err)
+		return err
+	}
+
+	// 暂停所有单币种风控事件对应的实例
+	for _, instance := range instances {
+		var hasUnRecoveryRiskEvent bool = false
+		for _, riskEvent := range singleTokenRiskEvents {
+			if riskEvent.StrategyInstanceId == strconv.Itoa(instance.Id) {
+				hasUnRecoveryRiskEvent = true
+				break
+			}
+		}
+		if hasUnRecoveryRiskEvent {
+			e.Log.Infof("instanceId: %d has un-recoverd risk event", instance.Id)
+			continue
+		}
+		//启动交易功能
+		// step1 先启动水位调节实例
+		err = StartTokenWaterLevelWithCheckExists(&instance)
+		if err != nil {
+			return err
+		}
+
+		// 启动水位调节后，更新数据库中的相关参数
+		updateData := map[string]interface{}{
+			"is_trading":         false,
+			"status":             2, // 水位调节中
+			"is_trading_blocked": false,
+		}
+
+		if err := e.Orm.Model(&models.BusDexCexTriangularObserver{}).
+			Where("id = ?", instance.Id).
+			Updates(updateData).Error; err != nil {
+			e.Log.Errorf("更新实例参数失败：%s", err)
+			return err
+		}
+
+		e.Log.Infof("实例：%s 参数已成功更新", instance.Id)
+		return nil
+
+	}
+
+	return nil
+}
+
+func CheckIsTradeBlockedByRiskControl(instanceId int) (bool, error) {
+	db := sdk.Runtime.GetDbByKey("*")
+
+	err := db.Model(&models.BusDexCexTriangularObserver{}).
+		Where("id = ?", instanceId).
+		First(&models.BusDexCexTriangularObserver{}).Error
+	if err != nil {
+		log.Errorf("查询实例失败, 异常：%s \r\n", err)
+		return true, err
+	}
+
+	var riskEvents []models.BusDexCexTriangularObserver
+	err = db.Model(models.BusRiskEvent{}).
+		Where("strategy_id = ?", common.STRATEGY_DEX_CEX_TRIANGULAR_ARBITRAGE).
+		Where("strategy_instance_id =?", instanceId).
+		Where("is_recovered =?", false).
+		Where("risk_level >= ?", common.RISK_LEVEL_MIDDLE).
+		Find(&riskEvents).Error
+	if err != nil {
+		log.Errorf("查询风控事件失败, 异常：%s \r\n", err)
+		return true, err
+	}
+	if len(riskEvents) > 0 {
+		return true, nil
+	}
+	return false, nil
+}
+
+func SendWarningNotification(symbol, instanceID, traderID, triggerCondition, triggerValue, currentValue string, larkClient lark.LarkRobotAlert) error {
+	message := fmt.Sprintf(`
+	⚠️ 风控预警通知
+		策略实例ID: %s
+		交易币对: %s
+		触发风控的交易ID: %s
+		触发条件: %s %s
+		当前值: %s
+		通知时间: %s
+
+	🔔 该预警不会影响交易，仅供参考。请关注交易风险。
+	`, instanceID, symbol, traderID, triggerCondition, triggerValue, currentValue, time.Now().Format("2006-01-02 15:04:05"))
+
+	return larkClient.SendLarkAlert(message)
+}
+
+// SendMiddleNotification 发送风控中级别通知
+func SendMiddleNotification(symbol, instanceID, traderID, triggerCondition, triggerValue, currentValue, recoveryMethod string, larkClient lark.LarkRobotAlert) error {
+	message := fmt.Sprintf(`
+	🚨 风控触发：暂停 %s 交易
+		策略实例ID: %s
+		触发风控的交易ID: %s
+		触发条件: %s %s
+		当前值: %s
+		恢复方式: %s
+		通知时间: %s
+
+	❗ 请立即检查策略，并决定是否手动恢复交易。
+	`, symbol, instanceID, traderID, triggerCondition, triggerValue, currentValue, recoveryMethod, time.Now().Format("2006-01-02 15:04:05"))
+
+	return larkClient.SendLarkAlert(message)
+}
+
+// SendHigestNotification 发送风控最高级别通知
+func SendHighestNotification(traderID, triggerCondition, triggerValue, currentValue, recoveryMethod string, larkClient lark.LarkRobotAlert) error {
+	message := fmt.Sprintf(`
+	🛑 交易系统已全局暂停
+		触发风控的交易ID: %s
+		触发条件: %s %s
+		当前值: %s
+		恢复方式: %s
+		通知时间: %s
+
+	🚨 全局交易已暂停，请立即检查风险，并决定恢复方案。
+	`, traderID, triggerCondition, triggerValue, currentValue, recoveryMethod, time.Now().Format("2006-01-02 15:04:05"))
+
+	return larkClient.SendLarkAlert(message)
+}
+
+func SendRiskCheckFailMessage(riskRule string, larkClient lark.LarkRobotAlert) error {
+	message := fmt.Sprintf(`
+	❌ 风控校验失败
+		风控规则: %s
+		通知时间: %s
+		请检查风控规则并及时修正。
+	`, riskRule, time.Now().Format("2006-01-02 15:04:05"))
+	return larkClient.SendLarkAlert(message)
 }

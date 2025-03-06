@@ -32,6 +32,7 @@ type StrategyDexCexTriangularArbitrageTrades struct {
 	CexBuyQuoteAmount  string `json:"cexBuyQuoteAmount" gorm:"type:double;comment:Cex buy quote amount"`
 	CexBuyFeeAsset     string `json:"cexBuyFeeAsset" gorm:"type:varchar(32);comment:Cex buy fee asset"`
 	CexBuyFee          string `json:"cexBuyFee" gorm:"type:double;comment:Cex buy fee"`
+	IsRiskChecked      bool   `gorm:"null;comment:是否完成风控检查" json:"isRiskChecked"`
 	models.ModelTime
 	models.ControlBy
 }

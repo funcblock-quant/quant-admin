@@ -286,7 +286,7 @@ func (e BusDexCexTriangularObserver) StopTrader(c *gin.Context) {
 		return
 	}
 	req.SetUpdateBy(user.GetUserId(c))
-	err = s.StopTrader(&req)
+	err = s.StopTrader(&req, false)
 	if err != nil {
 		e.Error(500, err, fmt.Sprintf("停止交易失败，\r\n失败信息 %s", err.Error()))
 		return
@@ -399,7 +399,49 @@ func (e BusDexCexTriangularObserver) UpdateGlobalWaterLevel(c *gin.Context) {
 	}
 	err = s.UpdateGlobalWaterLevelConfig(&req)
 	if err != nil {
-		e.Error(500, err, fmt.Sprintf("更新trader 参数失败，\r\n失败信息 %s", err.Error()))
+		e.Error(500, err, fmt.Sprintf("更新全局水位调节 参数失败，\r\n失败信息 %s", err.Error()))
+		return
+	}
+
+	e.OK(nil, "更新成功")
+}
+
+func (e BusDexCexTriangularObserver) GetGlobalRiskConfigState(c *gin.Context) {
+	s := service.BusDexCexTriangularObserver{}
+	err := e.MakeContext(c).
+		MakeOrm().
+		MakeService(&s.Service).
+		Errors
+	if err != nil {
+		e.Logger.Error(err)
+		e.Error(500, err, err.Error())
+		return
+	}
+	resp, err := s.GetGlobalRiskConfigState()
+	if err != nil {
+		e.Error(500, err, fmt.Sprintf("获取全局风控 参数失败，\r\n失败信息 %s", err.Error()))
+		return
+	}
+
+	e.OK(resp, "获取全局风控参数成功")
+}
+
+func (e BusDexCexTriangularObserver) UpdateGlobalRiskConfig(c *gin.Context) {
+	s := service.BusDexCexTriangularObserver{}
+	req := dto.BusDexCexTriangularUpdateGlobalRiskConfig{}
+	err := e.MakeContext(c).
+		MakeOrm().
+		Bind(&req).
+		MakeService(&s.Service).
+		Errors
+	if err != nil {
+		e.Logger.Error(err)
+		e.Error(500, err, err.Error())
+		return
+	}
+	err = s.UpdateGlobalRiskConfig(&req)
+	if err != nil {
+		e.Error(500, err, fmt.Sprintf("更新全局风控 参数失败，\r\n失败信息 %s", err.Error()))
 		return
 	}
 

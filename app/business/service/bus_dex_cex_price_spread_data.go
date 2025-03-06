@@ -3,7 +3,6 @@ package service
 import (
 	"errors"
 	"fmt"
-	log "github.com/go-admin-team/go-admin-core/logger"
 	"math"
 	"quanta-admin/app/grpc/client"
 	pb "quanta-admin/app/grpc/proto/client/observer_service"
@@ -12,6 +11,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	log "github.com/go-admin-team/go-admin-core/logger"
 
 	"github.com/go-admin-team/go-admin-core/sdk/service"
 	"gorm.io/gorm"
@@ -274,11 +275,9 @@ func (e *BusDexCexPriceSpreadData) GetLatestSpreadData() error {
 
 	for _, observer := range observerList {
 		id := strconv.Itoa(observer.Id)
-		e.Log.Infof("id:%s get latest spread data \r\n", id)
 		state, err := client.GetObserverState(id)
-		e.Log.Infof("get observer state resp:%v \r\n", state)
 		if err != nil {
-			e.Log.Errorf("grpc获取最新价差数据失败， error:%s \r\n", err)
+			// e.Log.Errorf("grpc获取最新价差数据失败， error:%s \r\n", err)
 			if strings.Contains(err.Error(), "NotEnoughTickArrayAccount") {
 				//获取当前失败次数
 				val, _ := dexCexObserverFailures.LoadOrStore(id, 0)

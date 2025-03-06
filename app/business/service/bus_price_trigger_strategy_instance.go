@@ -253,7 +253,6 @@ func (e *BusPriceTriggerStrategyInstance) UpdateProfitTarget(req *dto.BusPriceTr
 	e.Log.Infof("update profit target instance id : %d\r\n", data.Id)
 	if config.ApplicationConfig.Mode != "dev" {
 		err = client.UpdateProfitTarget(profitTargetConfig)
-		err = nil
 		if err != nil {
 			e.Log.Errorf("Service StopInstance throw grpc error:%s \r\n", err)
 			return err
@@ -302,7 +301,6 @@ func (e *BusPriceTriggerStrategyInstance) UpdateExecuteNum(req *dto.BusPriceTrig
 	e.Log.Infof("update execute num, instance id : %d\r\n", data.Id)
 	if config.ApplicationConfig.Mode != "dev" {
 		err = client.UpdateExecuteNum(executeConfig)
-		err = nil
 		if err != nil {
 			e.Log.Errorf("Service UpdateExecuteNum throw grpc error:%s \r\n", err)
 			return err

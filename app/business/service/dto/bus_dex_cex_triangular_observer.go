@@ -2,13 +2,14 @@ package dto
 
 import (
 	"fmt"
-	"github.com/go-admin-team/go-admin-core/sdk/pkg/utils"
-	"google.golang.org/protobuf/proto"
 	"quanta-admin/app/business/models"
 	pb "quanta-admin/app/grpc/proto/client/observer_service"
 	"quanta-admin/common/dto"
 	common "quanta-admin/common/models"
 	"strconv"
+
+	"github.com/go-admin-team/go-admin-core/sdk/pkg/utils"
+	"google.golang.org/protobuf/proto"
 )
 
 type BusDexCexTriangularObserverGetPageReq struct {
@@ -272,13 +273,15 @@ type DexCexTriangularObserverSymbolListResp struct {
 }
 
 type BusDexCexTriangularObserverStartTraderReq struct {
-	InstanceId           int      `json:"id" comment:"策略端实例id"`
-	AlertThreshold       *float64 `json:"alertThreshold"`
-	BuyTriggerThreshold  *float64 `json:"buyTriggerThreshold"`
-	SellTriggerThreshold *float64 `json:"sellTriggerThreshold"`
-	SlippageBpsRate      *float64 `json:"slippageBpsRate"`
-	PriorityFeeRate      *float64 `json:"priorityFeeRate"`
-	JitoFeeRate          *float64 `json:"jitoFeeRate"`
+	InstanceId                 int      `json:"id" comment:"策略端实例id"`
+	AlertThreshold             *float64 `json:"alertThreshold"`
+	BuyTriggerThreshold        *float64 `json:"buyTriggerThreshold"`
+	SellTriggerThreshold       *float64 `json:"sellTriggerThreshold"`
+	MinDepositAmountThreshold  *float64 `json:"minDepositAmountThreshold"`
+	MinWithdrawAmountThreshold *float64 `json:"minWithdrawAmountThreshold"`
+	SlippageBpsRate            *float64 `json:"slippageBpsRate"`
+	PriorityFeeRate            *float64 `json:"priorityFeeRate"`
+	JitoFeeRate                *float64 `json:"jitoFeeRate"`
 	common.ControlBy
 }
 
@@ -314,10 +317,12 @@ type BusDexCexTriangularUpdateTraderParamsReq struct {
 }
 
 type BusDexCexTriangularUpdateWaterLevelParamsReq struct {
-	InstanceId           int      `json:"id" comment:"策略端实例id"`
-	AlertThreshold       *float64 `json:"alertThreshold"`
-	BuyTriggerThreshold  *float64 `json:"buyTriggerThreshold"`
-	SellTriggerThreshold *float64 `json:"sellTriggerThreshold"`
+	InstanceId                 int      `json:"id" comment:"策略端实例id"`
+	AlertThreshold             *float64 `json:"alertThreshold"`
+	BuyTriggerThreshold        *float64 `json:"buyTriggerThreshold"`
+	SellTriggerThreshold       *float64 `json:"sellTriggerThreshold"`
+	MinDepositAmountThreshold  *float64 `json:"minDepositAmountThreshold"`
+	MinWithdrawAmountThreshold *float64 `json:"minWithdrawAmountThreshold"`
 	common.ControlBy
 }
 
@@ -331,4 +336,20 @@ type BusDexCexTriangularGlobalWaterLevelStateResp struct {
 type BusDexCexTriangularUpdateGlobalWaterLevelConfigReq struct {
 	SolWaterLevelConfig        *BusDexCexTriangularUpdateWaterLevelParamsReq `json:"solWaterLevelConfig"`
 	StableCoinWaterLevelConfig *BusDexCexTriangularUpdateWaterLevelParamsReq `json:"stableCoinWaterLevelConfig"`
+}
+
+type BusDexCexTriangularUpdateGlobalRiskConfig struct {
+	AbsoluteLossThreshold []RiskControlItem `json:"absoluteLossThreshold"` // 绝对亏损风控
+	RelativeLossThreshold []RiskControlItem `json:"relativeLossThreshold"` // 相对亏损风控
+}
+
+type ActionDetail struct {
+	PauseDuration int  `json:"pauseDuration"` // 暂停时长，-1 表示次日零点
+	ManualResume  bool `json:"manualResume"`  // 是否人工恢复
+}
+
+type RiskControlItem struct {
+	Threshold    float64      `json:"threshold"`    // 阈值
+	Action       int          `json:"action"`       // 操作类型 (1-预警, 2-暂停当前实例交易, 3-暂停全局交易)
+	ActionDetail ActionDetail `json:"actionDetail"` // 具体操作详情
 }

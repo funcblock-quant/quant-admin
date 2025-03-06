@@ -28,6 +28,7 @@ func (a LarkRobotAlert) SendLarkAlert(text string) error {
 	if secret != "" {
 		message = message.WithSign(secret, time.Now().Unix())
 	}
+
 	resp, err := bot.PostNotificationV2(message.Text(text).Build())
 	if err != nil {
 		log.Errorf("bot.PostNotificationV2 error: %v", err)

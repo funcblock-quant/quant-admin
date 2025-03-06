@@ -2,8 +2,6 @@ package jobs
 
 import (
 	"fmt"
-	log "github.com/go-admin-team/go-admin-core/logger"
-	"github.com/go-admin-team/go-admin-core/sdk"
 	"quanta-admin/app/business/daos"
 	"quanta-admin/app/business/models"
 	businessService "quanta-admin/app/business/service"
@@ -16,6 +14,9 @@ import (
 	"quanta-admin/notification/lark"
 	"strconv"
 	"time"
+
+	log "github.com/go-admin-team/go-admin-core/logger"
+	"github.com/go-admin-team/go-admin-core/sdk"
 )
 
 // InitJob
@@ -350,6 +351,15 @@ func (t DexCexObserverInspection) Exec(arg interface{}) error {
 					continue
 				}
 			}
+
+			// 校验交易功能是否被风控
+			result, _ := businessService.CheckIsTradeBlockedByRiskControl(observer.Id)
+			if result {
+				// 交易被风控，不进行下一步水位调节开启
+				log.Infof("observer: %d\n is blocked by risk control, skip water level \r\n", observer.Id)
+				continue
+			}
+
 			if !containsWaterLevelInstance(waterLevelInstances, strconv.Itoa(observer.Id)) {
 				// 服务端不存在的，重启
 				err = businessService.StartTokenWaterLevel(&observer)
@@ -369,6 +379,14 @@ func (t DexCexObserverInspection) Exec(arg interface{}) error {
 					//如果重启失败，则不进行下一步水位调节开启
 					continue
 				}
+			}
+
+			// 校验交易功能是否被风控
+			result, _ := businessService.CheckIsTradeBlockedByRiskControl(observer.Id)
+			if result {
+				// 交易被风控，不进行下一步水位调节开启和交易开启
+				log.Infof("observer: %d\n is blocked by risk control, skip water level and trading \r\n", observer.Id)
+				continue
 			}
 
 			if !containsWaterLevelInstance(waterLevelInstances, strconv.Itoa(observer.Id)) {
