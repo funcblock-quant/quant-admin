@@ -2092,7 +2092,7 @@ func (e BusDexCexTriangularObserver) CheckExistRiskEvent() error {
 	// 1. 查询出所有未恢复的全局风控事件
 	var highestRiskEvents []models.BusRiskEvent
 	err := e.Orm.Model(models.BusRiskEvent{}).
-		Where("is_recovered =?", false).
+		Where("is_recovered =?", 0).
 		Where("strategy_id =?", common.STRATEGY_DEX_CEX_TRIANGULAR_ARBITRAGE).
 		Where("risk_scope =? and risk_level > ?", common.RISK_SCOPE_GOLBAL, common.RISK_LEVEL_MIDDLE).
 		Find(&highestRiskEvents).Error
@@ -2162,7 +2162,7 @@ func (e BusDexCexTriangularObserver) CheckExistRiskEvent() error {
 	// 2. 查出所有未恢复的单币种风控事件
 	var singleTokenRiskEvents []models.BusRiskEvent
 	err = e.Orm.Model(models.BusRiskEvent{}).
-		Where("is_recovered =?", false).
+		Where("is_recovered =?", 0).
 		Where("strategy_id =?", common.STRATEGY_DEX_CEX_TRIANGULAR_ARBITRAGE).
 		Where("risk_scope =? and risk_level =?", common.RISK_SCOPE_SINGLE_TOKEN, common.RISK_LEVEL_MIDDLE).
 		Find(&singleTokenRiskEvents).Error
@@ -2229,7 +2229,7 @@ func (e BusDexCexTriangularObserver) CheckBlockingInstance() error {
 	// 1. 查询出所有未恢复的全局风控事件
 	var highestRiskEvents []models.BusRiskEvent
 	err := e.Orm.Model(models.BusRiskEvent{}).
-		Where("is_recovered =?", false).
+		Where("is_recovered =?", 0).
 		Where("strategy_id =?", common.STRATEGY_DEX_CEX_TRIANGULAR_ARBITRAGE).
 		Where("risk_scope =? and risk_level > ?", common.RISK_SCOPE_GOLBAL, common.RISK_LEVEL_MIDDLE).
 		Find(&highestRiskEvents).Error
@@ -2323,11 +2323,11 @@ func CheckIsTradeBlockedByRiskControl(instanceId int) (bool, error) {
 		return true, err
 	}
 
-	var riskEvents []models.BusDexCexTriangularObserver
+	var riskEvents []models.BusRiskEvent
 	err = db.Model(models.BusRiskEvent{}).
 		Where("strategy_id = ?", common.STRATEGY_DEX_CEX_TRIANGULAR_ARBITRAGE).
 		Where("strategy_instance_id =?", instanceId).
-		Where("is_recovered =?", false).
+		Where("is_recovered =?", 0).
 		Where("risk_level >= ?", common.RISK_LEVEL_MIDDLE).
 		Find(&riskEvents).Error
 	if err != nil {
