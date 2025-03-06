@@ -1636,16 +1636,19 @@ func (e BusDexCexTriangularObserver) CheckRiskControl() error {
 	}
 
 	// 单笔最大亏损金额阈值
-	absoluteLossThreshold, ok := configMap["absoluteLossThreshold"].([]interface{})
-	if !ok {
-		e.Log.Error("[Risk Control Check] JSON 解析失败:", err)
-		return err
+	var absoluteLossThreshold []interface{}
+	if v, ok := configMap["relativeLossThreshold"]; ok {
+		if list, valid := v.([]interface{}); valid {
+			absoluteLossThreshold = list
+		}
 	}
 	// 单笔最大亏损比例阈值
-	relativeLossThreshold, ok := configMap["relativeLossThreshold"].([]interface{})
-	if !ok {
-		e.Log.Error("[Risk Control Check] JSON 解析失败:", err)
-		return err
+	var relativeLossThreshold []interface{}
+
+	if v, ok := configMap["relativeLossThreshold"]; ok {
+		if list, valid := v.([]interface{}); valid {
+			relativeLossThreshold = list
+		}
 	}
 
 	// 排序，按照 action 从大到小排序
