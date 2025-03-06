@@ -54,9 +54,9 @@ type BusRiskEventInsertReq struct {
 	RiskScope          int       `json:"riskScope" comment:"风控范围"`
 	AssetSymbol        string    `json:"assetSymbol" comment:"风控币种"`
 	RiskLevel          int       `json:"riskLevel" comment:"风控级别"`
-	ManualRecover      bool      `json:"manualRecover" comment:"是否需要人工恢复"`
+	ManualRecover      int       `json:"manualRecover" comment:"是否需要人工恢复"`
 	AutoRecoverTime    time.Time `json:"autoRecoverTime" comment:"自动恢复时间"`
-	IsRecovered        bool      `json:"isRecovered" comment:"是否已恢复"`
+	IsRecovered        int       `json:"isRecovered" comment:"是否已恢复"`
 	RecoveredBy        string    `json:"recoveredBy" comment:"审核人"`
 	RecoveredAt        time.Time `json:"recoveredAt" comment:"恢复时间"`
 	TriggerRule        string    `json:"triggerRule" comment:"触发的风控规则"`
@@ -88,7 +88,7 @@ func (s *BusRiskEventInsertReq) GetId() interface{} {
 
 type BusRiskEventUpdateReq struct {
 	Id          int       `uri:"id" comment:"风控事件ID"` // 风控事件ID
-	IsRecovered bool      `json:"isRecovered" comment:"是否已恢复"`
+	IsRecovered int       `json:"isRecovered" comment:"是否已恢复"`
 	RecoveredAt time.Time `json:"recoveredAt" comment:"恢复时间"`
 	common.ControlBy
 }
