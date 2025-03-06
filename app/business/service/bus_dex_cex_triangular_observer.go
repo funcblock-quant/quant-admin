@@ -1642,6 +1642,7 @@ func (e BusDexCexTriangularObserver) CheckRiskControl() error {
 			absoluteLossThreshold = list
 		}
 	}
+	e.Log.Infof("[Risk Control Check] absoluteLossThreshold: %v", absoluteLossThreshold)
 	// 单笔最大亏损比例阈值
 	var relativeLossThreshold []interface{}
 
@@ -1650,6 +1651,7 @@ func (e BusDexCexTriangularObserver) CheckRiskControl() error {
 			relativeLossThreshold = list
 		}
 	}
+	e.Log.Infof("[Risk Control Check] relativeLossThreshold: %v", relativeLossThreshold)
 
 	// 排序，按照 action 从大到小排序
 	sort.Slice(absoluteLossThreshold, func(i, j int) bool {
