@@ -760,7 +760,7 @@ func (e *BusDexCexTriangularObserver) UpdateWaterLevel(c *dto.BusDexCexTriangula
 	data.BuyTriggerThreshold = c.BuyTriggerThreshold
 	data.SellTriggerThreshold = c.SellTriggerThreshold
 	data.AlertThreshold = c.AlertThreshold
-	data.MinDepositAmountThreshold = C.MinDepositAmountThreshold
+	data.MinDepositAmountThreshold = c.MinDepositAmountThreshold
 	data.MinWithdrawAmountThreshold = c.MinWithdrawAmountThreshold
 	err = UpdateTokenWaterLevel(&data)
 	if err != nil {
