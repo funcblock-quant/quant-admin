@@ -1204,8 +1204,17 @@ func (e *BusDexCexTriangularObserver) StartGlobalWaterLevel() error {
 			solanaAlertThreshold = configMap["alertThreshold"].(float64)
 			solBuyTriggerThreshold = configMap["buyTriggerThreshold"].(float64)
 			solSellTriggerThreshold = configMap["sellTriggerThreshold"].(float64)
-			solMinDepositAmountThreshold = configMap["minDepositAmountThreshold"].(float64)
-			solMinWithdrawAmountThreshold = configMap["minWithdrawAmountThreshold"].(float64)
+			if v, ok := configMap["minDepositAmountThreshold"].(float64); ok {
+				solMinDepositAmountThreshold = v
+			} else {
+				solMinDepositAmountThreshold = 0
+			}
+
+			if v, ok := configMap["minWithdrawAmountThreshold"].(float64); ok {
+				solMinWithdrawAmountThreshold = v
+			} else {
+				solMinWithdrawAmountThreshold = 0
+			}
 		}
 	}
 
