@@ -1871,7 +1871,7 @@ func (e BusDexCexTriangularObserver) AbsoluteLossThresholdCheck(absoluteLossThre
 
 		thresholdMap := threshold.(map[string]interface{})
 		thresholdValue := thresholdMap["threshold"].(float64)
-		action := thresholdMap["action"].(int)
+		action := thresholdMap["action"].(float64)
 		actionDetail := thresholdMap["actionDetail"].(map[string]interface{})
 
 		cexSellAmount, err1 := strconv.ParseFloat(trade.CexSellQuoteAmount, 64)
@@ -1986,7 +1986,7 @@ func (e BusDexCexTriangularObserver) RelativeLossThresholdCheck(relativeLossThre
 
 		thresholdMap := threshold.(map[string]interface{})
 		thresholdValue := thresholdMap["threshold"].(float64)
-		action := thresholdMap["action"].(int)
+		action := thresholdMap["action"].(float64)
 		actionDetail := thresholdMap["actionDetail"].(map[string]interface{})
 
 		cexSellAmount, err1 := strconv.ParseFloat(trade.CexSellQuoteAmount, 64)
