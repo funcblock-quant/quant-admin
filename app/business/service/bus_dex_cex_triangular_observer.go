@@ -1702,7 +1702,8 @@ func (e BusDexCexTriangularObserver) CheckRiskControl() error {
 		Select("strategy_dex_cex_triangular_arbitrage_trades.*, opportunities.cex_target_asset as symbol").
 		Joins("LEFT JOIN strategy_dex_cex_triangular_arbitrage_opportunities AS opportunities ON strategy_dex_cex_triangular_arbitrage_trades.opportunity_id = opportunities.opportunity_id").
 		Where("strategy_dex_cex_triangular_arbitrage_trades.id > ?", riskCheckProgress.LastCheckedTradeId).
-		Order("strategy_dex_cex_triangular_arbitrage_trades.created_at desc").
+		Where("strategy_dex_cex_triangular_arbitrage_trades.dex_success = 1 and strategy_dex_cex_triangular_arbitrage_trades.cex_sell_success = 1 and strategy_dex_cex_triangular_arbitrage_trades.cex_buy_success = 1").
+		Order("strategy_dex_cex_triangular_arbitrage_trades.created_at asc").
 		Limit(20). // 每5s处理最多20条记录
 		Find(&trades).Error
 
