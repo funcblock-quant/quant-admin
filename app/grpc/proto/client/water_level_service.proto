@@ -42,6 +42,10 @@ message TokenThresholdConfig {
   string buy_trigger_threshold = 2;
   //string target_balance_threshold = 3; // 取消这个字段，改为(buy_trigger_threshold + target_balance_threshold)/2
   string sell_trigger_threshold = 4;
+  // 最小充值金额阈值
+  string min_deposit_amount_threshold = 5;
+  // 最小提现金额阈值
+  string min_withdraw_amount_threshold = 6;
 }
 
 message StableCoinThresholdConfig {
