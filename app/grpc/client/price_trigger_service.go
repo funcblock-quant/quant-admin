@@ -3,10 +3,11 @@ package client
 import (
 	"context"
 	"fmt"
-	"github.com/golang/protobuf/ptypes/empty"
 	"quanta-admin/app/grpc/pool"
 	"quanta-admin/app/grpc/proto/client/trigger_service"
 	"time"
+
+	"github.com/golang/protobuf/ptypes/empty"
 )
 
 func StartTriggerInstance(request *trigger_service.StartTriggerRequest) (string, error) {
@@ -161,7 +162,7 @@ func UpdateProfitTarget(request *trigger_service.ProfitTargetConfig) error {
 	return nil
 }
 
-func UpdateExecuteNum(request *trigger_service.ExecuteConfig) error {
+func UpdateExecuteConfig(request *trigger_service.ExecuteConfig) error {
 	// 获取 gRPC 客户端连接
 	clientConn, err := pool.GetGrpcClient("trigger-service")
 	if err != nil {
@@ -177,7 +178,7 @@ func UpdateExecuteNum(request *trigger_service.ExecuteConfig) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	_, err = c.UpdateExecuteNum(ctx, request)
+	_, err = c.UpdateExecuteConfig(ctx, request)
 	if err != nil {
 		return fmt.Errorf("更新 执行次数失败: %w", err)
 	}

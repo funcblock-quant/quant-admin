@@ -205,6 +205,7 @@ func (t PriceTriggerInspection) Exec(arg interface{}) error {
 			execConfig := trigger_service.ExecuteConfig{
 				InstanceId: strconv.Itoa(instance.Id),
 				ExecuteNum: uint32(instance.ExecuteNum),
+				DelayTime:  uint32(instance.DelayTime),
 			}
 
 			request := &trigger_service.StartTriggerRequest{
@@ -219,6 +220,7 @@ func (t PriceTriggerInspection) Exec(arg interface{}) error {
 				UserId:             instance.ExchangeUserId,
 				ProfitTargetConfig: &profitTargetConfig,
 				ExecuteConfig:      &execConfig,
+				CloseOrderType:     instance.CloseOrderType,
 			}
 
 			_, err = client.StartTriggerInstance(request)

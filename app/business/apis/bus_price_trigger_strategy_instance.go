@@ -265,17 +265,17 @@ func (e BusPriceTriggerStrategyInstance) UpdateProfitTarget(c *gin.Context) {
 	e.OK("", "修改止盈配置成功")
 }
 
-// UpdateExecuteNum 修改执行次数
-// @Summary 修改执行次数
-// @Description 修改执行次数
-// @Tags 修改执行次数
+// UpdateExecuteConfig 修改执行参数
+// @Summary 修改执行参数
+// @Description 修改执行参数
+// @Tags 修改执行参数
 // @Accept application/json
 // @Product application/json
 // @Param data body dto.BusPriceTriggerStrategyInstanceUpdateExecuteNumReq true "data"
 // @Success 200 {object} response.Response	"{"code": 200, "message": "修改成功"}"
-// @Router /api/v1/updateExecuteNum [put]
+// @Router /api/v1/updateExecuteConfig [put]
 // @Security Bearer
-func (e BusPriceTriggerStrategyInstance) UpdateExecuteNum(c *gin.Context) {
+func (e BusPriceTriggerStrategyInstance) UpdateExecuteConfig(c *gin.Context) {
 	req := dto.BusPriceTriggerStrategyInstanceUpdateExecuteNumReq{}
 	s := service.BusPriceTriggerStrategyInstance{}
 	err := e.MakeContext(c).
@@ -289,9 +289,9 @@ func (e BusPriceTriggerStrategyInstance) UpdateExecuteNum(c *gin.Context) {
 		return
 	}
 	e.Logger.Infof("req:%#v", req)
-	err = s.UpdateExecuteNum(&req)
+	err = s.UpdateExecuteConfig(&req)
 	if err != nil {
-		e.Error(500, err, fmt.Sprintf("修改执行次数失败，\r\n失败信息 %s", err.Error()))
+		e.Error(500, err, fmt.Sprintf("修改执行参数失败，\r\n失败信息 %s", err.Error()))
 		return
 	}
 

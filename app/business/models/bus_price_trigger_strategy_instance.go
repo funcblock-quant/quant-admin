@@ -25,6 +25,8 @@ type BusPriceTriggerStrategyInstance struct {
 	CallbackRatio     *float64  `json:"callbackRatio" gorm:"type:float;comment:浮动止盈回调比例"`
 	CutoffRatio       *float64  `json:"cutoffRatio" gorm:"type:float;comment:浮动止盈止盈比例"`
 	MinProfit         *float64  `json:"minProfit" gorm:"type:float;comment:浮动止盈最低利润"`
+	CloseOrderType    string    `json:"closeOrderType" gorm:"type:varchar(16);comment:平仓模式"`
+	DelayTime         int       `json:"delayTime" gorm:"type:int;comment:延迟时间"`
 	models.ModelTime
 	models.ControlBy
 }

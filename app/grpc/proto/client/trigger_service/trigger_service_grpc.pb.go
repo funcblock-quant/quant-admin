@@ -27,7 +27,7 @@ const (
 	TriggerInstance_ListInstances_FullMethodName            = "/grpc_service.TriggerInstance/ListInstances"
 	TriggerInstance_CheckApiKey_FullMethodName              = "/grpc_service.TriggerInstance/CheckApiKey"
 	TriggerInstance_UpdateProfitTargetConfig_FullMethodName = "/grpc_service.TriggerInstance/UpdateProfitTargetConfig"
-	TriggerInstance_UpdateExecuteNum_FullMethodName         = "/grpc_service.TriggerInstance/UpdateExecuteNum"
+	TriggerInstance_UpdateExecuteConfig_FullMethodName      = "/grpc_service.TriggerInstance/UpdateExecuteConfig"
 )
 
 // TriggerInstanceClient is the client API for TriggerInstance service.
@@ -44,8 +44,8 @@ type TriggerInstanceClient interface {
 	CheckApiKey(ctx context.Context, in *APIConfig, opts ...grpc.CallOption) (*CheckApiKeyHealthyResponse, error)
 	// 修改止盈参数
 	UpdateProfitTargetConfig(ctx context.Context, in *ProfitTargetConfig, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	// 修改执行次数
-	UpdateExecuteNum(ctx context.Context, in *ExecuteConfig, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// 修改执行参数
+	UpdateExecuteConfig(ctx context.Context, in *ExecuteConfig, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type triggerInstanceClient struct {
@@ -101,9 +101,9 @@ func (c *triggerInstanceClient) UpdateProfitTargetConfig(ctx context.Context, in
 	return out, nil
 }
 
-func (c *triggerInstanceClient) UpdateExecuteNum(ctx context.Context, in *ExecuteConfig, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *triggerInstanceClient) UpdateExecuteConfig(ctx context.Context, in *ExecuteConfig, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, TriggerInstance_UpdateExecuteNum_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, TriggerInstance_UpdateExecuteConfig_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -124,8 +124,8 @@ type TriggerInstanceServer interface {
 	CheckApiKey(context.Context, *APIConfig) (*CheckApiKeyHealthyResponse, error)
 	// 修改止盈参数
 	UpdateProfitTargetConfig(context.Context, *ProfitTargetConfig) (*emptypb.Empty, error)
-	// 修改执行次数
-	UpdateExecuteNum(context.Context, *ExecuteConfig) (*emptypb.Empty, error)
+	// 修改执行参数
+	UpdateExecuteConfig(context.Context, *ExecuteConfig) (*emptypb.Empty, error)
 	mustEmbedUnimplementedTriggerInstanceServer()
 }
 
@@ -148,8 +148,8 @@ func (UnimplementedTriggerInstanceServer) CheckApiKey(context.Context, *APIConfi
 func (UnimplementedTriggerInstanceServer) UpdateProfitTargetConfig(context.Context, *ProfitTargetConfig) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateProfitTargetConfig not implemented")
 }
-func (UnimplementedTriggerInstanceServer) UpdateExecuteNum(context.Context, *ExecuteConfig) (*emptypb.Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateExecuteNum not implemented")
+func (UnimplementedTriggerInstanceServer) UpdateExecuteConfig(context.Context, *ExecuteConfig) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateExecuteConfig not implemented")
 }
 func (UnimplementedTriggerInstanceServer) mustEmbedUnimplementedTriggerInstanceServer() {}
 
@@ -254,20 +254,20 @@ func _TriggerInstance_UpdateProfitTargetConfig_Handler(srv interface{}, ctx cont
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TriggerInstance_UpdateExecuteNum_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _TriggerInstance_UpdateExecuteConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ExecuteConfig)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TriggerInstanceServer).UpdateExecuteNum(ctx, in)
+		return srv.(TriggerInstanceServer).UpdateExecuteConfig(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: TriggerInstance_UpdateExecuteNum_FullMethodName,
+		FullMethod: TriggerInstance_UpdateExecuteConfig_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TriggerInstanceServer).UpdateExecuteNum(ctx, req.(*ExecuteConfig))
+		return srv.(TriggerInstanceServer).UpdateExecuteConfig(ctx, req.(*ExecuteConfig))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -300,8 +300,8 @@ var TriggerInstance_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _TriggerInstance_UpdateProfitTargetConfig_Handler,
 		},
 		{
-			MethodName: "UpdateExecuteNum",
-			Handler:    _TriggerInstance_UpdateExecuteNum_Handler,
+			MethodName: "UpdateExecuteConfig",
+			Handler:    _TriggerInstance_UpdateExecuteConfig_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
