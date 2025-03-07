@@ -276,14 +276,14 @@ func (e *BusPriceTriggerStrategyInstance) UpdateProfitTarget(req *dto.BusPriceTr
 	return nil
 }
 
-// UpdateExecuteNum
+// UpdateExecuteConfig
 // @Accept  application/json
 // @Product application/json
 // @Param
 // @Success 200 {object} response.Response "{"code": 200, "data": [...]}"
 // @Router /api/v1/updateExecuteNum [put]
 // @Security Bearer
-func (e *BusPriceTriggerStrategyInstance) UpdateExecuteNum(req *dto.BusPriceTriggerStrategyInstanceUpdateExecuteNumReq) error {
+func (e *BusPriceTriggerStrategyInstance) UpdateExecuteConfig(req *dto.BusPriceTriggerStrategyInstanceUpdateExecuteNumReq) error {
 	var err error
 	data := models.BusPriceTriggerStrategyInstance{}
 
@@ -295,22 +295,34 @@ func (e *BusPriceTriggerStrategyInstance) UpdateExecuteNum(req *dto.BusPriceTrig
 
 	executeConfig := &trigger_service.ExecuteConfig{
 		InstanceId: strconv.Itoa(data.Id),
-		ExecuteNum: uint32(req.ExecuteNum),
+	}
+	if req.ExecuteNum != nil {
+		executeConfig.ExecuteNum = uint32(*req.ExecuteNum)
+	}
+	if req.DelayTime != nil {
+		executeConfig.DelayTime = uint32(*req.DelayTime)
 	}
 
 	e.Log.Infof("update execute num, instance id : %d\r\n", data.Id)
 	if config.ApplicationConfig.Mode != "dev" {
-		err = client.UpdateExecuteNum(executeConfig)
+		err = client.UpdateExecuteConfig(executeConfig)
 		if err != nil {
 			e.Log.Errorf("Service UpdateExecuteNum throw grpc error:%s \r\n", err)
 			return err
 		}
 	}
 
+	updateData := map[string]interface{}{}
+
+	if req.ExecuteNum != nil {
+		updateData["execute_num"] = *req.ExecuteNum
+	}
+	if req.DelayTime != nil {
+		updateData["delay_time"] = *req.DelayTime
+	}
+
 	err = e.Orm.Model(&data).
-		Updates(map[string]interface{}{
-			"execute_num": req.ExecuteNum,
-		}).Error
+		Updates(updateData).Error
 
 	if err != nil {
 		e.Log.Errorf("Service StopInstance throw db error:%s \r\n", err)

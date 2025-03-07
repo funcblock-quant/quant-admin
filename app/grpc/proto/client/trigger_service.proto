@@ -18,8 +18,8 @@ service TriggerInstance {
   rpc CheckApiKey (APIConfig) returns (CheckApiKeyHealthyResponse);
   // 修改止盈参数
   rpc UpdateProfitTargetConfig(ProfitTargetConfig) returns (google.protobuf.Empty);
-  // 修改执行次数
-  rpc UpdateExecuteNum(ExecuteConfig) returns (google.protobuf.Empty);
+  // 修改执行参数
+  rpc UpdateExecuteConfig(ExecuteConfig) returns (google.protobuf.Empty);
 }
 
 // Message definitions
@@ -35,6 +35,7 @@ message StartTriggerRequest {
   APIConfig     api_config = 9; //Apikey相关
   ProfitTargetConfig profit_target_config = 10; // 止盈配置
   ExecuteConfig execute_config = 11; //执行参数配置
+  string        close_order_type = 12; //平仓模式 taker or maker
 }
 
 message CheckApiKeyHealthyRequest {
@@ -92,6 +93,7 @@ message LimitTypeConfig {
 message ExecuteConfig {
   string instance_id = 1; // 中台实例id
   uint32 execute_num = 2; //任务执行次数
+  uint32 delay_time = 3; //延迟时间，单位s
 }
 
 /* 枚举 **/

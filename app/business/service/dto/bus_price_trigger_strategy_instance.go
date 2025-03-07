@@ -48,6 +48,7 @@ type BusPriceTriggerStrategyResp struct {
 	Id                string                                     `json:"id"`
 	OpenPrice         string                                     `json:"openPrice"`
 	ClosePrice        string                                     `json:"closePrice"`
+	CloseOrderType    string                                     `json:"closeOrderType" comment:"平仓模式"`
 	Amount            string                                     `json:"amount"`
 	Side              string                                     `json:"side"`
 	Symbol            string                                     `json:"symbol"`
@@ -60,6 +61,7 @@ type BusPriceTriggerStrategyResp struct {
 	Statistical       BusPriceTriggerStrategyStatistical         `json:"statistical" gorm:"-"`
 	ExchangeUserId    string                                     `json:"exchangeUserId"`
 	ExecuteNum        int                                        `json:"executeNum"`
+	DelayTime         int                                        `json:"delayTime"`
 	ProfitTargetType  string                                     `json:"profitTargetType"`
 	ProfitTargetPrice string                                     `json:"profitTargetPrice"`
 	LossTargetPrice   string                                     `json:"lossTargetPrice"`
@@ -78,6 +80,7 @@ type BusPriceTriggerStrategyInstanceInsertReq struct {
 	Id                int       `json:"-" comment:""` //
 	OpenPrice         string    `json:"openPrice" comment:"开仓价格"`
 	ClosePrice        string    `json:"closePrice" comment:"平仓价格"`
+	CloseOrderType    string    `json:"closeOrderType" comment:"平仓模式"`
 	Amount            string    `json:"amount" comment:"开仓数量"`
 	Side              string    `json:"side" comment:"买卖方向"`
 	Symbol            string    `json:"symbol" comment:"交易币种"`
@@ -86,6 +89,7 @@ type BusPriceTriggerStrategyInstanceInsertReq struct {
 	Status            string    `json:"status" comment:"状态，created, started, stopped, closed"`
 	ExchangeUserId    string    `json:"exchangeUserId"`
 	ExecuteNum        int       `json:"executeNum"`
+	DelayTime         int       `json:"delayTime"`
 	ProfitTargetType  string    `json:"profitTargetType"`
 	ProfitTargetPrice float64   `json:"profitTargetPrice"`
 	LossTargetPrice   float64   `json:"lossTargetPrice"`
@@ -107,8 +111,9 @@ type BusPriceTriggerStrategyInstanceUpdateProfitTargetReq struct {
 }
 
 type BusPriceTriggerStrategyInstanceUpdateExecuteNumReq struct {
-	Id         int `json:"id" comment:""` //
-	ExecuteNum int `json:"executeNum"`
+	Id         int  `json:"id" comment:""` //
+	ExecuteNum *int `json:"executeNum"`
+	DelayTime  *int `json:"delayTime"`
 	common.ControlBy
 }
 
@@ -131,6 +136,8 @@ func (s *BusPriceTriggerStrategyInstanceInsertReq) Generate(model *models.BusPri
 	model.CreateBy = s.CreateBy // 添加这而，需要记录是被谁创建的
 	model.ExchangeUserId = s.ExchangeUserId
 	model.ExecuteNum = s.ExecuteNum
+	model.CloseOrderType = s.CloseOrderType
+	model.DelayTime = s.DelayTime
 	model.ProfitTargetType = s.ProfitTargetType
 	if s.ProfitTargetType == "LIMIT" {
 		model.ProfitTargetPrice = strconv.FormatFloat(s.ProfitTargetPrice, 'f', -1, 64)
