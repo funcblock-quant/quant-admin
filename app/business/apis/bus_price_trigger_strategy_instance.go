@@ -321,3 +321,27 @@ func (e BusPriceTriggerStrategyInstance) GetSymbolList(c *gin.Context) {
 
 	e.OK(list, "查询成功")
 }
+
+// GetExchangeUserIdList 获取价格触发下单策略实例所有的交易所userId列表
+func (e BusPriceTriggerStrategyInstance) GetExchangeUserIdList(c *gin.Context) {
+	s := service.BusPriceTriggerStrategyInstance{}
+	err := e.MakeContext(c).
+		MakeOrm().
+		MakeService(&s.Service).
+		Errors
+	if err != nil {
+		e.Logger.Error(err)
+		e.Error(500, err, err.Error())
+		return
+	}
+
+	list := make([]dto.BusPriceTriggerStrategyExchangeUserIdListResp, 0)
+	userId := user.GetUserId(c)
+	err = s.GetExchangeUserIdList(userId, &list)
+	if err != nil {
+		e.Error(500, err, fmt.Sprintf("获取价格触发下单策略币种列表失败，\r\n失败信息 %s", err.Error()))
+		return
+	}
+
+	e.OK(list, "查询成功")
+}
