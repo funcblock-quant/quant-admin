@@ -386,6 +386,24 @@ func (e *BusPriceTriggerStrategyInstance) GetSymbolList(list *[]dto.BusPriceTrig
 	return nil
 }
 
+// GetExchangeUserIdList 获取BusPriceTriggerStrategyInstance所有交易所userId
+func (e *BusPriceTriggerStrategyInstance) GetExchangeUserIdList(userId int, list *[]dto.BusPriceTriggerStrategyExchangeUserIdListResp) error {
+	var err error
+	var data models.BusPriceTriggerStrategyInstance
+
+	err = e.Orm.Model(&data).
+		Select("exchange_user_id").
+		Group("exchange_user_id").
+		Where("create_by", userId).
+		Debug().Find(list).Error
+
+	if err != nil {
+		e.Log.Errorf("BusPriceTriggerStrategyInstance GetExchangeUserIdList error:%s \r\n", err)
+		return err
+	}
+	return nil
+}
+
 func (e *BusPriceTriggerStrategyInstance) MonitorExecuteNum() error {
 	// 获取所有运行中的实例，并统计他们的执行次数
 	var data []models.BusPriceTriggerStrategyInstance
