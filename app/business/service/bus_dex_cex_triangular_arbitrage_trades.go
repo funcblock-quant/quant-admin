@@ -321,3 +321,29 @@ func (e *StrategyDexCexTriangularArbitrageTrades) ScanTrades() error {
 	}
 	return nil
 }
+
+// SnapshotResult 结构体存储统计结果
+type SnapshotResult struct {
+	TargetToken string  `json:"targetToken"`
+	TotalVolume float64 `json:"totalVolume"`
+	TotalProfit float64 `json:"totalProfit"`
+}
+
+// DailyTradeSnapshot 每日交易快照
+func (e *StrategyDexCexTriangularArbitrageTrades) DailyTradeSnapshot() error {
+	e.Log.Infof("开始生成每日套利快照")
+	// var data models.StrategyDexCexTriangularArbitrageTrades
+
+	// // 计算时间范围（获取当天 UTC 0 点的时间）
+	// now := time.Now().UTC()
+	// today := now.Format("2006-01-02") // 格式化日期 YYYY-MM-DD
+
+	// db := e.Orm
+
+	// // **1. 获取所有需要统计的交易对**
+	// var activeSymbols []struct {
+	// 	TargetToken string
+	// 	QuoteToken  string
+	// }
+	return nil
+}

@@ -341,6 +341,33 @@ func (e BusDexCexTriangularObserver) UpdateTrader(c *gin.Context) {
 	e.OK(nil, "更新成功")
 }
 
+// StopAllTrades 一键暂停所有交易
+func (e BusDexCexTriangularObserver) StopAllTrades(c *gin.Context) {
+	s := service.BusDexCexTriangularObserver{}
+	err := e.MakeContext(c).
+		MakeOrm().
+		MakeService(&s.Service).
+		Errors
+	if err != nil {
+		e.Logger.Error(err)
+		e.Error(500, err, err.Error())
+		return
+	}
+	userId := user.GetUserId(c)
+	failedList, err := s.StopAllTrader(userId)
+	if err != nil {
+		if len(failedList) == 0 {
+			e.Error(500, err, fmt.Sprintf("更新trader 参数失败，\r\n失败信息 %s", err.Error()))
+		} else {
+			// 失败，且有部分 trader 停止失败
+			e.Error(500, err, fmt.Sprintf("停止trader部分成果，失败列表: %v", failedList))
+		}
+		return
+	}
+
+	e.OK(nil, "更新成功")
+}
+
 func (e BusDexCexTriangularObserver) UpdateWaterLevel(c *gin.Context) {
 	s := service.BusDexCexTriangularObserver{}
 	req := dto.BusDexCexTriangularUpdateWaterLevelParamsReq{}

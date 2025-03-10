@@ -336,7 +336,7 @@ func (t DexCexObserverInspection) Exec(arg interface{}) error {
 			log.Infof("observer: %d\n status is 1, check observer \r\n", observer.Id)
 			if exists, _ := containsObserver(observerInfos, strconv.Itoa(observer.Id)); !exists {
 				// 服务端不存在，重启
-				err = businessService.StartObserver(&observer)
+				err = businessService.DoStartObserver(&observer)
 				if err != nil {
 					continue
 				}
@@ -347,7 +347,7 @@ func (t DexCexObserverInspection) Exec(arg interface{}) error {
 			log.Infof("observer: %d\n status is 2, check observer and water level \r\n", observer.Id)
 			if exist, _ := containsObserver(observerInfos, strconv.Itoa(observer.Id)); !exist {
 				// 服务端不存在的，重启
-				err = businessService.StartObserver(&observer)
+				err = businessService.DoStartObserver(&observer)
 				if err != nil {
 					//如果重启失败，则不进行下一步水位调节开启
 					continue
@@ -364,7 +364,7 @@ func (t DexCexObserverInspection) Exec(arg interface{}) error {
 
 			if !containsWaterLevelInstance(waterLevelInstances, strconv.Itoa(observer.Id)) {
 				// 服务端不存在的，重启
-				err = businessService.StartTokenWaterLevel(&observer)
+				err = businessService.DoStartTokenWaterLevel(&observer)
 				if err != nil {
 					//如果重启失败，则不进行下一步水位调节开启
 					continue
@@ -376,7 +376,7 @@ func (t DexCexObserverInspection) Exec(arg interface{}) error {
 			exist, isTrading := containsObserver(observerInfos, strconv.Itoa(observer.Id))
 			if !exist {
 				// 服务端不存在的，重启
-				err = businessService.StartObserver(&observer)
+				err = businessService.DoStartObserver(&observer)
 				if err != nil {
 					//如果重启失败，则不进行下一步水位调节开启
 					continue
@@ -393,7 +393,7 @@ func (t DexCexObserverInspection) Exec(arg interface{}) error {
 
 			if !containsWaterLevelInstance(waterLevelInstances, strconv.Itoa(observer.Id)) {
 				// 服务端不存在的，重启
-				err = businessService.StartTokenWaterLevel(&observer)
+				err = businessService.DoStartTokenWaterLevel(&observer)
 				if err != nil {
 					//如果重启失败，则下次再重启
 					continue
@@ -402,7 +402,7 @@ func (t DexCexObserverInspection) Exec(arg interface{}) error {
 
 			if observer.IsTrading && !isTrading {
 				// 如果实例开启了交易，但是服务端没有启动交易功能，则还需要重启交易功能
-				err = businessService.StartTrader(&observer)
+				err = businessService.DoStartTrader(&observer)
 				if err != nil {
 					//如果重启失败，则下次再重启
 					continue

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"quanta-admin/app/business/service"
 	"sync"
-	"time"
 
 	"github.com/go-admin-team/go-admin-core/logger"
 	"github.com/go-admin-team/go-admin-core/sdk"
@@ -136,21 +135,20 @@ func InitSimpleJob() {
 
 	})
 
+	c.AddFunc("0 0 * * *", func() {
+
+		// 每天凌晨12点，快照前一天的收益等数据
+		fmt.Println("Check Blocking Instance Job running")
+		s := service.StrategyDexCexTriangularArbitrageTrades{}
+		s.Orm = orm
+		s.Log = log
+		err := s.DailyTradeSnapshot()
+		if err != nil {
+			log.Errorf("Take daily trade snapshot Job run failed, err:%v\n", err)
+		}
+
+	})
+
 	c.Start()
 	select {}
-}
-
-// 包装任务，防止崩溃
-func safeWrapper(name string, job func()) func() {
-	return func() {
-		defer func() {
-			if r := recover(); r != nil {
-				logger.Errorf("Job %s crashed: %v", name, r)
-				jobLock.Unlock()
-			}
-		}()
-		start := time.Now()
-		job()
-		logger.Infof("Job %s finished in %v", name, time.Since(start))
-	}
 }

@@ -31,6 +31,13 @@ type BusDexCexTriangularObserver struct {
 	service.Service
 }
 
+const (
+	INSTANCE_STATUS_CREATED    = 0
+	INSTANCE_STATUS_OBSERVE    = 1
+	INSTANCE_STATUS_WATERLEVEL = 2
+	INSTANCE_STATUS_TRADING    = 3
+)
+
 // GetPage 获取BusDexCexTriangularObserver列表
 func (e *BusDexCexTriangularObserver) GetPage(c *dto.BusDexCexTriangularObserverGetPageReq, p *actions.DataPermission, list *[]dto.BusDexCexTriangularObserverGetPageResp, count *int64) error {
 	var err error
@@ -42,7 +49,7 @@ func (e *BusDexCexTriangularObserver) GetPage(c *dto.BusDexCexTriangularObserver
 			cDto.Paginate(c.GetPageSize(), c.GetPageIndex()),
 			actions.Permission(data.TableName(), p),
 		)
-	statuses := []int{1, 2, 3} // 需要查询的多个状态
+	statuses := []int{INSTANCE_STATUS_OBSERVE, INSTANCE_STATUS_WATERLEVEL, INSTANCE_STATUS_TRADING} // 需要查询的多个状态
 	tx.Where("status IN (?)", statuses)
 	err = tx.Debug().Find(list).Limit(-1).Offset(-1).
 		Count(count).Error
@@ -289,7 +296,7 @@ func (e *BusDexCexTriangularObserver) GetSymbolList(p *actions.DataPermission, l
 		).
 		Select("symbol").
 		Group("symbol").
-		Where("status IN ?", []int{1, 2, 3}).
+		Where("status IN ?", []int{INSTANCE_STATUS_OBSERVE, INSTANCE_STATUS_WATERLEVEL, INSTANCE_STATUS_TRADING}).
 		Debug().Find(list).Error
 
 	if err != nil {
@@ -352,7 +359,7 @@ func (e *BusDexCexTriangularObserver) BatchInsert(c *dto.BusDexCexTriangularObse
 			}
 		}
 
-		tx.Model(&data).Where("id = ?", data.Id).Update("status", 1)
+		tx.Model(&data).Where("id = ?", data.Id).Update("status", INSTANCE_STATUS_OBSERVE)
 		err = tx.Commit().Error
 		if err != nil {
 			e.Log.Errorf("BusDexCexTriangularObserverService Insert error:%s \r\n", err)
@@ -391,14 +398,16 @@ func (e *BusDexCexTriangularObserver) Update(c *dto.BusDexCexTriangularObserverU
 func (e *BusDexCexTriangularObserver) Remove(d *dto.BusDexCexTriangularObserverDeleteReq, p *actions.DataPermission) error {
 	var data models.BusDexCexTriangularObserver
 
-	instanceId := strconv.Itoa(d.Ids)
-	err := client.StopArbitragerClient(instanceId)
-	if err != nil {
-		e.Log.Errorf("暂停监视器失败 error:%s \r\n", err)
-		return err
-	}
+	if config.ApplicationConfig.Mode != "dev" {
+		instanceId := strconv.Itoa(d.Ids)
+		err := client.StopArbitragerClient(instanceId)
+		if err != nil {
+			e.Log.Errorf("暂停监视器失败 error:%s \r\n", err)
+			return err
+		}
 
-	e.Log.Infof("grpc请求暂停监视器成功")
+		e.Log.Infof("grpc请求暂停监视器成功")
+	}
 
 	db := e.Orm.Model(&data).
 		Scopes(
@@ -475,7 +484,7 @@ func (e *BusDexCexTriangularObserver) StartTrader(c *dto.BusDexCexTriangularObse
 		//"slippage_bps":           slippageBpsUint,
 		"priority_fee_rate": priorityFeeRate,
 		"jito_fee_rate":     c.JitoFeeRate,
-		"status":            2, // 水位调节中
+		"status":            INSTANCE_STATUS_WATERLEVEL, // 水位调节中
 	}
 
 	if err := e.Orm.Model(&models.BusDexCexTriangularObserver{}).
@@ -495,7 +504,7 @@ func (e *BusDexCexTriangularObserver) MonitorWaterLevelToStartTrader() error {
 	var list []models.BusDexCexTriangularObserver
 	err := e.Orm.Model(&data).
 		//status = 2 表示水位调节中，并且交易功能暂停
-		Where("status = ? and is_trading = ?", 2, false).
+		Where("status = ? and is_trading = ?", INSTANCE_STATUS_WATERLEVEL, false).
 		Find(&list).Error
 	if err != nil {
 		e.Log.Errorf("获取实例失败:%s \r\n", err)
@@ -519,7 +528,7 @@ func (e *BusDexCexTriangularObserver) MonitorWaterLevelToStartTrader() error {
 			e.Log.Infof("currency: %s, cex spot balance:%s, cex margin balance:%s, dex balance: %s", waterLevelState.Currency, waterLevelState.SpotAccountBalance, waterLevelState.MarginAccountBalance, waterLevelState.ChainWalletBalance)
 			//开启交易功能
 
-			err = StartTrader(&instance)
+			err = DoStartTrader(&instance)
 			if err != nil {
 				e.Log.Errorf("start trader error:%s \r\n", err)
 				return err
@@ -548,7 +557,7 @@ func (e *BusDexCexTriangularObserver) MonitorWaterLevelToStopTrader() error {
 	var list []models.BusDexCexTriangularObserver
 	err := e.Orm.Model(&data).
 		//status = 3 表示已启动交易，并且交易功能开启中
-		Where("status = ? and is_trading = ?", 3, true).
+		Where("status = ? and is_trading = ?", INSTANCE_STATUS_TRADING, true).
 		Find(&list).Error
 	if err != nil {
 		e.Log.Errorf("获取实例失败:%s \r\n", err)
@@ -581,7 +590,7 @@ func (e *BusDexCexTriangularObserver) MonitorWaterLevelToStopTrader() error {
 			// 暂停交易成功后，更新状态
 			updateData := map[string]interface{}{
 				"is_trading": false,
-				"status":     2, // 水位调节中
+				"status":     INSTANCE_STATUS_WATERLEVEL, // 水位调节中
 			}
 			if err := e.Orm.Model(&models.BusDexCexTriangularObserver{}).
 				Where("id = ?", instance.Id).
@@ -631,7 +640,7 @@ func (e *BusDexCexTriangularObserver) StopTrader(c *dto.BusDexCexTriangularObser
 	// 更新observer的isTrading = false
 	updateData := map[string]interface{}{
 		"is_trading":         false,
-		"status":             1,
+		"status":             INSTANCE_STATUS_OBSERVE,
 		"is_trading_blocked": isTradingBlocked,
 	}
 
@@ -745,6 +754,75 @@ func (e *BusDexCexTriangularObserver) UpdateTrader(c *dto.BusDexCexTriangularUpd
 	return nil
 }
 
+// StopAllTrader 暂停所有trader
+func (e *BusDexCexTriangularObserver) StopAllTrader(operator int) ([]string, error) {
+	var data models.BusDexCexTriangularObserver
+	failedList := make([]string, 0)
+
+	//查出所有水位调节中和交易中的instance
+	// 查询出所有交易开启中以及水位调节中的实例
+	var instances []models.BusDexCexTriangularObserver
+	err := e.Orm.Model(models.BusDexCexTriangularObserver{}).
+		Where("status IN ?", []int{INSTANCE_STATUS_WATERLEVEL, INSTANCE_STATUS_TRADING}).
+		Find(&instances).Error
+	if err != nil {
+		e.Log.Errorf("查询实例失败:%s \r\n", err)
+		return nil, err
+	}
+
+	for _, instance := range instances {
+		id := strconv.Itoa(instance.Id)
+		if instance.Status == strconv.Itoa(INSTANCE_STATUS_WATERLEVEL) {
+			// 水位调节中，暂停水位调节，更新状态为1
+
+			stopWaterLevelReq := &waterLevelPb.InstantId{
+				InstanceId: id,
+			}
+			err = client.StopWaterLevelInstance(stopWaterLevelReq)
+			if err != nil {
+				e.Log.Errorf("grpc 暂停停水位调节实例：:%d 失败，异常：%s \r\n", instance.Id, err)
+				failedList = append(failedList, id)
+				continue
+			}
+
+			updateData := map[string]interface{}{
+				"status": INSTANCE_STATUS_OBSERVE,
+			}
+			err := e.Orm.Model(&data).
+				Where("id =?", instance.Id).
+				Updates(updateData).Error
+			if err != nil {
+				e.Log.Errorf("更新实例:%d 状态为 开启观察 失败，异常信息：%s \r\n", instance.Id, err)
+				failedList = append(failedList, id)
+				continue
+			}
+			e.Log.Infof("instanceId：%d 已暂停水位调节功能", instance.Id)
+		} else if instance.Status == strconv.Itoa(INSTANCE_STATUS_TRADING) {
+			// 交易中，暂停所有trader，更新状态为4
+
+			stopReq := dto.BusDexCexTriangularObserverStopTraderReq{
+				InstanceId: instance.Id,
+			}
+			stopReq.UpdateBy = operator
+
+			err = e.StopTrader(&stopReq, false)
+			if err != nil {
+				e.Log.Errorf("grpc 暂停trader实例：:%d 失败，异常：%s \r\n", instance.Id, err)
+				failedList = append(failedList, id)
+				continue
+			}
+		}
+	}
+	if len(failedList) > 0 {
+		e.Log.Warnf("停止trader功能部分成功")
+		return failedList, errors.New("一键暂停部分成功")
+	}
+
+	e.Log.Infof("实例：%d 参数已成功更新", data.Id)
+
+	return nil, nil
+}
+
 // UpdateWaterLevel 更新WaterLevel 参数
 func (e *BusDexCexTriangularObserver) UpdateWaterLevel(c *dto.BusDexCexTriangularUpdateWaterLevelParamsReq) error {
 	var data models.BusDexCexTriangularObserver
@@ -762,7 +840,7 @@ func (e *BusDexCexTriangularObserver) UpdateWaterLevel(c *dto.BusDexCexTriangula
 	data.AlertThreshold = c.AlertThreshold
 	data.MinDepositAmountThreshold = c.MinDepositAmountThreshold
 	data.MinWithdrawAmountThreshold = c.MinWithdrawAmountThreshold
-	err = UpdateTokenWaterLevel(&data)
+	err = DoUpdateTokenWaterLevel(&data)
 	if err != nil {
 		return err
 	}
@@ -909,7 +987,7 @@ func (e *BusDexCexTriangularObserver) UpdateGlobalWaterLevelConfig(req *dto.BusD
 
 	var quoteTokens []string
 	err = e.Orm.Model(&instance).
-		Where("status = ? AND is_trading = ?", 3, true).
+		Where("status = ? AND is_trading = ?", INSTANCE_STATUS_TRADING, true).
 		Distinct().
 		Pluck("quote_token", &quoteTokens).
 		Error
@@ -1183,7 +1261,7 @@ func (e *BusDexCexTriangularObserver) StartGlobalWaterLevel() error {
 	var data models.BusDexCexTriangularObserver
 	var quoteTokens []string
 	err := e.Orm.Model(&data).
-		Where("status = ? AND is_trading = ?", 3, true).
+		Where("status = ? AND is_trading = ?", INSTANCE_STATUS_TRADING, true).
 		Distinct().
 		Pluck("quote_token", &quoteTokens).
 		Error
@@ -1419,194 +1497,6 @@ func (e *BusDexCexTriangularObserver) StartGlobalWaterLevel() error {
 			}
 		}
 
-	}
-	return nil
-}
-
-func StartObserver(observer *models.BusDexCexTriangularObserver) error {
-
-	maxArraySize := new(uint32)
-	*maxArraySize = uint32(observer.MaxArraySize) //默认5， clmm使用参数
-
-	dexConfig := &pb.DexConfig{}
-	if observer.DexType == "RAY_AMM" {
-		dexConfig.Config = &pb.DexConfig_RayAmm{
-			RayAmm: &pb.RayAmmConfig{
-				Pool:      observer.AmmPoolId,
-				TokenMint: observer.TokenMint,
-			},
-		}
-	} else if observer.DexType == "RAY_CLMM" {
-		dexConfig.Config = &pb.DexConfig_RayClmm{
-			RayClmm: &pb.RayClmmConfig{
-				Pool:         observer.AmmPoolId,
-				TokenMint:    observer.TokenMint,
-				MaxArraySize: maxArraySize,
-			},
-		}
-	}
-
-	//triggerHoldingMsUint := uint64(observer.TriggerHoldingMs)
-	arbitrageConfig := &pb.ObserverParams{
-		MinQuoteAmount: observer.MinQuoteAmount,
-		MaxQuoteAmount: observer.MaxQuoteAmount,
-		//SlippageRate:      observer.SlippageBpsRate,
-		ProfitTriggerRate: observer.ProfitTriggerRate,
-		//TriggerHoldingMs:  &triggerHoldingMsUint,
-	}
-
-	amberConfig := &pb.AmberObserverConfig{}
-	GenerateAmberConfig(observer, amberConfig)
-
-	instanceId := strconv.Itoa(observer.Id)
-	log.Infof("restart observer success with params: dexConfig: %+v\n, arbitrageConfig: %+v\n", dexConfig, arbitrageConfig)
-	err := client.StartNewArbitragerClient(&instanceId, amberConfig, dexConfig, arbitrageConfig)
-	if err != nil {
-		log.Errorf("restart observer throw grpc error: %v\n", err)
-		return err
-	}
-	return nil
-}
-
-func GenerateAmberConfig(observer *models.BusDexCexTriangularObserver, amberConfig *pb.AmberObserverConfig) error {
-	amberConfig.ExchangeType = &observer.ExchangeType
-	amberConfig.TakerFee = proto.Float64(*observer.TakerFee)
-
-	amberConfig.TargetToken = &observer.TargetToken
-	amberConfig.QuoteToken = &observer.QuoteToken
-
-	if observer.Depth != "" {
-		depthInt, err := strconv.Atoi(observer.Depth)
-		if err != nil {
-			depthInt = 20 //默认20档
-		}
-		amberConfig.BidDepth = proto.Int32(int32(depthInt))
-		amberConfig.AskDepth = proto.Int32(int32(depthInt))
-	}
-	return nil
-}
-
-func StartTrader(instance *models.BusDexCexTriangularObserver) error {
-
-	exchangeType, err := instance.GetExchangeTypeForTrader()
-	if err != nil {
-		log.Errorf("获取ExchangeType参数异常，:%s \r\n", err)
-		return err
-	}
-
-	//slippageBpsUint, err := strconv.ParseUint(instance.SlippageBps, 10, 64)
-	//if err != nil {
-	//	log.Errorf("转换失败: %s", err)
-	//}
-	//log.Infof("slippageBps: %v\n", slippageBpsUint)
-	//slippageBpsFloat := float64(slippageBpsUint) / 10000.0
-
-	amberTraderConfig := &pb.AmberTraderConfig{
-		ExchangeType: &exchangeType,
-	}
-
-	jitoFee := instance.JitoFeeRate
-	traderParams := &pb.TraderParams{
-		//Slippage:    &slippageBpsFloat,
-		SlippageRate:    instance.SlippageBpsRate,
-		PriorityFeeRate: instance.PriorityFeeRate,
-		JitoFeeRate:     jitoFee,
-	}
-	if config.ApplicationConfig.Mode != "dev" {
-		instanceId := strconv.Itoa(instance.Id)
-		err := client.EnableTrader(instanceId, amberTraderConfig, traderParams)
-		if err != nil {
-			log.Errorf("GRPC 启动Trader for instanceId:%d 失败，异常:%s \r\n", instance.Id, err)
-			return err
-		}
-	}
-	return nil
-}
-
-// StartTokenWaterLevelWithCheckExists 启动水位调节，校验是否存在
-func StartTokenWaterLevelWithCheckExists(observer *models.BusDexCexTriangularObserver) error {
-	instances, err := client.ListWaterLevelInstance()
-	if err != nil {
-		log.Errorf("water level 服务不可用，:%s \r\n", err)
-		return err
-	}
-	ids := instances.InstanceIds
-	isExist := false
-	for _, id := range ids {
-		if id == strconv.Itoa(observer.Id) {
-			isExist = true
-			break
-		}
-	}
-	if isExist {
-		//说明已经启动实例了，此时更新实例参数
-		err = UpdateTokenWaterLevel(observer)
-		if err != nil {
-			log.Errorf("grpc启动实例失败，异常信息:%s \r\n", err)
-			return err
-		}
-	} else {
-		//说明未启动实例，此时启动新的实例
-		err = StartTokenWaterLevel(observer)
-		if err != nil {
-			log.Errorf("grpc启动实例失败，异常信息:%s \r\n", err)
-			return err
-		}
-	}
-	return nil
-}
-
-// StartTokenWaterLevel 启动水位调节，不校验是否存在
-func StartTokenWaterLevel(observer *models.BusDexCexTriangularObserver) error {
-	tokenConfig := &waterLevelPb.TokenThresholdConfig{
-		AlertThreshold:             strconv.FormatFloat(*observer.AlertThreshold, 'f', -1, 64),
-		BuyTriggerThreshold:        strconv.FormatFloat(*observer.BuyTriggerThreshold, 'f', -1, 64),
-		SellTriggerThreshold:       strconv.FormatFloat(*observer.SellTriggerThreshold, 'f', -1, 64),
-		MinDepositAmountThreshold:  strconv.FormatFloat(*observer.MinDepositAmountThreshold, 'f', -1, 64),
-		MinWithdrawAmountThreshold: strconv.FormatFloat(*observer.MinWithdrawAmountThreshold, 'f', -1, 64),
-	}
-
-	clientRequest := &waterLevelPb.StartInstanceRequest{
-		InstanceId:           strconv.Itoa(observer.Id),
-		ExchangeType:         observer.ExchangeType,
-		Currency:             observer.TargetToken,
-		CurrencyType:         0, // token
-		PubKey:               observer.TokenMint,
-		TokenThresholdConfig: tokenConfig,
-	}
-
-	log.Infof("restart water level with req: %v \r\n", clientRequest)
-	_, err := client.StartWaterLevelInstance(clientRequest)
-	if err != nil {
-		log.Errorf("启动水位调节失败:%s \r\n", err)
-		return err
-	}
-	log.Infof("水位调节启动成功")
-	return nil
-}
-
-// UpdateTokenWaterLevel 更新水位调节
-func UpdateTokenWaterLevel(observer *models.BusDexCexTriangularObserver) error {
-	instanceId := strconv.Itoa(observer.Id)
-
-	tokenConfig := &waterLevelPb.TokenThresholdConfig{
-		AlertThreshold:             strconv.FormatFloat(*observer.AlertThreshold, 'f', -1, 64),
-		BuyTriggerThreshold:        strconv.FormatFloat(*observer.BuyTriggerThreshold, 'f', -1, 64),
-		SellTriggerThreshold:       strconv.FormatFloat(*observer.SellTriggerThreshold, 'f', -1, 64),
-		MinDepositAmountThreshold:  strconv.FormatFloat(*observer.MinDepositAmountThreshold, 'f', -1, 64),
-		MinWithdrawAmountThreshold: strconv.FormatFloat(*observer.MinWithdrawAmountThreshold, 'f', -1, 64),
-	}
-
-	waterLevelParams := &waterLevelPb.UpdateInstanceParamsRequest{
-		InstanceId:           instanceId,
-		CurrencyType:         0, //Token
-		TokenThresholdConfig: tokenConfig,
-	}
-
-	err := client.UpdateWaterLevelInstance(waterLevelParams)
-	if err != nil {
-		log.Errorf("grpc更新实例：:%s water level参数失败，异常：%s \r\n", instanceId, err)
-		return err
 	}
 	return nil
 }
@@ -2111,7 +2001,7 @@ func (e BusDexCexTriangularObserver) CheckExistRiskEvent() error {
 	// 查询出所有交易开启中以及水位调节中的实例
 	var instances []models.BusDexCexTriangularObserver
 	err = e.Orm.Model(models.BusDexCexTriangularObserver{}).
-		Where("status IN ?", []int{2, 3}).
+		Where("status IN ?", []int{INSTANCE_STATUS_WATERLEVEL, INSTANCE_STATUS_TRADING}).
 		Find(&instances).Error
 	if err != nil {
 		e.Log.Errorf("查询实例失败:%s \r\n", err)
@@ -2129,7 +2019,7 @@ func (e BusDexCexTriangularObserver) CheckExistRiskEvent() error {
 				InstanceId: instance.Id,
 			}
 
-			if instance.Status == "2" { //水位调节中
+			if instance.Status == strconv.Itoa(INSTANCE_STATUS_WATERLEVEL) { //水位调节中
 				stopReq := &waterLevelPb.InstantId{
 					InstanceId: strconv.Itoa(instance.Id),
 				}
@@ -2140,7 +2030,7 @@ func (e BusDexCexTriangularObserver) CheckExistRiskEvent() error {
 				}
 				// 更新observer的status =1
 				updateData := map[string]interface{}{
-					"status":             1,
+					"status":             INSTANCE_STATUS_OBSERVE,
 					"is_trading_blocked": true,
 				}
 
@@ -2152,7 +2042,7 @@ func (e BusDexCexTriangularObserver) CheckExistRiskEvent() error {
 					continue
 				}
 
-			} else if instance.Status == "3" { //交易开启中
+			} else if instance.Status == strconv.Itoa(INSTANCE_STATUS_TRADING) { //交易开启中
 				err = e.StopTrader(&stopTradeReq, true)
 				if err != nil {
 					e.Log.Errorf("关闭实例%d失败:%s \r\n", instance.Id, err)
@@ -2193,7 +2083,7 @@ func (e BusDexCexTriangularObserver) CheckExistRiskEvent() error {
 					InstanceId: instance.Id,
 				}
 
-				if instance.Status == "2" { //水位调节中
+				if instance.Status == strconv.Itoa(INSTANCE_STATUS_WATERLEVEL) { //水位调节中
 					stopReq := &waterLevelPb.InstantId{
 						InstanceId: strconv.Itoa(instance.Id),
 					}
@@ -2204,7 +2094,7 @@ func (e BusDexCexTriangularObserver) CheckExistRiskEvent() error {
 					}
 					// 更新observer的status =1
 					updateData := map[string]interface{}{
-						"status":             1,
+						"status":             INSTANCE_STATUS_OBSERVE,
 						"is_trading_blocked": true,
 					}
 
@@ -2216,7 +2106,7 @@ func (e BusDexCexTriangularObserver) CheckExistRiskEvent() error {
 						continue
 					}
 
-				} else if instance.Status == "3" { //交易开启中
+				} else if instance.Status == strconv.Itoa(INSTANCE_STATUS_TRADING) { //交易开启中
 					err = e.StopTrader(&stopTradeReq, true)
 					if err != nil {
 						e.Log.Errorf("关闭实例%d失败:%s \r\n", instance.Id, err)
@@ -2245,10 +2135,10 @@ func (e BusDexCexTriangularObserver) CheckBlockingInstance() error {
 		return err
 	}
 
-	// 查询出所有交易开启中以及水位调节中的实例
+	// 查询出所有被风控事件blocking的实例
 	var instances []models.BusDexCexTriangularObserver
 	err = e.Orm.Model(models.BusDexCexTriangularObserver{}).
-		Where("status = ?", 1).
+		Where("status = ?", INSTANCE_STATUS_OBSERVE).
 		Where("is_trading_blocked = true").
 		Find(&instances).Error
 	if err != nil {
@@ -2300,7 +2190,7 @@ func (e BusDexCexTriangularObserver) CheckBlockingInstance() error {
 		// 启动水位调节后，更新数据库中的相关参数
 		updateData := map[string]interface{}{
 			"is_trading":         false,
-			"status":             2, // 水位调节中
+			"status":             INSTANCE_STATUS_WATERLEVEL, // 水位调节中
 			"is_trading_blocked": false,
 		}
 
@@ -2316,6 +2206,182 @@ func (e BusDexCexTriangularObserver) CheckBlockingInstance() error {
 
 	}
 
+	return nil
+}
+
+func DoStartObserver(observer *models.BusDexCexTriangularObserver) error {
+
+	maxArraySize := new(uint32)
+	*maxArraySize = uint32(observer.MaxArraySize) //默认5， clmm使用参数
+
+	dexConfig := &pb.DexConfig{}
+	if observer.DexType == "RAY_AMM" {
+		dexConfig.Config = &pb.DexConfig_RayAmm{
+			RayAmm: &pb.RayAmmConfig{
+				Pool:      observer.AmmPoolId,
+				TokenMint: observer.TokenMint,
+			},
+		}
+	} else if observer.DexType == "RAY_CLMM" {
+		dexConfig.Config = &pb.DexConfig_RayClmm{
+			RayClmm: &pb.RayClmmConfig{
+				Pool:         observer.AmmPoolId,
+				TokenMint:    observer.TokenMint,
+				MaxArraySize: maxArraySize,
+			},
+		}
+	}
+
+	//triggerHoldingMsUint := uint64(observer.TriggerHoldingMs)
+	arbitrageConfig := &pb.ObserverParams{
+		MinQuoteAmount: observer.MinQuoteAmount,
+		MaxQuoteAmount: observer.MaxQuoteAmount,
+		//SlippageRate:      observer.SlippageBpsRate,
+		ProfitTriggerRate: observer.ProfitTriggerRate,
+		//TriggerHoldingMs:  &triggerHoldingMsUint,
+	}
+
+	amberConfig := &pb.AmberObserverConfig{}
+	amberConfig.ExchangeType = &observer.ExchangeType
+	amberConfig.TakerFee = proto.Float64(*observer.TakerFee)
+
+	amberConfig.TargetToken = &observer.TargetToken
+	amberConfig.QuoteToken = &observer.QuoteToken
+
+	if observer.Depth != "" {
+		depthInt, err := strconv.Atoi(observer.Depth)
+		if err != nil {
+			depthInt = 20 //默认20档
+		}
+		amberConfig.BidDepth = proto.Int32(int32(depthInt))
+		amberConfig.AskDepth = proto.Int32(int32(depthInt))
+	}
+
+	instanceId := strconv.Itoa(observer.Id)
+	log.Infof("restart observer success with params: dexConfig: %+v\n, arbitrageConfig: %+v\n", dexConfig, arbitrageConfig)
+	err := client.StartNewArbitragerClient(&instanceId, amberConfig, dexConfig, arbitrageConfig)
+	if err != nil {
+		log.Errorf("restart observer throw grpc error: %v\n", err)
+		return err
+	}
+	return nil
+}
+
+func DoStartTrader(instance *models.BusDexCexTriangularObserver) error {
+
+	exchangeType, err := instance.GetExchangeTypeForTrader()
+	if err != nil {
+		log.Errorf("获取ExchangeType参数异常，:%s \r\n", err)
+		return err
+	}
+
+	amberTraderConfig := &pb.AmberTraderConfig{
+		ExchangeType: &exchangeType,
+	}
+
+	jitoFee := instance.JitoFeeRate
+	traderParams := &pb.TraderParams{
+		//Slippage:    &slippageBpsFloat,
+		SlippageRate:    instance.SlippageBpsRate,
+		PriorityFeeRate: instance.PriorityFeeRate,
+		JitoFeeRate:     jitoFee,
+	}
+	if config.ApplicationConfig.Mode != "dev" {
+		instanceId := strconv.Itoa(instance.Id)
+		err := client.EnableTrader(instanceId, amberTraderConfig, traderParams)
+		if err != nil {
+			log.Errorf("GRPC 启动Trader for instanceId:%d 失败，异常:%s \r\n", instance.Id, err)
+			return err
+		}
+	}
+	return nil
+}
+
+// StartTokenWaterLevelWithCheckExists 启动水位调节，校验是否存在
+func StartTokenWaterLevelWithCheckExists(observer *models.BusDexCexTriangularObserver) error {
+	instances, err := client.ListWaterLevelInstance()
+	if err != nil {
+		log.Errorf("water level 服务不可用，:%s \r\n", err)
+		return err
+	}
+	ids := instances.InstanceIds
+	isExist := false
+	for _, id := range ids {
+		if id == strconv.Itoa(observer.Id) {
+			isExist = true
+			break
+		}
+	}
+	if isExist {
+		//说明已经启动实例了，此时更新实例参数
+		err = DoUpdateTokenWaterLevel(observer)
+		if err != nil {
+			log.Errorf("grpc启动实例失败，异常信息:%s \r\n", err)
+			return err
+		}
+	} else {
+		//说明未启动实例，此时启动新的实例
+		err = DoStartTokenWaterLevel(observer)
+		if err != nil {
+			log.Errorf("grpc启动实例失败，异常信息:%s \r\n", err)
+			return err
+		}
+	}
+	return nil
+}
+
+// DoStartTokenWaterLevel 启动水位调节，不校验是否存在
+func DoStartTokenWaterLevel(observer *models.BusDexCexTriangularObserver) error {
+	tokenConfig := &waterLevelPb.TokenThresholdConfig{
+		AlertThreshold:             strconv.FormatFloat(*observer.AlertThreshold, 'f', -1, 64),
+		BuyTriggerThreshold:        strconv.FormatFloat(*observer.BuyTriggerThreshold, 'f', -1, 64),
+		SellTriggerThreshold:       strconv.FormatFloat(*observer.SellTriggerThreshold, 'f', -1, 64),
+		MinDepositAmountThreshold:  strconv.FormatFloat(*observer.MinDepositAmountThreshold, 'f', -1, 64),
+		MinWithdrawAmountThreshold: strconv.FormatFloat(*observer.MinWithdrawAmountThreshold, 'f', -1, 64),
+	}
+
+	clientRequest := &waterLevelPb.StartInstanceRequest{
+		InstanceId:           strconv.Itoa(observer.Id),
+		ExchangeType:         observer.ExchangeType,
+		Currency:             observer.TargetToken,
+		CurrencyType:         0, // token
+		PubKey:               observer.TokenMint,
+		TokenThresholdConfig: tokenConfig,
+	}
+
+	log.Infof("restart water level with req: %v \r\n", clientRequest)
+	_, err := client.StartWaterLevelInstance(clientRequest)
+	if err != nil {
+		log.Errorf("启动水位调节失败:%s \r\n", err)
+		return err
+	}
+	log.Infof("水位调节启动成功")
+	return nil
+}
+
+// DoUpdateTokenWaterLevel 更新水位调节
+func DoUpdateTokenWaterLevel(observer *models.BusDexCexTriangularObserver) error {
+	instanceId := strconv.Itoa(observer.Id)
+
+	tokenConfig := &waterLevelPb.TokenThresholdConfig{
+		AlertThreshold:             strconv.FormatFloat(*observer.AlertThreshold, 'f', -1, 64),
+		BuyTriggerThreshold:        strconv.FormatFloat(*observer.BuyTriggerThreshold, 'f', -1, 64),
+		SellTriggerThreshold:       strconv.FormatFloat(*observer.SellTriggerThreshold, 'f', -1, 64),
+		MinDepositAmountThreshold:  strconv.FormatFloat(*observer.MinDepositAmountThreshold, 'f', -1, 64),
+		MinWithdrawAmountThreshold: strconv.FormatFloat(*observer.MinWithdrawAmountThreshold, 'f', -1, 64),
+	}
+
+	waterLevelParams := &waterLevelPb.UpdateInstanceParamsRequest{
+		InstanceId:           instanceId,
+		CurrencyType:         0, //Token
+		TokenThresholdConfig: tokenConfig,
+	}
+
+	err := client.UpdateWaterLevelInstance(waterLevelParams)
+	if err != nil {
+		log.Errorf("grpc更新实例：:%s water level参数失败，异常：%s \r\n", instanceId, err)
+		return err
+	}
 	return nil
 }
 
