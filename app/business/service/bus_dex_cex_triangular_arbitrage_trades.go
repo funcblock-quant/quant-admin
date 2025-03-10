@@ -322,28 +322,134 @@ func (e *StrategyDexCexTriangularArbitrageTrades) ScanTrades() error {
 	return nil
 }
 
-// SnapshotResult 结构体存储统计结果
-type SnapshotResult struct {
-	TargetToken string  `json:"targetToken"`
-	TotalVolume float64 `json:"totalVolume"`
-	TotalProfit float64 `json:"totalProfit"`
-}
-
 // DailyTradeSnapshot 每日交易快照
 func (e *StrategyDexCexTriangularArbitrageTrades) DailyTradeSnapshot() error {
 	e.Log.Infof("开始生成每日套利快照")
-	// var data models.StrategyDexCexTriangularArbitrageTrades
+	// 获取当天时间范围
+	today := time.Now().Format("2006-01-02")
+	startOfDay := time.Now().Truncate(24 * time.Hour)
+	endOfDay := startOfDay.Add(24*time.Hour - time.Second)
 
-	// // 计算时间范围（获取当天 UTC 0 点的时间）
-	// now := time.Now().UTC()
-	// today := now.Format("2006-01-02") // 格式化日期 YYYY-MM-DD
+	var snapshots []models.BusDexCexDailyTradeStatisticSnapshot
+	instanceIdSet := make(map[string]bool)
 
-	// db := e.Orm
+	// 查询当日成功交易的 instanceId
+	var tradedInstanceIds []string
+	e.Orm.Model(&models.StrategyDexCexTriangularArbitrageTrades{}).
+		Select("DISTINCT instance_id").
+		Where("dex_success = ? AND cex_buy_success = ? AND cex_sell_success =?", 1, 1, 1).
+		Where("created_at BETWEEN ? AND ?", startOfDay, endOfDay).
+		Pluck("instance_id", &tradedInstanceIds)
 
-	// // **1. 获取所有需要统计的交易对**
-	// var activeSymbols []struct {
-	// 	TargetToken string
-	// 	QuoteToken  string
-	// }
-	return nil
+	for _, id := range tradedInstanceIds {
+		instanceIdSet[id] = true
+	}
+
+	var activeInstanceIds []string
+	e.Orm.Model(&models.BusDexCexTriangularObserver{}).
+		Select("id").
+		Where("status in ?", []int{INSTANCE_STATUS_WATERLEVEL, INSTANCE_STATUS_TRADING}).
+		Pluck("id", &activeInstanceIds)
+
+	for _, id := range activeInstanceIds {
+		instanceIdSet[id] = true
+	}
+	// 获取交易开启状态的币种信息
+	var instances []struct {
+		Id          string
+		Symbol      string
+		TargetToken string
+		QuoteToken  string
+	}
+
+	e.Orm.Model(&models.BusDexCexTriangularObserver{}).
+		Select("id, symbol, target_token, quote_token").
+		Where("id IN ?", getKeys(instanceIdSet)).
+		Scan(&instances)
+
+	var markdownContent string
+	markdownContent += fmt.Sprintf("📊 每日交易快照\n📅 日期：%s\n\n", today)
+	markdownContent += "        | 币对 | 成交笔数 | 总成交量 | 当天利润 | 利润增长率 |\n"
+	markdownContent += "        |------|--------|---------|---------|---------|\n"
+
+	var allTrades int
+	var allVolume, allProfit, allPreviousProfit, allProfitGrowthRate float64
+	// 统计每个币种的总成交量和总收益
+	for _, inst := range instances {
+		var totalTrade int
+		var totalVolume, totalProfit, previousTotalProfit, profitGrowthRate float64
+
+		e.Orm.Model(&models.StrategyDexCexTriangularArbitrageTrades{}).
+			Select("COUNT(*) AS totalTrade, COALESCE(SUM(cex_sell_quantity), 0) AS total_volume, COALESCE(SUM(cex_sell_quote_amount - cex_buy_quote_amount), 0) AS total_profit").
+			Where("instance_id = ?", inst.Id).
+			Where("dex_success = ? AND cex_buy_success = ? AND cex_sell_success =?", 1, 1, 1).
+			Where("created_at BETWEEN ? AND ?", startOfDay, endOfDay).
+			Row().Scan(&totalTrade, &totalVolume, &totalProfit)
+
+		// 查询今天之前的所有利润
+		e.Orm.Model(&models.StrategyDexCexTriangularArbitrageTrades{}).
+			Select("COALESCE(SUM(cex_sell_quote_amount - cex_buy_quote_amount), 0) AS previous_total_profit").
+			Where("instance_id = ?", inst.Id).
+			Where("dex_success = ? AND cex_buy_success = ? AND cex_sell_success =?", 1, 1, 1).
+			Where("created_at < ?", startOfDay).
+			Row().Scan(&previousTotalProfit)
+
+		// 计算当天利润增长百分比
+		if previousTotalProfit > 0 {
+			profitGrowthRate = (totalProfit - previousTotalProfit) / previousTotalProfit
+		} else {
+			profitGrowthRate = 0
+		}
+
+		// 组装快照数据（无成交的数据 TotalVolume 和 TotalProfit 仍然为 0）
+		snapshots = append(snapshots, models.BusDexCexDailyTradeStatisticSnapshot{
+			InstanceID:   inst.Id,
+			SnapshotDate: today,
+			Symbol:       inst.Symbol,
+			TargetToken:  inst.TargetToken,
+			QuoteToken:   inst.QuoteToken,
+			TotalVolume:  totalVolume,
+			TotalProfit:  totalProfit,
+		})
+
+		allTrades += totalTrade
+		allVolume += totalVolume
+		allProfit += totalProfit
+		allPreviousProfit += previousTotalProfit
+
+		// 拼接lark通知消息
+		markdownContent += fmt.Sprintf("        | %s/%s | %d | %.2f | $%.2f | %.2f%% |\n",
+			inst.TargetToken, inst.QuoteToken, totalTrade, totalVolume,
+			totalProfit, profitGrowthRate*100)
+	}
+
+	if allPreviousProfit > 0 {
+		allProfitGrowthRate = (allProfit - allPreviousProfit) / allPreviousProfit
+	} else {
+		allProfitGrowthRate = 0
+	}
+
+	markdownContent += "        |------|--------|---------|---------|---------|\n"
+	markdownContent += fmt.Sprintf("汇总 |   x   | %d | %.2f | $%.2f | %.2f%% |\n",
+		allTrades, allVolume,
+		allProfit, allProfitGrowthRate*100)
+
+	config := ext.ExtConfig
+	larkClient := lark.NewLarkRobotAlert(config)
+	e.Log.Infof("lark notificationMsg:%s \n", markdownContent)
+	err := larkClient.SendLarkAlert(markdownContent)
+	if err != nil {
+		e.Log.Infof("lark 推送消息失败")
+	}
+
+	return e.Orm.Create(&snapshots).Error
+}
+
+// getKeys 获取 map 的 key 列表
+func getKeys(m map[string]bool) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
 }
