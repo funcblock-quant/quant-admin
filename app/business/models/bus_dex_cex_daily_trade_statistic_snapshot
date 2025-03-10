@@ -1,0 +1,30 @@
+package models
+
+import (
+	"time"
+
+	"quanta-admin/common/models"
+)
+
+type BusDexCexDailyTradeStatisticSnapshot struct {
+	models.Model
+
+	InstanceID   int64     `gorm:"not null;comment:'实例ID'" json:"instanceId"`
+	SnapshotDate time.Time `gorm:"type:date;not null;comment:'统计日期'" json:"snapshotDate"`
+	Symbol       string    `gorm:"type:varchar(50);not null;comment:'交易币对，例如 BTC/USDT'" json:"symbol"`
+	TargetToken  string    `gorm:"type:varchar(32);not null;comment:'基础币种，例如 BTC'" json:"targetToken"`
+	QuoteToken   string    `gorm:"type:varchar(32);not null;comment:'计价币种，例如 USDT'" json:"quoteToken"`
+	TotalVolume  string    `gorm:"type:double;not null;default:0;comment:'当日总成交量 (计价币种)'" json:"totalVolume"`
+	TotalProfit  string    `gorm:"type:double;not null;default:0;comment:'当日总收益 (计价币种)'" json:"totalProfit"`
+	TotalFee     string    `gorm:"type:double;not null;default:0;comment:'当日总手续费 (计价币种)'" json:"totalFee"`
+	models.ModelTime
+	models.ControlBy
+}
+
+func (BusDexCexPriceSpreadStatistics) TableName() string {
+	return "bus_dex_cex_daily_trade_statistic_snapshot"
+}
+
+func (e *BusDexCexPriceSpreadStatistics) GetId() interface{} {
+	return e.Id
+}
