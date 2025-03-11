@@ -57,7 +57,7 @@ func (e *StrategyDexCexTriangularArbitrageTrades) GetPage(c *dto.StrategyDexCexT
 	if c.IsSuccess {
 		query = query.Where("strategy_dex_cex_triangular_arbitrage_trades.dex_success = 1 and strategy_dex_cex_triangular_arbitrage_trades.cex_sell_success = 1 and strategy_dex_cex_triangular_arbitrage_trades.cex_buy_success = 1")
 	} else {
-		query = query.Where("strategy_dex_cex_triangular_arbitrage_trades.dex_success = 0 or strategy_dex_cex_triangular_arbitrage_trades.cex_sell_success = 0 or strategy_dex_cex_triangular_arbitrage_trades.cex_buy_success = 0")
+		query = query.Where("strategy_dex_cex_triangular_arbitrage_trades.dex_success = 1 and (strategy_dex_cex_triangular_arbitrage_trades.cex_sell_success = 0 or strategy_dex_cex_triangular_arbitrage_trades.cex_buy_success = 0)")
 	}
 
 	if c.Symbol != "" {
