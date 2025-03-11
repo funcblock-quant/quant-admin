@@ -93,7 +93,7 @@ func InitSimpleJob() {
 
 	})
 
-	c.AddFunc("@every 5s", func() {
+	c.AddFunc("@every 10s", func() {
 
 		// 每5s一次风控检查
 		fmt.Println("CheckRisk Control Job running")
