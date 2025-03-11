@@ -77,23 +77,23 @@ type BusPriceTriggerStrategyStatistical struct {
 }
 
 type BusPriceTriggerStrategyInstanceInsertReq struct {
-	Id             int    `json:"-" comment:""` //
-	OpenPrice      string `json:"openPrice" comment:"开仓价格"`
-	ClosePrice     string `json:"closePrice" comment:"平仓价格"`
-	CloseOrderType string `json:"closeOrderType" comment:"平仓模式"`
-	Amount         string `json:"amount" comment:"开仓数量"`
-	Side           string `json:"side" comment:"买卖方向"`
-	Symbol         string `json:"symbol" comment:"交易币种"`
-	// CloseTime         time.Time `json:"closeTime" comment:"停止时间"`
-	ApiConfig         int     `json:"apiConfig" comment:"api配置id"`
-	Status            string  `json:"status" comment:"状态，created, started, stopped, closed"`
-	ExchangeUserId    string  `json:"exchangeUserId"`
-	ExecuteNum        int     `json:"executeNum"`
-	DelayTime         int     `json:"delayTime"`
-	ProfitTargetType  string  `json:"profitTargetType"`
-	ProfitTargetPrice float64 `json:"profitTargetPrice"`
-	LossTargetPrice   float64 `json:"lossTargetPrice"`
-	CallbackRatio     float64 `json:"callbackRatio"`
+	Id                int       `json:"-" comment:""` //
+	OpenPrice         string    `json:"openPrice" comment:"开仓价格"`
+	ClosePrice        string    `json:"closePrice" comment:"平仓价格"`
+	CloseOrderType    string    `json:"closeOrderType" comment:"平仓模式"`
+	Amount            string    `json:"amount" comment:"开仓数量"`
+	Side              string    `json:"side" comment:"买卖方向"`
+	Symbol            string    `json:"symbol" comment:"交易币种"`
+	CloseTime         time.Time `json:"closeTime" comment:"停止时间"`
+	ApiConfig         int       `json:"apiConfig" comment:"api配置id"`
+	Status            string    `json:"status" comment:"状态，created, started, stopped, closed"`
+	ExchangeUserId    string    `json:"exchangeUserId"`
+	ExecuteNum        int       `json:"executeNum"`
+	DelayTime         int       `json:"delayTime"`
+	ProfitTargetType  string    `json:"profitTargetType"`
+	ProfitTargetPrice float64   `json:"profitTargetPrice"`
+	LossTargetPrice   float64   `json:"lossTargetPrice"`
+	CallbackRatio     float64   `json:"callbackRatio"`
 	// CutoffRatio       float64   `json:"cutoffRatio"`
 	MinProfit float64 `json:"minProfit"`
 	common.ControlBy
@@ -130,11 +130,7 @@ func (s *BusPriceTriggerStrategyInstanceInsertReq) Generate(model *models.BusPri
 	model.Amount = s.Amount
 	model.Side = s.Side
 	model.Symbol = s.Symbol
-	now := time.Now().UTC()
-	nextDay := now.AddDate(0, 0, 1)
-	nextDayAt16UTC := time.Date(nextDay.Year(), nextDay.Month(), nextDay.Day(), 16, 0, 0, 0, time.UTC)
-
-	model.CloseTime = nextDayAt16UTC
+	model.CloseTime = s.CloseTime
 	model.Status = s.Status
 	model.ApiConfig = s.ApiConfig
 	model.CreateBy = s.CreateBy // 添加这而，需要记录是被谁创建的
