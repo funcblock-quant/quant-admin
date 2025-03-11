@@ -339,8 +339,9 @@ type BusDexCexTriangularUpdateGlobalWaterLevelConfigReq struct {
 }
 
 type BusDexCexTriangularUpdateGlobalRiskConfig struct {
-	AbsoluteLossThreshold []RiskControlItem `json:"absoluteLossThreshold"` // 绝对亏损风控
-	RelativeLossThreshold []RiskControlItem `json:"relativeLossThreshold"` // 相对亏损风控
+	AbsoluteLossThreshold       []RiskControlItem `json:"absoluteLossThreshold"`       // 绝对亏损风控
+	RelativeLossThreshold       []RiskControlItem `json:"relativeLossThreshold"`       // 相对亏损风控
+	SymbolDailyMaxLossThreshold []RiskControlItem `json:"symbolDailyMaxLossThreshold"` // 币种当日亏损风控
 }
 
 type ActionDetail struct {

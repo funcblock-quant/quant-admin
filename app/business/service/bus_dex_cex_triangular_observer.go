@@ -78,7 +78,7 @@ func (e *BusDexCexTriangularObserver) GetPage(c *dto.BusDexCexTriangularObserver
 		buyOnDex := state.GetBuyOnDex()
 		var cexSellPrice, dexBuyPrice, buyOnDexProfit float64
 		if buyOnDex != nil {
-			cexSellPrice, dexBuyPrice = e.calculate_dex_cex_price(buyOnDex, true)
+			cexSellPrice, dexBuyPrice = e.calculateDexCexPrice(buyOnDex, true)
 			buyOnDexProfit = *buyOnDex.CexSellQuoteAmount - *buyOnDex.CexBuyQuoteAmount
 		} else {
 			// 处理 buyOnDex 为空的情况，例如设置默认值或跳过计算
@@ -90,7 +90,7 @@ func (e *BusDexCexTriangularObserver) GetPage(c *dto.BusDexCexTriangularObserver
 		sellOnDex := state.GetSellOnDex()
 		var cexBuyPrice, dexSellPrice, sellOnDexProfit float64
 		if sellOnDex != nil {
-			cexBuyPrice, dexSellPrice = e.calculate_dex_cex_price(sellOnDex, false)
+			cexBuyPrice, dexSellPrice = e.calculateDexCexPrice(sellOnDex, false)
 			sellOnDexProfit = *sellOnDex.CexSellQuoteAmount - *sellOnDex.CexBuyQuoteAmount
 		} else {
 			// 处理 sellOnDex 为空的情况，例如设置默认值或跳过计算
@@ -148,7 +148,7 @@ func (e *BusDexCexTriangularObserver) GetPage(c *dto.BusDexCexTriangularObserver
 	return nil
 }
 
-func (e *BusDexCexTriangularObserver) calculate_dex_cex_price(priceState *pb.ObserverState, isDexBuy bool) (float64, float64) {
+func (e *BusDexCexTriangularObserver) calculateDexCexPrice(priceState *pb.ObserverState, isDexBuy bool) (float64, float64) {
 	var cexPrice float64      // TRUMP/USDT
 	var dexPrice float64      //TRUMP/USDT
 	var cexQuotePrice float64 // 例如：TRUMP/USDT
@@ -237,11 +237,11 @@ func (e *BusDexCexTriangularObserver) Get(d *dto.BusDexCexTriangularObserverGetR
 	}
 	e.Log.Infof("get state for observerId:%d \r\n state: %+v \r\n", id, state)
 	buyOnDex := state.GetBuyOnDex()
-	cexSellPrice, dexBuyPrice := e.calculate_dex_cex_price(buyOnDex, true)
+	cexSellPrice, dexBuyPrice := e.calculateDexCexPrice(buyOnDex, true)
 	e.Log.Infof("[buy on dex price details]: cexPrice: %+v , dexPrice: %+v \r\n", cexSellPrice, dexBuyPrice)
 
 	sellOnDex := state.GetSellOnDex()
-	cexBuyPrice, dexSellPrice := e.calculate_dex_cex_price(sellOnDex, false)
+	cexBuyPrice, dexSellPrice := e.calculateDexCexPrice(sellOnDex, false)
 	e.Log.Infof("[sell on dex price details]: cexPrice: %+v , dexPrice: %+v \r\n", cexBuyPrice, dexSellPrice)
 
 	buyOnDexProfit := *buyOnDex.CexSellQuoteAmount - *buyOnDex.CexBuyQuoteAmount
@@ -1533,6 +1533,16 @@ func (e BusDexCexTriangularObserver) CheckRiskControl() error {
 		}
 	}
 	e.Log.Infof("[Risk Control Check] absoluteLossThreshold: %v", absoluteLossThreshold)
+	// 单币种最大日亏损阈值
+	var symbolDailyMaxLossThreshold []interface{}
+
+	if v, ok := configMap["symbolDailyMaxLossThreshold"]; ok {
+		if list, valid := v.([]interface{}); valid {
+			symbolDailyMaxLossThreshold = list
+		}
+	}
+	e.Log.Infof("[Risk Control Check] symbolDailyMaxLossThreshold: %v", symbolDailyMaxLossThreshold)
+
 	// 单笔最大亏损比例阈值
 	var relativeLossThreshold []interface{}
 
@@ -1550,6 +1560,10 @@ func (e BusDexCexTriangularObserver) CheckRiskControl() error {
 
 	sort.Slice(relativeLossThreshold, func(i, j int) bool {
 		return relativeLossThreshold[i].(map[string]interface{})["action"].(float64) > relativeLossThreshold[j].(map[string]interface{})["action"].(float64)
+	})
+
+	sort.Slice(symbolDailyMaxLossThreshold, func(i, j int) bool {
+		return symbolDailyMaxLossThreshold[i].(map[string]interface{})["action"].(float64) > symbolDailyMaxLossThreshold[j].(map[string]interface{})["action"].(float64)
 	})
 
 	// 从交易中，获取成功的交易记录，并且未完成风控校验的记录。
@@ -1639,12 +1653,21 @@ func (e BusDexCexTriangularObserver) CheckRiskControl() error {
 			errOccurred = err
 			break
 		}
-
 		if afterAction > maxAfterAction {
 			maxAfterAction = afterAction
 		}
 
 		// TODO 3. 单币种单日累计亏损金额阈值
+		afterAction, err = e.SymbolDailyMaxLossThresholdCheck(symbolDailyMaxLossThreshold, trade, *larkClient)
+		if err != nil {
+			SendRiskCheckFailMessage(common.TRIGGER_RULE_SYMBOL_DAILY_MAX_LOSS_THRESHOLD, *larkClient)
+			e.Log.Errorf("[Risk Control Check] 单币种最大日亏损阈值校验失败:%s \r\n", err)
+			errOccurred = err
+			break
+		}
+		if afterAction > maxAfterAction {
+			maxAfterAction = afterAction
+		}
 
 		// TODO 4. 全币种单日累计亏损金额阈值
 
@@ -1818,22 +1841,6 @@ func (e BusDexCexTriangularObserver) AbsoluteLossThresholdCheck(absoluteLossThre
 					return 0, errors.New("生成风控事件失败")
 				}
 
-				// 暂停交易
-				// InstanceIdInt, err := strconv.Atoi(trade.InstanceId)
-				// if err != nil {
-				// 	e.Log.Errorf("[Risk Control Check] 实例ID解析失败:%s \r\n")
-				// 	return false, errors.New("实例ID解析失败")
-				// }
-
-				// stopTradeReq := dto.BusDexCexTriangularObserverStopTraderReq{
-				// 	InstanceId: InstanceIdInt,
-				// }
-				// // TODO 暂停交易如果报错了，要如何补偿？定时任务补偿？
-				// err = e.StopTrader(&stopTradeReq)
-				// if err != nil {
-				// 	e.Log.Errorf("[Risk Control Check] 暂停交易失败:%s \r\n", err)
-				// }
-
 				var recoverMethod string
 				if manualRecover == 1 {
 					recoverMethod = "手动恢复"
@@ -1932,23 +1939,6 @@ func (e BusDexCexTriangularObserver) RelativeLossThresholdCheck(relativeLossThre
 					return 0, errors.New("生成风控事件失败")
 				}
 
-				// 暂停交易
-				// InstanceIdInt, err := strconv.Atoi(trade.InstanceId)
-				// if err != nil {
-				// 	e.Log.Errorf("[Risk Control Check] 实例ID解析失败:%s \r\n")
-				// 	return needStopTrade, errors.New("实例ID解析失败")
-				// }
-
-				// stopTradeReq := dto.BusDexCexTriangularObserverStopTraderReq{
-				// 	InstanceId: InstanceIdInt,
-				// }
-
-				// // TODO 暂停交易如果报错了，要如何补偿？定时任务补偿？
-				// err = e.StopTrader(&stopTradeReq)
-				// if err != nil {
-				// 	e.Log.Errorf("[Risk Control Check] 暂停交易失败:%s \r\n", err)
-				// }
-
 				var recoverMethod string
 				if manualRecover == 1 {
 					recoverMethod = "手动恢复"
@@ -1977,6 +1967,105 @@ func (e BusDexCexTriangularObserver) RelativeLossThresholdCheck(relativeLossThre
 				}
 
 				SendWarningNotification(trade.Symbol, trade.InstanceId, strconv.Itoa(trade.Id), common.TRIGGER_RULE_RELATIVE_LOSS_THRESHOLD, strconv.FormatFloat(thresholdValue, 'f', -1, 64), profitPercentStr, larkClient)
+			}
+			//只要触发了高级别的风控策略，就不会再匹配同类型下的低级别风控规则
+			return afterAction, nil
+		}
+	}
+	return afterAction, nil
+}
+
+func (e BusDexCexTriangularObserver) SymbolDailyMaxLossThresholdCheck(symbolDailyMaxLossThreshold []interface{}, trade dto.StrategyDexCexTriangularArbitrageTradesGetPageResp, larkClient lark.LarkRobotAlert) (int, error) {
+	afterAction := 0
+	for _, threshold := range symbolDailyMaxLossThreshold {
+
+		thresholdMap := threshold.(map[string]interface{})
+		thresholdValue := thresholdMap["threshold"].(float64)
+		action := thresholdMap["action"].(float64)
+		actionDetail := thresholdMap["actionDetail"].(map[string]interface{})
+
+		symbol := trade.Symbol
+
+		dailyProfit, err := GetDailySymbolProfit(e.Orm, symbol)
+		if err != nil {
+			e.Log.Errorf("[Risk Control Check] 获取%s每日收益数据失败:%s \r\n", symbol, err)
+			return 0, errors.New("获取每日收益数据失败")
+		}
+
+		dailyProfitStr := strconv.FormatFloat(dailyProfit, 'f', -1, 64)
+
+		if dailyProfit < -thresholdValue {
+			// 亏损超过阈值
+			// 生成风控事件
+			riskEvent := models.BusRiskEvent{
+				StrategyId:         common.STRATEGY_DEX_CEX_TRIANGULAR_ARBITRAGE,
+				StrategyInstanceId: trade.InstanceId,
+				TradeId:            trade.Id,
+				AssetSymbol:        trade.Symbol,
+				TriggerRule:        common.TRIGGER_RULE_SYMBOL_DAILY_MAX_LOSS_THRESHOLD,
+				TriggerValue:       dailyProfitStr,
+			}
+			if action == 3 {
+				// 暂停全部交易，单笔交易亏损触发暂不支持暂停全部交易行为
+				e.Log.Errorf("[Risk Control Check] 单币种交易日亏损触发暂不支持暂停全部交易行为 \r\n")
+				return 0, errors.New("单币种交易日亏损触发暂不支持暂停全部交易行为")
+			} else if action == 2 {
+				// 暂停当前策略实例
+				afterAction = 2
+				riskEvent.RiskScope = common.RISK_SCOPE_SINGLE_TOKEN
+				riskEvent.RiskLevel = common.RISK_LEVEL_MIDDLE
+				riskEvent.IsRecovered = 0
+				manualRecover := actionDetail["manualResume"].(int)
+				riskEvent.ManualRecover = manualRecover
+				if manualRecover != 1 {
+					pauseDuration := actionDetail["pauseDuration"].(int64)
+					if pauseDuration == -1 {
+						// 第二天0点恢复
+						now := time.Now()
+						tomorrow := now.AddDate(0, 0, 1)
+						tomorrowZero := time.Date(tomorrow.Year(), tomorrow.Month(), tomorrow.Day(), 0, 0, 0, 0, tomorrow.Location())
+						riskEvent.AutoRecoverTime = &tomorrowZero
+					} else {
+						// 按指定暂停时长
+						recoverTime := time.Now().Add(time.Duration(pauseDuration) * time.Second)
+						riskEvent.AutoRecoverTime = &recoverTime
+					}
+				}
+
+				err := e.Orm.Create(&riskEvent).Error
+				if err != nil {
+					e.Log.Errorf("[Risk Control Check] 生成风控事件失败:%s \r\n")
+					return 0, errors.New("生成风控事件失败")
+				}
+
+				var recoverMethod string
+				if manualRecover == 1 {
+					recoverMethod = "手动恢复"
+				} else {
+					recoverMethod = "自动恢复"
+				}
+
+				SendMiddleNotification(trade.Symbol, trade.InstanceId, strconv.Itoa(trade.Id), common.TRIGGER_RULE_SYMBOL_DAILY_MAX_LOSS_THRESHOLD, strconv.FormatFloat(thresholdValue, 'f', -1, 64), dailyProfitStr, recoverMethod, larkClient)
+
+			} else if action == 1 {
+				// 预警
+				afterAction = 1
+				riskEvent.RiskScope = common.RISK_SCOPE_SINGLE_TOKEN
+				riskEvent.RiskLevel = common.RISK_LEVEL_LOW
+				riskEvent.IsRecovered = 1 // 预警类的不需要进行恢复，不阻断流程
+				nowTime := time.Now()
+				riskEvent.RecoveredAt = &nowTime
+				riskEvent.ManualRecover = 0
+				riskEvent.AutoRecoverTime = &nowTime
+				riskEvent.RecoveredBy = "-1"
+
+				err := e.Orm.Create(&riskEvent).Error
+				if err != nil {
+					e.Log.Errorf("[Risk Control Check] 生成风控事件失败:%s \r\n", err)
+					return 0, errors.New("生成风控事件失败")
+				}
+
+				SendWarningNotification(trade.Symbol, trade.InstanceId, strconv.Itoa(trade.Id), common.TRIGGER_RULE_SYMBOL_DAILY_MAX_LOSS_THRESHOLD, strconv.FormatFloat(thresholdValue, 'f', -1, 64), dailyProfitStr, larkClient)
 			}
 			//只要触发了高级别的风控策略，就不会再匹配同类型下的低级别风控规则
 			return afterAction, nil
@@ -2411,6 +2500,94 @@ func CheckIsTradeBlockedByRiskControl(instanceId int) (bool, error) {
 		return true, nil
 	}
 	return false, nil
+}
+
+// GetDailySymbolProfit 获取特定币种当日总利润
+func GetDailySymbolProfit(db *gorm.DB, symbol string) (float64, error) {
+	var totalProfit float64
+
+	today := time.Now().Format("2006-01-02")
+	startOfDay := today + " 00:00:00"
+	endOfDay := today + " 23:59:59"
+
+	err := db.Model(&models.StrategyDexCexTriangularArbitrageTrades{}).
+		Select("COALESCE(SUM(strategy_dex_cex_triangular_arbitrage_trades.cex_sell_quote_amount - strategy_dex_cex_triangular_arbitrage_trades.cex_buy_quote_amount), 0) AS total_profit").
+		Joins("LEFT JOIN strategy_dex_cex_triangular_arbitrage_opportunities AS opportunities ON strategy_dex_cex_triangular_arbitrage_trades.opportunity_id = opportunities.opportunity_id").
+		Where("opportunities.cex_target_asset = ?", symbol).
+		Where("strategy_dex_cex_triangular_arbitrage_trades.dex_success = ? AND strategy_dex_cex_triangular_arbitrage_trades.cex_buy_success = ? AND strategy_dex_cex_triangular_arbitrage_trades.cex_sell_success =?", 1, 1, 1).
+		Where("strategy_dex_cex_triangular_arbitrage_trades.created_at BETWEEN ? AND ?", startOfDay, endOfDay).
+		Scan(&totalProfit).Error
+
+	if err != nil {
+		log.Errorf("获取特定币种当日总利润失败, 异常：%s \r\n", err)
+		return 0, err
+	}
+	return totalProfit, nil
+}
+
+// GetAllDailyProfit 获取全币种币种当日总利润
+func GetAllDailyProfit(db *gorm.DB) (float64, error) {
+	var totalProfit float64
+
+	today := time.Now().Format("2006-01-02")
+	startOfDay := today + " 00:00:00"
+	endOfDay := today + " 23:59:59"
+
+	err := db.Model(&models.StrategyDexCexTriangularArbitrageTrades{}).
+		Select("COALESCE(SUM(strategy_dex_cex_triangular_arbitrage_trades.cex_sell_quote_amount - strategy_dex_cex_triangular_arbitrage_trades.cex_buy_quote_amount), 0) AS total_profit").
+		Joins("LEFT JOIN strategy_dex_cex_triangular_arbitrage_opportunities AS opportunities ON strategy_dex_cex_triangular_arbitrage_trades.opportunity_id = opportunities.opportunity_id").
+		Where("strategy_dex_cex_triangular_arbitrage_trades.dex_success = ? AND strategy_dex_cex_triangular_arbitrage_trades.cex_buy_success = ? AND strategy_dex_cex_triangular_arbitrage_trades.cex_sell_success =?", 1, 1, 1).
+		Where("strategy_dex_cex_triangular_arbitrage_trades.created_at BETWEEN ? AND ?", startOfDay, endOfDay).
+		Scan(&totalProfit).Error
+
+	if err != nil {
+		log.Errorf("获取全币种当日总利润失败, 异常：%s \r\n", err)
+		return 0, err
+	}
+	return totalProfit, nil
+}
+
+// GetTotalSymbolProfitBeforeToday 获取特定币种当日之前的总利润
+func GetTotalSymbolProfitBeforeToday(db *gorm.DB, symbol string) (float64, error) {
+	var totalProfit float64
+
+	today := time.Now().Format("2006-01-02")
+	startOfDay := today + " 00:00:00"
+
+	err := db.Model(&models.StrategyDexCexTriangularArbitrageTrades{}).
+		Select("COALESCE(SUM(strategy_dex_cex_triangular_arbitrage_trades.cex_sell_quote_amount - strategy_dex_cex_triangular_arbitrage_trades.cex_buy_quote_amount), 0) AS total_profit").
+		Joins("LEFT JOIN strategy_dex_cex_triangular_arbitrage_opportunities AS opportunities ON strategy_dex_cex_triangular_arbitrage_trades.opportunity_id = opportunities.opportunity_id").
+		Where("opportunities.cex_target_asset = ?", symbol).
+		Where("strategy_dex_cex_triangular_arbitrage_trades.dex_success = ? AND strategy_dex_cex_triangular_arbitrage_trades.cex_buy_success = ? AND strategy_dex_cex_triangular_arbitrage_trades.cex_sell_success =?", 1, 1, 1).
+		Where("strategy_dex_cex_triangular_arbitrage_trades.created_at BETWEEN < ?", startOfDay).
+		Scan(&totalProfit).Error
+
+	if err != nil {
+		log.Errorf("获取特定币种当日之前总利润失败, 异常：%s \r\n", err)
+		return 0, err
+	}
+	return totalProfit, nil
+}
+
+// GetAllTotalProfitBeforeToday 获取全币种币种当日之前的总利润
+func GetAllTotalProfitBeforeToday(db *gorm.DB) (float64, error) {
+	var totalProfit float64
+
+	today := time.Now().Format("2006-01-02")
+	startOfDay := today + " 00:00:00"
+
+	err := db.Model(&models.StrategyDexCexTriangularArbitrageTrades{}).
+		Select("COALESCE(SUM(strategy_dex_cex_triangular_arbitrage_trades.cex_sell_quote_amount - strategy_dex_cex_triangular_arbitrage_trades.cex_buy_quote_amount), 0) AS total_profit").
+		Joins("LEFT JOIN strategy_dex_cex_triangular_arbitrage_opportunities AS opportunities ON strategy_dex_cex_triangular_arbitrage_trades.opportunity_id = opportunities.opportunity_id").
+		Where("strategy_dex_cex_triangular_arbitrage_trades.dex_success = ? AND strategy_dex_cex_triangular_arbitrage_trades.cex_buy_success = ? AND strategy_dex_cex_triangular_arbitrage_trades.cex_sell_success =?", 1, 1, 1).
+		Where("strategy_dex_cex_triangular_arbitrage_trades.created_at < ?", startOfDay).
+		Scan(&totalProfit).Error
+
+	if err != nil {
+		log.Errorf("获取全币种当日之前总利润失败, 异常：%s \r\n", err)
+		return 0, err
+	}
+	return totalProfit, nil
 }
 
 func SendWarningNotification(symbol, instanceID, traderID, triggerCondition, triggerValue, currentValue string, larkClient lark.LarkRobotAlert) error {

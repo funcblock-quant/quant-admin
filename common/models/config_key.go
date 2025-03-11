@@ -59,6 +59,7 @@ const (
 
 // 风控触发规则
 const (
-	TRIGGER_RULE_ABSOLUTE_LOSS_THRESHOLD string = "单笔交易亏损超阈值"
-	TRIGGER_RULE_RELATIVE_LOSS_THRESHOLD string = "单笔交易亏损比例超阈值"
+	TRIGGER_RULE_ABSOLUTE_LOSS_THRESHOLD         string = "单笔交易亏损超阈值"
+	TRIGGER_RULE_RELATIVE_LOSS_THRESHOLD         string = "单笔交易亏损比例超阈值"
+	TRIGGER_RULE_SYMBOL_DAILY_MAX_LOSS_THRESHOLD string = "单币种每日最大亏损超阈值"
 )
