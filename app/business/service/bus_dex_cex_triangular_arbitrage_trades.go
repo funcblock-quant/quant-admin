@@ -326,7 +326,7 @@ func (e *StrategyDexCexTriangularArbitrageTrades) ScanTrades() error {
 func (e *StrategyDexCexTriangularArbitrageTrades) DailyTradeSnapshot() error {
 	e.Log.Infof("开始生成每日套利快照")
 	// 获取当天时间范围
-	today := time.Now().Format("2006-01-02")
+	snapshotDate := time.Now().AddDate(0, 0, -1).Format("2006-01-02")
 	startOfDay := time.Now().Truncate(24 * time.Hour)
 	endOfDay := startOfDay.Add(24*time.Hour - time.Second)
 
@@ -368,7 +368,7 @@ func (e *StrategyDexCexTriangularArbitrageTrades) DailyTradeSnapshot() error {
 		Scan(&instances)
 
 	var markdownContent string
-	markdownContent += fmt.Sprintf("📊 每日交易快照\n📅 日期：%s\n\n", today)
+	markdownContent += fmt.Sprintf("📊 每日交易快照\n📅 日期：%s\n\n", snapshotDate)
 	markdownContent += "        | 币对 | 成交笔数 | 总成交量 | 当天利润 | 利润增长率 |\n"
 	markdownContent += "        |------|--------|---------|---------|---------|\n"
 
@@ -404,7 +404,7 @@ func (e *StrategyDexCexTriangularArbitrageTrades) DailyTradeSnapshot() error {
 		// 组装快照数据（无成交的数据 TotalVolume 和 TotalProfit 仍然为 0）
 		snapshots = append(snapshots, models.BusDexCexDailyTradeStatisticSnapshot{
 			InstanceID:   inst.Id,
-			SnapshotDate: today,
+			SnapshotDate: snapshotDate,
 			Symbol:       inst.Symbol,
 			TargetToken:  inst.TargetToken,
 			QuoteToken:   inst.QuoteToken,
