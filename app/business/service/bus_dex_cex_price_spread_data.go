@@ -499,8 +499,7 @@ func (e *BusDexCexPriceSpreadData) restartObserver(observer models.BusDexCexTria
 
 		// 更新observer的isTrading = false
 		updateData := map[string]interface{}{
-			"is_trading": false,
-			"status":     1,
+			"status": 1,
 		}
 
 		err = e.Orm.Model(&data).
@@ -539,6 +538,19 @@ func (e *BusDexCexPriceSpreadData) restartObserver(observer models.BusDexCexTria
 			e.Log.Errorf("[重启Observer]启动交易功能失败 error:%s \r\n", err)
 			return err
 		}
+
+		updateData := map[string]interface{}{
+			"status": 3,
+		}
+
+		err = e.Orm.Model(&data).
+			Where("id = ?", id).
+			Updates(updateData).Error
+		if err != nil {
+			e.Log.Errorf("[重启Observer]更新数据库实例:%s 交易状态失败，异常信息：%s \r\n", id, err)
+			return err
+		}
+		log.Info("[重启Observer]更新数据库状态为status = 3 \n")
 		log.Infof("[重启Observer]重启交易功能成功")
 	}
 
