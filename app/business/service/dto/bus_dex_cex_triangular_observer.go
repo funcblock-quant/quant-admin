@@ -280,7 +280,7 @@ type BusDexCexTriangularObserverStartTraderReq struct {
 	MinDepositAmountThreshold  *float64 `json:"minDepositAmountThreshold"`
 	MinWithdrawAmountThreshold *float64 `json:"minWithdrawAmountThreshold"`
 	SlippageBpsRate            *float64 `json:"slippageBpsRate"`
-	PriorityFeeRate            *float64 `json:"priorityFeeRate"`
+	PriorityFee                *float64 `json:"priorityFee"`
 	JitoFeeRate                *float64 `json:"jitoFeeRate"`
 	common.ControlBy
 }
@@ -311,7 +311,7 @@ func (s *BusDexCexTriangularUpdateObserverParamsReq) Generate(model *models.BusD
 type BusDexCexTriangularUpdateTraderParamsReq struct {
 	InstanceId      int      `json:"id" comment:"策略端实例id"`
 	SlippageBpsRate *float64 `json:"slippageBpsRate"`
-	PriorityFeeRate *float64 `json:"priorityFeeRate"`
+	PriorityFee     *float64 `json:"priorityFee"`
 	JitoFeeRate     *float64 `json:"jitoFeeRate"`
 	common.ControlBy
 }

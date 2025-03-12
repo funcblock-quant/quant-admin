@@ -27,7 +27,7 @@ type BusDexCexTriangularObserver struct {
 	Depth                      string   `gorm:"not null;default:20;comment:深度" json:"depth"`
 	IsTrading                  bool     `gorm:"default:false;comment:是否启动交易" json:"isTrading"`
 	ProfitTriggerRate          *float64 `gorm:"null;comment:最小利润" json:"profitTriggerRate"`
-	PriorityFeeRate            *float64 `gorm:"null;comment:交易优先费" json:"priorityFeeRate"`
+	PriorityFee                *float64 `gorm:"null;comment:交易优先费" json:"priorityFee"`
 	JitoFeeRate                *float64 `gorm:"null;comment:jito交易费比例" json:"jitoFeeRate"`
 	Status                     string   `gorm:"not null;comment:状态，0-新增，1-已开启观察，2-水位调节中，3-已启动交易，4-已停止" json:"status"` // 使用 uint8 更合适
 	OwnerProgram               *string  `gorm:"null;" json:"ownerProgram"`                                            // 使用 uint8 更合适
