@@ -97,8 +97,8 @@ message ObserverParams {
 }
 
 message TraderParams {
-  required double slippage_rate = 1; // 0% - 1%
-  optional double priority_fee_rate = 2; // 0% - 10%
+  optional double priority_fee = 1;
+  required double slippage_rate = 2; // 0% - 1%
   required double jito_fee_rate = 3; // 0% - 50%
 }
 

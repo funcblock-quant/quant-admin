@@ -469,7 +469,7 @@ func (e *BusDexCexTriangularObserver) StartTrader(c *dto.BusDexCexTriangularObse
 	//}
 	//log.Infof("slippageBps: %v\n", slippageBpsUint)
 
-	priorityFeeRate := *c.PriorityFeeRate
+	priorityFee := *c.PriorityFee
 	//err = StartTrader(c, priorityFee, jitoFee, slippageBpsUint, data, exchangeType, e)
 	//if err != nil {
 	//	return err
@@ -482,9 +482,9 @@ func (e *BusDexCexTriangularObserver) StartTrader(c *dto.BusDexCexTriangularObse
 		"buy_trigger_threshold":  c.BuyTriggerThreshold,
 		"sell_trigger_threshold": c.SellTriggerThreshold,
 		//"slippage_bps":           slippageBpsUint,
-		"priority_fee_rate": priorityFeeRate,
-		"jito_fee_rate":     c.JitoFeeRate,
-		"status":            INSTANCE_STATUS_WATERLEVEL, // 水位调节中
+		"priority_fee":  priorityFee,
+		"jito_fee_rate": c.JitoFeeRate,
+		"status":        INSTANCE_STATUS_WATERLEVEL, // 水位调节中
 	}
 
 	if err := e.Orm.Model(&models.BusDexCexTriangularObserver{}).
@@ -723,9 +723,9 @@ func (e *BusDexCexTriangularObserver) UpdateTrader(c *dto.BusDexCexTriangularUpd
 
 	traderParams := &pb.TraderParams{
 		//Slippage:    &slippageBpsFloat,
-		SlippageRate:    c.SlippageBpsRate,
-		PriorityFeeRate: c.PriorityFeeRate,
-		JitoFeeRate:     c.JitoFeeRate,
+		SlippageRate: c.SlippageBpsRate,
+		PriorityFee:  c.PriorityFee,
+		JitoFeeRate:  c.JitoFeeRate,
 	}
 	if config.ApplicationConfig.Mode != "dev" {
 		instanceId := strconv.Itoa(data.Id)
@@ -738,7 +738,7 @@ func (e *BusDexCexTriangularObserver) UpdateTrader(c *dto.BusDexCexTriangularUpd
 
 	updateData := map[string]interface{}{
 		"slippage_bps_rate": c.SlippageBpsRate,
-		"priority_fee_rate": c.PriorityFeeRate,
+		"priority_fee":      c.PriorityFee,
 		"jito_fee_rate":     *c.JitoFeeRate,
 	}
 	// 更新observer的trader相关参数
@@ -2371,9 +2371,9 @@ func DoStartTrader(instance *models.BusDexCexTriangularObserver) error {
 	jitoFee := instance.JitoFeeRate
 	traderParams := &pb.TraderParams{
 		//Slippage:    &slippageBpsFloat,
-		SlippageRate:    instance.SlippageBpsRate,
-		PriorityFeeRate: instance.PriorityFeeRate,
-		JitoFeeRate:     jitoFee,
+		SlippageRate: instance.SlippageBpsRate,
+		PriorityFee:  instance.PriorityFee,
+		JitoFeeRate:  jitoFee,
 	}
 	if config.ApplicationConfig.Mode != "dev" {
 		instanceId := strconv.Itoa(instance.Id)
