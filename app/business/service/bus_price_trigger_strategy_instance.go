@@ -45,6 +45,19 @@ func (e *BusPriceTriggerStrategyInstance) GetPage(c *dto.BusPriceTriggerStrategy
 			return err
 		}
 
+		for _, trade := range details {
+			//封装最新的滑点
+			if trade.Slippage != "" {
+				slippage, err := strconv.ParseFloat(trade.Slippage, 64)
+				if err != nil {
+					e.Log.Errorf("BusPriceTriggerStrategyInstanceService Get details error:%s \r\n", err)
+					return err
+				}
+				(*list)[index].LatestSlippage = slippage
+				break
+			}
+		}
+
 		var apiConfig models.BusPriceTriggerStrategyApikeyConfig
 		err = e.Orm.Unscoped().Model(&apiConfig).Where("id = ?", strategy.ApiConfig).First(&apiConfig).Error
 		if err != nil {
@@ -459,7 +472,6 @@ type AverageSlippageResult struct {
 }
 
 func (e *BusPriceTriggerStrategyInstance) CalculateSlippageForPriceTriggerInstance() error {
-	e.Log.Info("[Calculate Slippage] 开始计算滑点")
 
 	// 定时任务要分两部分，
 	// 1. 计算历史数据，需要将已过期、已暂停的数据--这一部分不用处理了
