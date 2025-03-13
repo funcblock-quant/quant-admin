@@ -585,11 +585,10 @@ func (e *BusPriceTriggerStrategyInstance) CalculateSlippageForPriceTriggerInstan
 		return err
 	}
 
-	e.Log.Infof("[Calculate Slippage] slippageList: %v", slippageList)
 	// 获取该instance的成交
-	// for _, slippage := range slippageList {
-	// 	e.Log.Infof("[Calculate Slippage] tradeId: %d  滑点：%f%% \r\n", slippage.TradeId, *slippage.Slippage)
-	// }
+	for _, slippage := range slippageList {
+		e.Log.Infof("[Calculate Slippage] tradeId: %d  滑点：%f%% \r\n", slippage.TradeId, *slippage.Slippage)
+	}
 
 	return nil
 }
