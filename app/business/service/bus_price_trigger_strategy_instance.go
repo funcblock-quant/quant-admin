@@ -531,7 +531,7 @@ func (e *BusPriceTriggerStrategyInstance) CalculateSlippageForPriceTriggerInstan
 		}
 
 		averageSlippage := totalSlippage / float64(len(trades))
-		e.Log.Infof("[Calculate Slippage] averageSlipp: %f", averageSlippage)
+		e.Log.Infof("[Calculate Slippage] averageSlipp: %f%%", averageSlippage)
 	}
 
 	return nil
