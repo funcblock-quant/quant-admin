@@ -496,7 +496,13 @@ func (e *BusPriceTriggerStrategyInstance) CalculateSlippageForPriceTriggerInstan
 				continue
 			}
 
-			if trade.OriginQty != "0" {
+			originQty, err := decimal.NewFromString(trade.OriginQty)
+			if err != nil {
+				e.Log.Errorf("[Calculate Slippage] parse OriginQty error:%s \r\n", err)
+				continue
+			}
+
+			if originQty.IsZero() {
 				//开仓
 				if side == "short" {
 					//做空
