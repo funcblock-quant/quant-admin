@@ -585,9 +585,15 @@ func (e *BusPriceTriggerStrategyInstance) CalculateSlippageForPriceTriggerInstan
 		return err
 	}
 
-	// 获取该instance的成交
+	// 逐条保存交易记录的滑点值
 	for _, slippage := range slippageList {
-		e.Log.Infof("[Calculate Slippage] tradeId: %d  滑点：%f%% \r\n", slippage.TradeId, *slippage.Slippage)
+		err := db.Model(&models.BusPriceMonitorForOptionHedging{}).
+			Where("id =?", slippage.TradeId).
+			Update("slippage", *slippage.Slippage).Error
+		if err != nil {
+			e.Log.Errorf("[Calculate Slippage] CalculateSlippageForPriceTriggerInstance error:%s \r\n", err)
+			continue
+		}
 	}
 
 	return nil
