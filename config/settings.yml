@@ -18,7 +18,7 @@ settings:
     # 日志输出，file：文件，default：命令行，其他：命令行
     stdout: '' #控制台日志，启用后，不输出到文件
     # 日志等级, trace, debug, info, warn, error, fatal
-    level: trace
+    level: debug
     # 数据库日志开关
     enableddb: true
   jwt:
