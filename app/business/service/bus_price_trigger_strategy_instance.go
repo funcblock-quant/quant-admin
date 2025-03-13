@@ -461,6 +461,8 @@ func (e *BusPriceTriggerStrategyInstance) CalculateSlippageForPriceTriggerInstan
 		return err
 	}
 
+	var allSlippage float64
+	var count int
 	for _, instance := range data {
 		// 获取该instance的全部成交。然后按照时间从前往后计算滑点，并记录一个平均滑点
 		var trades []models.BusPriceMonitorForOptionHedging
@@ -527,12 +529,16 @@ func (e *BusPriceTriggerStrategyInstance) CalculateSlippageForPriceTriggerInstan
 				}
 			}
 			totalSlippage += slippage
-
+			allSlippage += slippage
+			count++
 		}
 
 		averageSlippage := totalSlippage / float64(len(trades))
 		e.Log.Infof("[Calculate Slippage] averageSlipp: %f%%", averageSlippage)
 	}
+
+	allAverageSlippage := allSlippage / float64(count)
+	e.Log.Infof("[Calculate Slippage] all total averageSlipp: %f%%", allAverageSlippage)
 
 	return nil
 }
