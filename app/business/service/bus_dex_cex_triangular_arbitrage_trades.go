@@ -316,7 +316,7 @@ func (e *StrategyDexCexTriangularArbitrageTrades) ScanTrades() error {
 	e.Log.Infof("lark notificationMsg:%s \n", notificationMsg)
 	err = larkClient.SendLarkAlert(notificationMsg)
 	if err != nil {
-		e.Log.Infof("lark 推送消息失败")
+		e.Log.Error("lark 推送消息失败")
 		return err
 	}
 	return nil

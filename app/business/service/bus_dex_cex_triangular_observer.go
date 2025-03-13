@@ -1532,7 +1532,6 @@ func (e BusDexCexTriangularObserver) CheckRiskControl() error {
 			absoluteLossThreshold = list
 		}
 	}
-	e.Log.Infof("[Risk Control Check] absoluteLossThreshold: %v", absoluteLossThreshold)
 	// 单币种最大日亏损阈值
 	var symbolDailyMaxLossThreshold []interface{}
 
@@ -1541,7 +1540,6 @@ func (e BusDexCexTriangularObserver) CheckRiskControl() error {
 			symbolDailyMaxLossThreshold = list
 		}
 	}
-	e.Log.Infof("[Risk Control Check] symbolDailyMaxLossThreshold: %v", symbolDailyMaxLossThreshold)
 
 	// 单笔最大亏损比例阈值
 	var relativeLossThreshold []interface{}
@@ -1551,7 +1549,6 @@ func (e BusDexCexTriangularObserver) CheckRiskControl() error {
 			relativeLossThreshold = list
 		}
 	}
-	e.Log.Infof("[Risk Control Check] relativeLossThreshold: %v", relativeLossThreshold)
 
 	// 排序，按照 action 从大到小排序
 	sort.Slice(absoluteLossThreshold, func(i, j int) bool {
@@ -1577,7 +1574,6 @@ func (e BusDexCexTriangularObserver) CheckRiskControl() error {
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			e.Log.Info("[Risk Control Check] 当前不存在风控校验进度")
 			// 如果不存在，则新增
 			riskCheckProgress = models.BusRiskCheckProgress{
 				StrategyId:         common.STRATEGY_DEX_CEX_TRIANGULAR_ARBITRAGE,
@@ -1599,7 +1595,7 @@ func (e BusDexCexTriangularObserver) CheckRiskControl() error {
 	}
 
 	if riskCheckProgress.Status == common.RISK_CHECK_STATUS_PROCESSING {
-		e.Log.Infof("[Risk Control Check] 风控校验正在进行中，跳过")
+		e.Log.Warn("[Risk Control Check] 风控校验正在进行中，跳过")
 		return nil
 	}
 
@@ -1634,7 +1630,7 @@ func (e BusDexCexTriangularObserver) CheckRiskControl() error {
 
 	var errOccurred error
 	for _, trade := range trades {
-		e.Log.Infof("[Risk Control Check] 交易订单:%d \r\n", trade.Id)
+		e.Log.Debugf("[Risk Control Check] 交易订单:%d \r\n", trade.Id)
 		maxAfterAction := 0
 		// 1. 单笔最大亏损金额阈值
 		maxAfterAction, err := e.AbsoluteLossThresholdCheck(absoluteLossThreshold, trade, *larkClient)
@@ -2098,9 +2094,9 @@ func (e BusDexCexTriangularObserver) CheckExistRiskEvent() error {
 	}
 
 	if len(highestRiskEvents) == 0 {
-		e.Log.Infof("当前不存在未恢复的风控事件 \r\n")
+		e.Log.Debugf("当前不存在未恢复的风控事件 \r\n")
 	} else {
-		e.Log.Infof("存在全局中断交易的事件,暂停全部实例交易功能")
+		e.Log.Debugf("存在全局中断交易的事件,暂停全部实例交易功能")
 
 		// 关闭所有实例
 		for _, instance := range instances {
@@ -2141,7 +2137,7 @@ func (e BusDexCexTriangularObserver) CheckExistRiskEvent() error {
 			}
 			continue
 		}
-		e.Log.Infof("完成暂停全部实例交易功能")
+		e.Log.Info("完成暂停全部实例交易功能")
 		return nil
 	}
 
@@ -2159,13 +2155,13 @@ func (e BusDexCexTriangularObserver) CheckExistRiskEvent() error {
 	}
 
 	if len(singleTokenRiskEvents) == 0 {
-		e.Log.Infof("当前不存在未恢复的单币种风控事件 \r\n")
+		e.Log.Debug("当前不存在未恢复的单币种风控事件 \r\n")
 		return nil
 	}
 
 	// 暂停所有单币种风控事件对应的实例
 	for _, instance := range instances {
-		e.Log.Infof("当前存在未恢复的单币种风控事件 \r\n")
+		e.Log.Debug("当前存在未恢复的单币种风控事件 \r\n")
 		for _, riskEvent := range singleTokenRiskEvents {
 			if riskEvent.StrategyInstanceId == strconv.Itoa(instance.Id) {
 				stopTradeReq := dto.BusDexCexTriangularObserverStopTraderReq{
