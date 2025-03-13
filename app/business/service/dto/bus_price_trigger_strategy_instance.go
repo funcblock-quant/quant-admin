@@ -66,8 +66,9 @@ type BusPriceTriggerStrategyResp struct {
 	ProfitTargetPrice string                                     `json:"profitTargetPrice"`
 	LossTargetPrice   string                                     `json:"lossTargetPrice"`
 	CallbackRatio     float64                                    `json:"callbackRatio"`
-	// CutoffRatio       int                                        `json:"cutoffRatio"`
-	MinProfit float64 `json:"minProfit"`
+	MinProfit         float64                                    `json:"minProfit"`
+	AverageSlippage   float64                                    `json:"averageSlippage"`
+	LatestSlippage    float64                                    `json:"latestSlippage"`
 }
 
 // BusPriceTriggerStrategyStatistical 价格触发下单的统计数据
