@@ -26,6 +26,7 @@ type BusPriceMonitorForOptionHedging struct {
 	FeeAsset           string `json:"feeAsset" gorm:"type:decimal(32,0);comment:交易手续费计价单位"`
 	MonitoredOpenedNum string `json:"monitoredOpenedNum" gorm:"type:tinyint;comment:监控的开单数量"`
 	Extra              string `json:"errMsg" gorm:"type:varchar(255);comment:错误信息"`
+	Slippage           string `json:"slippage" gorm:"type:float;comment:交易滑点"`
 	models.ModelTime
 	models.ControlBy
 }

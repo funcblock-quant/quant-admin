@@ -27,6 +27,7 @@ type BusPriceTriggerStrategyInstance struct {
 	MinProfit         *float64  `json:"minProfit" gorm:"type:float;comment:浮动止盈最低利润"`
 	CloseOrderType    string    `json:"closeOrderType" gorm:"type:varchar(16);comment:平仓模式"`
 	DelayTime         int       `json:"delayTime" gorm:"type:int;comment:延迟时间"`
+	AverageSlippage   string    `json:"averageSlippage" gorm:"type:float;comment:平均成交滑点"`
 	models.ModelTime
 	models.ControlBy
 }
