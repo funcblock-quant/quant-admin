@@ -447,3 +447,86 @@ func (e *BusPriceTriggerStrategyInstance) MonitorExecuteNum() error {
 	}
 	return nil
 }
+
+func (e *BusPriceTriggerStrategyInstance) CalculateSlippageForPriceTriggerInstance() error {
+	e.Log.Info("[Calculate Slippage] 开始计算滑点")
+	var data []models.BusPriceTriggerStrategyInstance
+
+	err := e.Orm.Model(&models.BusPriceTriggerStrategyInstance{}).
+		Where("id > ?", 691). //目前只计算昨天到现在的数据
+		Order("created_at asc").
+		Find(&data).Error
+	if err != nil {
+		e.Log.Errorf("[Calculate Slippage] CalculateSlippageForPriceTriggerInstance error:%s \r\n", err)
+		return err
+	}
+
+	for _, instance := range data {
+		// 获取该instance的全部成交。然后按照时间从前往后计算滑点，并记录一个平均滑点
+		var trades []models.BusPriceMonitorForOptionHedging
+		err = e.Orm.Model(&models.BusPriceMonitorForOptionHedging{}).
+			Where("strategy_instance_id =?", instance.Id).
+			Order("created_at asc").
+			Find(&trades).Error
+		if err != nil {
+			e.Log.Errorf("[Calculate Slippage] CalculateSlippageForPriceTriggerInstance error:%s \r\n", err)
+			continue
+		}
+
+		if len(trades) == 0 {
+			continue
+		}
+
+		openPrice, err1 := strconv.ParseFloat(instance.OpenPrice, 64)
+		closePrice, err2 := strconv.ParseFloat(instance.ClosePrice, 64)
+		if err1 != nil || err2 != nil {
+			e.Log.Errorf("[Calculate Slippage] parse openprice and closeprice error:%s or %s \r\n", err1, err2)
+			continue
+		}
+		side := instance.Side
+
+		var totalSlippage float64
+
+		e.Log.Infof("[Calculate Slippage] Calculate slippage for instance: %d \n", instance.Id)
+		for _, trade := range trades {
+			var slippage float64
+			tradePrice, err := strconv.ParseFloat(trade.OriginPrice, 64)
+			if err != nil {
+				e.Log.Errorf("[Calculate Slippage] parse trade price error:%s \r\n", err)
+				continue
+			}
+
+			if trade.OriginQty != "0" {
+				//开仓
+				if side == "short" {
+					//做空
+					slippage = (tradePrice - openPrice) / openPrice * 100
+					e.Log.Infof("[Calculate Slippage] tradeId: %d, 做空-开仓 滑点：%f%% \r\n", trade.Id, slippage)
+				} else {
+					// 做多
+					slippage = (openPrice - tradePrice) / openPrice * 100
+					e.Log.Infof("[Calculate Slippage] tradeId: %d, 做多-开仓 滑点：%f%% \r\n", trade.Id, slippage)
+				}
+
+			} else {
+				//平仓
+				if side == "short" {
+					//做空
+					slippage = (closePrice - tradePrice) / closePrice * 100
+					e.Log.Infof("[Calculate Slippage] tradeId: %d, 做空-平仓 滑点：%f%% \r\n", trade.Id, slippage)
+				} else {
+					//做多
+					slippage = (tradePrice - closePrice) / closePrice * 100
+					e.Log.Infof("[Calculate Slippage] tradeId: %d, 做多-平仓 滑点：%f%% \r\n", trade.Id, slippage)
+				}
+			}
+			totalSlippage += slippage
+
+		}
+
+		averageSlippage := totalSlippage / float64(len(trades))
+		e.Log.Infof("[Calculate Slippage] averageSlipp: %f", averageSlippage)
+	}
+
+	return nil
+}

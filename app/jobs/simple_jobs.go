@@ -149,6 +149,20 @@ func InitSimpleJob() {
 
 	})
 
+	c.AddFunc("@every 30s", func() {
+
+		//TODO  每30m计算一次滑点，这个目前只是计算，并不作展示，先和策略端对一下计算是否正确
+		fmt.Println("Calculate Slippage For Instance Job running")
+		s := service.BusPriceTriggerStrategyInstance{}
+		s.Orm = orm
+		s.Log = log
+		err := s.CalculateSlippageForPriceTriggerInstance()
+		if err != nil {
+			log.Errorf("Calculate Slippage For Instance Job run failed, err:%v\n", err)
+		}
+
+	})
+
 	c.Start()
 	select {}
 }
