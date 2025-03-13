@@ -453,6 +453,11 @@ type SlippageResult struct {
 	Slippage *float64
 }
 
+type AverageSlippageResult struct {
+	InstanceId      string
+	AverageSlippage *float64
+}
+
 func (e *BusPriceTriggerStrategyInstance) CalculateSlippageForPriceTriggerInstance() error {
 	e.Log.Info("[Calculate Slippage] 开始计算滑点")
 
@@ -562,16 +567,16 @@ func (e *BusPriceTriggerStrategyInstance) CalculateSlippageForPriceTriggerInstan
 				WHEN i.side = 'short' THEN
 					CASE
 						WHEN t.origin_qty != 0 THEN
-							(t.origin_price - CAST(i.open_price AS DECIMAL)) / CAST(i.open_price AS DECIMAL)
+							CAST((t.origin_price - CAST(i.open_price AS DECIMAL)) / CAST(i.open_price AS DECIMAL) AS DECIMAL(18, 6))
 						ELSE
-							(CAST(i.close_price AS DECIMAL) - t.origin_price) / CAST(i.close_price AS DECIMAL)
+							CAST((CAST(i.close_price AS DECIMAL) - t.origin_price) / CAST(i.close_price AS DECIMAL) AS DECIMAL(18, 6))
 					END
 				ELSE
 					CASE
 						WHEN t.origin_qty != 0 THEN
-							(CAST(i.open_price AS DECIMAL) - t.origin_price) / CAST(i.open_price AS DECIMAL)
+							CAST((CAST(i.open_price AS DECIMAL) - t.origin_price) / CAST(i.open_price AS DECIMAL) AS DECIMAL(18, 6))
 						ELSE
-							(t.origin_price - CAST(i.close_price AS DECIMAL)) / CAST(i.close_price AS DECIMAL)
+							CAST((t.origin_price - CAST(i.close_price AS DECIMAL)) / CAST(i.close_price AS DECIMAL) AS DECIMAL(18, 6))
 					END
 			END AS slippage
 		FROM
@@ -598,7 +603,7 @@ func (e *BusPriceTriggerStrategyInstance) CalculateSlippageForPriceTriggerInstan
 
 	// 保存完后，计算这些实例的平均交易滑点
 	var instances []models.BusPriceTriggerStrategyInstance
-	err = e.Orm.Model(&models.BusPriceTriggerStrategyInstance{}).
+	err = db.Model(&models.BusPriceTriggerStrategyInstance{}).
 		Where("id > ?", 691).
 		Where("average_slippage is NULL").
 		Order("created_at asc").
@@ -608,8 +613,33 @@ func (e *BusPriceTriggerStrategyInstance) CalculateSlippageForPriceTriggerInstan
 		return err
 	}
 
-	// for _, instance := range instances {
-	// }
+	for _, instance := range instances {
+		var averageSlippageResult AverageSlippageResult
+		err = db.Raw(`
+			SELECT
+				t.strategy_instance_id AS instance_id,
+				ROUND(AVG(t.slippage), 6) AS average_slippage
+			FROM
+				bus_price_monitor_for_option_hedging t
+			WHERE
+				t.slippage IS NOT NULL and t.strategy_instance_id = ?
+		`, instance.Id).Scan(&averageSlippageResult).Error
+		if err != nil {
+			e.Log.Errorf("[Calculate Slippage] calculate average slippage error:%s \r\n", err)
+			continue
+		}
+
+		// 更新实例的平均滑点
+		err = db.Model(&models.BusPriceTriggerStrategyInstance{}).
+			Where("id =?", instance.Id).
+			Update("average_slippage", *averageSlippageResult.AverageSlippage).Error
+		if err != nil {
+			e.Log.Errorf("[Calculate Slippage] update average slippage error:%s \r\n", err)
+			continue
+		}
+
+		e.Log.Debug("[Calculate Slippage] update average slippage for instance: %d, averageSlipp: %f%%", instance.Id, averageSlippageResult.AverageSlippage)
+	}
 
 	return nil
 }
