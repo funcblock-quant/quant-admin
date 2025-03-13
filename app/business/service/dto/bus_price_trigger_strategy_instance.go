@@ -68,7 +68,7 @@ type BusPriceTriggerStrategyResp struct {
 	CallbackRatio     float64                                    `json:"callbackRatio"`
 	MinProfit         float64                                    `json:"minProfit"`
 	AverageSlippage   float64                                    `json:"averageSlippage"`
-	LatestSlippage    float64                                    `json:"latestSlippage"`
+	LatestSlippage    float64                                    `json:"latestSlippage" gorm:"-"`
 }
 
 // BusPriceTriggerStrategyStatistical 价格触发下单的统计数据
