@@ -604,13 +604,16 @@ func (e *BusPriceTriggerStrategyInstance) CalculateSlippageForPriceTriggerInstan
 
 	// 逐条保存交易记录的滑点值
 	for _, slippage := range slippageList {
-		err := db.Model(&models.BusPriceMonitorForOptionHedging{}).
-			Where("id =?", slippage.TradeId).
-			Update("slippage", *slippage.Slippage).Error
-		if err != nil {
-			e.Log.Errorf("[Calculate Slippage] CalculateSlippageForPriceTriggerInstance error:%s \r\n", err)
-			continue
+		if slippage.Slippage != nil {
+			err := db.Model(&models.BusPriceMonitorForOptionHedging{}).
+				Where("id =?", slippage.TradeId).
+				Update("slippage", *slippage.Slippage).Error
+			if err != nil {
+				e.Log.Errorf("[Calculate Slippage] CalculateSlippageForPriceTriggerInstance error:%s \r\n", err)
+				continue
+			}
 		}
+
 	}
 
 	// 保存完后，计算这些实例的平均交易滑点
@@ -652,7 +655,6 @@ func (e *BusPriceTriggerStrategyInstance) CalculateSlippageForPriceTriggerInstan
 			}
 		}
 
-		e.Log.Debug("[Calculate Slippage] update average slippage for instance: %d, averageSlipp: %f%%", instance.Id, averageSlippageResult.AverageSlippage)
 	}
 
 	return nil
