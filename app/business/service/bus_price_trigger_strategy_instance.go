@@ -502,7 +502,7 @@ func (e *BusPriceTriggerStrategyInstance) CalculateSlippageForPriceTriggerInstan
 				continue
 			}
 
-			if originQty.IsZero() {
+			if !originQty.IsZero() {
 				//开仓
 				if side == "short" {
 					//做空
