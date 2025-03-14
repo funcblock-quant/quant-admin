@@ -69,6 +69,7 @@ func (e *BusPriceTriggerStrategyInstance) GetPage(c *dto.BusPriceTriggerStrategy
 
 		totalOrderNum := len(details)
 		totalPnl := decimal.NewFromFloat(0)
+		totalFee := decimal.NewFromFloat(0)
 		for _, d := range details {
 			var pnl decimal.Decimal
 			if d.Pnl == "" {
@@ -79,10 +80,23 @@ func (e *BusPriceTriggerStrategyInstance) GetPage(c *dto.BusPriceTriggerStrategy
 					e.Log.Errorf("BusPriceTriggerStrategyInstanceService Get details error:%s \r\n", err)
 				}
 			}
+			var fees decimal.Decimal
+			if d.Fees == "" {
+				fees = decimal.NewFromFloat(0)
+			} else {
+				fees, err = decimal.NewFromString(d.Fees)
+				if err != nil {
+					e.Log.Errorf("BusPriceTriggerStrategyInstanceService Get details error:%s \r\n", err)
+				}
+			}
+			totalFee = totalFee.Add(fees)
 			totalPnl = totalPnl.Add(pnl)
+
 		}
 		statistical.OrderNum = totalOrderNum
 		statistical.TotalPnl = totalPnl.StringFixed(8)
+		statistical.NetProfit = totalPnl.Sub(totalFee).StringFixed(8)
+
 		(*list)[index].Statistical = statistical
 		(*list)[index].Details = details
 	}
@@ -620,7 +634,7 @@ func (e *BusPriceTriggerStrategyInstance) CalculateSlippageForPriceTriggerInstan
 	var instances []models.BusPriceTriggerStrategyInstance
 	err = db.Model(&models.BusPriceTriggerStrategyInstance{}).
 		Where("id > ?", 691).
-		Where("status is ?", "started").
+		Where("status = ?", "started").
 		Order("created_at asc").
 		Find(&instances).Error
 	if err != nil {
@@ -637,8 +651,7 @@ func (e *BusPriceTriggerStrategyInstance) CalculateSlippageForPriceTriggerInstan
 			FROM
 				bus_price_monitor_for_option_hedging t
 			WHERE
-				t.slippage IS NOT NULL and t.strategy_instance_id = ?
-		`, instance.Id).Scan(&averageSlippageResult).Error
+				t.slippage IS NOT NULL and t.strategy_instance_id = ?`, instance.Id).Scan(&averageSlippageResult).Error
 		if err != nil {
 			e.Log.Errorf("[Calculate Slippage] calculate average slippage error:%s \r\n", err)
 			continue
