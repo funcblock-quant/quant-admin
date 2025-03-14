@@ -400,6 +400,7 @@ func (e *StrategyDexCexTriangularArbitrageTrades) DailyTradeSnapshot() error {
 			Where("created_at < ?", startOfDay).
 			Row().Scan(&previousTotalProfit)
 
+		e.Log.Infof("previous_total_profit : %d", previousTotalProfit)
 		// 计算当天利润增长百分比
 		if previousTotalProfit > 0 {
 			profitGrowthRate = (totalProfit - previousTotalProfit) / previousTotalProfit
@@ -440,13 +441,13 @@ func (e *StrategyDexCexTriangularArbitrageTrades) DailyTradeSnapshot() error {
 		allTrades, allVolume,
 		allProfit, allProfitGrowthRate*100)
 
-	config := ext.ExtConfig
-	larkClient := lark.NewLarkRobotAlert(config)
+	// config := ext.ExtConfig
+	// larkClient := lark.NewLarkRobotAlert(config)
 	e.Log.Infof("lark notificationMsg:%s \n", markdownContent)
-	err := larkClient.SendLarkAlert(markdownContent)
-	if err != nil {
-		e.Log.Infof("lark 推送消息失败")
-	}
+	// err := larkClient.SendLarkAlert(markdownContent)
+	// if err != nil {
+	// 	e.Log.Infof("lark 推送消息失败")
+	// }
 
 	return e.Orm.Create(&snapshots).Error
 }
