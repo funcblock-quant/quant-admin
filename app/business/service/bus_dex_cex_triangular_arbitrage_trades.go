@@ -441,13 +441,13 @@ func (e *StrategyDexCexTriangularArbitrageTrades) DailyTradeSnapshot() error {
 		allTrades, allVolume,
 		allProfit, allProfitGrowthRate*100)
 
-	// config := ext.ExtConfig
-	// larkClient := lark.NewLarkRobotAlert(config)
+	config := ext.ExtConfig
+	larkClient := lark.NewLarkRobotAlert(config)
 	e.Log.Infof("lark notificationMsg:%s \n", markdownContent)
-	// err := larkClient.SendLarkAlert(markdownContent)
-	// if err != nil {
-	// 	e.Log.Infof("lark 推送消息失败")
-	// }
+	err := larkClient.SendLarkAlert(markdownContent)
+	if err != nil {
+		e.Log.Infof("lark 推送消息失败")
+	}
 
 	return e.Orm.Create(&snapshots).Error
 }
