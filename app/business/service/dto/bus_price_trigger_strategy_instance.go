@@ -73,8 +73,9 @@ type BusPriceTriggerStrategyResp struct {
 
 // BusPriceTriggerStrategyStatistical 价格触发下单的统计数据
 type BusPriceTriggerStrategyStatistical struct {
-	OrderNum int    `json:"orderNum"`
-	TotalPnl string `json:"totalPnl"`
+	OrderNum  int    `json:"orderNum"`
+	TotalPnl  string `json:"totalPnl"`
+	NetProfit string `json:"netProfit"` //净利润
 }
 
 type BusPriceTriggerStrategyInstanceInsertReq struct {
