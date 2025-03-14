@@ -135,8 +135,7 @@ func InitSimpleJob() {
 
 	})
 
-	// c.AddFunc("0 0 * * *", func() {
-	c.AddFunc("@every 10m", func() {
+	c.AddFunc("0 0 * * *", func() {
 
 		// 每天凌晨12点，快照前一天的收益等数据
 		fmt.Println("Check Blocking Instance Job running")
