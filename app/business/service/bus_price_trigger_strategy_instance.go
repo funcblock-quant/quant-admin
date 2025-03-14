@@ -620,7 +620,7 @@ func (e *BusPriceTriggerStrategyInstance) CalculateSlippageForPriceTriggerInstan
 	var instances []models.BusPriceTriggerStrategyInstance
 	err = db.Model(&models.BusPriceTriggerStrategyInstance{}).
 		Where("id > ?", 691).
-		Where("average_slippage is NULL").
+		Where("status is ?", "started").
 		Order("created_at asc").
 		Find(&instances).Error
 	if err != nil {
