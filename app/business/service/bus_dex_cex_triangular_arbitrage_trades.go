@@ -325,10 +325,16 @@ func (e *StrategyDexCexTriangularArbitrageTrades) ScanTrades() error {
 // DailyTradeSnapshot 每日交易快照
 func (e *StrategyDexCexTriangularArbitrageTrades) DailyTradeSnapshot() error {
 	e.Log.Infof("开始生成每日套利快照")
+	yesterday := time.Now().AddDate(0, 0, -1)
 	// 获取当天时间范围
-	snapshotDate := time.Now().AddDate(0, 0, -1).Format("2006-01-02")
-	startOfDay := time.Now().Truncate(24 * time.Hour)
-	endOfDay := startOfDay.Add(24*time.Hour - time.Second)
+	snapshotDate := yesterday.Format("2006-01-02")
+	// 获取前一天 00:00:00
+	startOfDay := time.Date(yesterday.Year(), yesterday.Month(), yesterday.Day(), 0, 0, 0, 0, time.Local)
+	// 获取前一天 23:59:59
+	endOfDay := time.Date(yesterday.Year(), yesterday.Month(), yesterday.Day(), 23, 59, 59, 0, time.Local)
+
+	fmt.Println("前一天开始时间:", startOfDay)
+	fmt.Println("前一天结束时间:", endOfDay)
 
 	var snapshots []models.BusDexCexDailyTradeStatisticSnapshot
 	instanceIdSet := make(map[string]bool)
@@ -434,13 +440,13 @@ func (e *StrategyDexCexTriangularArbitrageTrades) DailyTradeSnapshot() error {
 		allTrades, allVolume,
 		allProfit, allProfitGrowthRate*100)
 
-	config := ext.ExtConfig
-	larkClient := lark.NewLarkRobotAlert(config)
+	// config := ext.ExtConfig
+	// larkClient := lark.NewLarkRobotAlert(config)
 	e.Log.Infof("lark notificationMsg:%s \n", markdownContent)
-	err := larkClient.SendLarkAlert(markdownContent)
-	if err != nil {
-		e.Log.Infof("lark 推送消息失败")
-	}
+	// err := larkClient.SendLarkAlert(markdownContent)
+	// if err != nil {
+	// 	e.Log.Infof("lark 推送消息失败")
+	// }
 
 	return e.Orm.Create(&snapshots).Error
 }
