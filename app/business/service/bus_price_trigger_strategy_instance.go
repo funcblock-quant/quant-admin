@@ -644,6 +644,8 @@ func (e *BusPriceTriggerStrategyInstance) CalculateSlippageForPriceTriggerInstan
 			continue
 		}
 
+		e.Log.Debug("[Calculate Slippage] averageSlippageResult: %+v  ", averageSlippageResult)
+
 		// 更新实例的平均滑点
 		if averageSlippageResult.AverageSlippage != nil {
 			err = db.Model(&models.BusPriceTriggerStrategyInstance{}).
@@ -653,7 +655,7 @@ func (e *BusPriceTriggerStrategyInstance) CalculateSlippageForPriceTriggerInstan
 				e.Log.Errorf("[Calculate Slippage] update average slippage error:%s \r\n", err)
 				continue
 			}
-			e.Log.Infof("[Calculate Slippage] instanceId: %s,  averageSlipp: %f%%", instance.Id, *averageSlippageResult.AverageSlippage)
+			e.Log.Debug("[Calculate Slippage] instanceId: %s,  averageSlipp: %f%%", instance.Id, *averageSlippageResult.AverageSlippage)
 		}
 
 	}
