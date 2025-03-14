@@ -653,8 +653,8 @@ func (e *BusPriceTriggerStrategyInstance) CalculateSlippageForPriceTriggerInstan
 				e.Log.Errorf("[Calculate Slippage] update average slippage error:%s \r\n", err)
 				continue
 			}
+			e.Log.Infof("[Calculate Slippage] instanceId: %s,  averageSlipp: %f%%", instance.Id, *averageSlippageResult.AverageSlippage)
 		}
-		e.Log.Infof("[Calculate Slippage] instanceId: %s,  averageSlipp: %f%%", instance.Id, *averageSlippageResult.AverageSlippage)
 
 	}
 
