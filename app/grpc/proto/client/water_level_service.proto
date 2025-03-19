@@ -83,7 +83,7 @@ message SecretKey {
   string api_key = 1;
   string secret = 2;
   string passphrase = 3;
-  string chain_wallet_private_key = 4;
-  string account_name = 5;
-  string uid = 6;
+  string account_name = 4;
+  string uid = 5;
+  string chain_wallet_private_key = 6;
 }
