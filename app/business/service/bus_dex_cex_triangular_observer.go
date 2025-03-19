@@ -2570,6 +2570,8 @@ func DoStartTokenWaterLevel(db *gorm.DB, observer *models.BusDexCexTriangularObs
 		Secret:                secret,
 		Passphrase:            cexAccount.Passphrase,
 		ChainWalletPrivateKey: privateKey,
+		AccountName:           cexAccount.AccountName,
+		Uid:                   cexAccount.Uid,
 	}
 
 	tokenConfig := &waterLevelPb.TokenThresholdConfig{
