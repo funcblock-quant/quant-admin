@@ -272,6 +272,10 @@ type DexCexTriangularObserverSymbolListResp struct {
 	Symbol string `json:"symbol" gorm:"column:symbol"`
 }
 
+type DexCexTriangularObserverExchangeListResp struct {
+	Exchange string `json:"exchange" gorm:"column:exchange"`
+}
+
 type BusDexCexTriangularObserverStartTraderReq struct {
 	InstanceId                 int      `json:"id" comment:"策略端实例id"`
 	AlertThreshold             *float64 `json:"alertThreshold"`
@@ -282,6 +286,8 @@ type BusDexCexTriangularObserverStartTraderReq struct {
 	SlippageBpsRate            *float64 `json:"slippageBpsRate"`
 	PriorityFee                *float64 `json:"priorityFee"`
 	JitoFeeRate                *float64 `json:"jitoFeeRate"`
+	CexAccount                 int      `json:"cexAccount"`
+	DexWallet                  int      `json:"DexWallet"`
 	common.ControlBy
 }
 
@@ -334,6 +340,7 @@ type BusDexCexTriangularGlobalWaterLevelStateResp struct {
 }
 
 type BusDexCexTriangularUpdateGlobalWaterLevelConfigReq struct {
+	ExchangeType               string                                        `json:"exchangeType" `
 	SolWaterLevelConfig        *BusDexCexTriangularUpdateWaterLevelParamsReq `json:"solWaterLevelConfig"`
 	StableCoinWaterLevelConfig *BusDexCexTriangularUpdateWaterLevelParamsReq `json:"stableCoinWaterLevelConfig"`
 }
@@ -353,4 +360,14 @@ type RiskControlItem struct {
 	Threshold    float64      `json:"threshold"`    // 阈值
 	Action       int          `json:"action"`       // 操作类型 (1-预警, 2-暂停当前实例交易, 3-暂停全局交易)
 	ActionDetail ActionDetail `json:"actionDetail"` // 具体操作详情
+}
+
+// BusGetCexAccountListReq 获取请求参数
+type BusGetCexAccountListReq struct {
+	Exchange string `uri:"exchange"`
+}
+
+// BusGetCexExchangeListReq 获取请求参数
+type BusGetCexExchangeConfigListReq struct {
+	Exchange string `uri:"exchange"`
 }

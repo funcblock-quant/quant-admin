@@ -13,6 +13,7 @@ import (
 	cDto "quanta-admin/common/dto"
 	common "quanta-admin/common/models"
 	lark "quanta-admin/common/notification"
+	"quanta-admin/common/utils"
 	ext "quanta-admin/config"
 	"sort"
 	"strconv"
@@ -42,7 +43,6 @@ const (
 func (e *BusDexCexTriangularObserver) GetPage(c *dto.BusDexCexTriangularObserverGetPageReq, p *actions.DataPermission, list *[]dto.BusDexCexTriangularObserverGetPageResp, count *int64) error {
 	var err error
 	var data models.BusDexCexTriangularObserver
-	e.Log.Infof("e[GetPage], data: %+v", data)
 	tx := e.Orm.Model(&data).
 		Scopes(
 			cDto.MakeCondition(c.GetNeedSearch()),
@@ -300,9 +300,67 @@ func (e *BusDexCexTriangularObserver) GetSymbolList(p *actions.DataPermission, l
 		Debug().Find(list).Error
 
 	if err != nil {
-		e.Log.Errorf("BusDexCexTriangularObserverService GetPage error:%s \r\n", err)
+		e.Log.Errorf("BusDexCexTriangularObserverService GetSymbolList error:%s \r\n", err)
 		return err
 	}
+	return nil
+}
+
+// GetExchangeList 获取BusDexCexTriangularObserver所有币种列表
+func (e *BusDexCexTriangularObserver) GetExchangeList(p *actions.DataPermission, list *[]dto.DexCexTriangularObserverExchangeListResp) error {
+	var err error
+	var data models.BusDexCexTriangularObserver
+
+	err = e.Orm.Model(&data).
+		Unscoped().
+		Scopes(
+			actions.Permission(data.TableName(), p),
+		).
+		Select("exchange_type as exchange").
+		Group("exchange_type").
+		Where("status IN ?", []int{INSTANCE_STATUS_OBSERVE, INSTANCE_STATUS_WATERLEVEL, INSTANCE_STATUS_TRADING}).
+		Debug().Find(list).Error
+
+	if err != nil {
+		e.Log.Errorf("BusDexCexTriangularObserverService GetSymbolList error:%s \r\n", err)
+		return err
+	}
+	return nil
+}
+
+// GetDexWalletList 获取BusDexCexTriangularObserver所有dex钱包列表
+func (e *BusDexCexTriangularObserver) GetDexWalletList(p *actions.DataPermission, list *[]models.BusDexWallet) error {
+	var err error
+	var data models.BusDexWallet
+
+	err = e.Orm.Model(&data).
+		Unscoped().
+		Find(list).Error
+
+	if err != nil {
+		e.Log.Errorf("BusDexCexTriangularObserverService GetDexWalletList error:%s \r\n", err)
+		return err
+	}
+
+	return nil
+}
+
+// GetCexAccountList 获取BusDexCexTriangularObserver所有cex账户列表
+func (e *BusDexCexTriangularObserver) GetCexAccountList(req *dto.BusGetCexAccountListReq, p *actions.DataPermission, list *[]models.BusExchangeAccountInfo) error {
+	var err error
+	var data models.BusExchangeAccountInfo
+
+	//查出绑定了amber的交易所账户列表，别且状态是已启用
+	err = e.Orm.Model(&data).
+		Unscoped().
+		Where("exchange_type = ? and status = ? and is_amber_bound = ?", req.Exchange, 2, true).
+		Find(list).Error
+
+	if err != nil {
+		e.Log.Errorf("BusDexCexTriangularObserverService GetCexAccountList error:%s \r\n", err)
+		return err
+	}
+
 	return nil
 }
 
@@ -451,9 +509,11 @@ func (e *BusDexCexTriangularObserver) StartTrader(c *dto.BusDexCexTriangularObse
 	data.MinDepositAmountThreshold = c.MinDepositAmountThreshold
 	data.MinWithdrawAmountThreshold = c.MinWithdrawAmountThreshold
 	// step1 先启动水位调节实例
-	err = StartTokenWaterLevelWithCheckExists(&data)
-	if err != nil {
-		return err
+	if config.ApplicationConfig.Mode != "dev" {
+		err = StartTokenWaterLevelWithCheckExists(&data)
+		if err != nil {
+			return err
+		}
 	}
 
 	//exchangeType, err := data.GetExchangeTypeForTrader()
@@ -482,9 +542,11 @@ func (e *BusDexCexTriangularObserver) StartTrader(c *dto.BusDexCexTriangularObse
 		"buy_trigger_threshold":  c.BuyTriggerThreshold,
 		"sell_trigger_threshold": c.SellTriggerThreshold,
 		//"slippage_bps":           slippageBpsUint,
-		"priority_fee":  priorityFee,
-		"jito_fee_rate": c.JitoFeeRate,
-		"status":        INSTANCE_STATUS_WATERLEVEL, // 水位调节中
+		"priority_fee":   priorityFee,
+		"jito_fee_rate":  c.JitoFeeRate,
+		"status":         INSTANCE_STATUS_WATERLEVEL, // 水位调节中
+		"cex_account_id": c.CexAccount,
+		"dex_wallet_id":  c.DexWallet,
 	}
 
 	if err := e.Orm.Model(&models.BusDexCexTriangularObserver{}).
@@ -528,7 +590,7 @@ func (e *BusDexCexTriangularObserver) MonitorWaterLevelToStartTrader() error {
 			e.Log.Infof("currency: %s, cex spot balance:%s, cex margin balance:%s, dex balance: %s", waterLevelState.Currency, waterLevelState.SpotAccountBalance, waterLevelState.MarginAccountBalance, waterLevelState.ChainWalletBalance)
 			//开启交易功能
 
-			err = DoStartTrader(&instance)
+			err = DoStartTrader(e.Orm, &instance)
 			if err != nil {
 				e.Log.Errorf("start trader error:%s \r\n", err)
 				return err
@@ -866,8 +928,14 @@ func (e *BusDexCexTriangularObserver) UpdateWaterLevel(c *dto.BusDexCexTriangula
 }
 
 // GetGlobalWaterLevelState 获取全局WaterLevel 状态及当前参数
-func (e *BusDexCexTriangularObserver) GetGlobalWaterLevelState() (*dto.BusDexCexTriangularGlobalWaterLevelStateResp, error) {
+func (e *BusDexCexTriangularObserver) GetGlobalWaterLevelState(req *dto.BusGetCexExchangeConfigListReq) (*dto.BusDexCexTriangularGlobalWaterLevelStateResp, error) {
 	var data models.BusCommonConfig
+	exchangeType := req.Exchange
+	if exchangeType == "" {
+		e.Log.Infof("exchange is empty, return default config")
+		return nil, nil
+	}
+
 	resp := &dto.BusDexCexTriangularGlobalWaterLevelStateResp{}
 	//step 1 : 查询sol以及稳定币的水位调节是否启动
 	waterLevelInstances, err := client.ListWaterLevelInstance()
@@ -877,10 +945,10 @@ func (e *BusDexCexTriangularObserver) GetGlobalWaterLevelState() (*dto.BusDexCex
 	} else {
 		log.Infof("waterLevelInstances:%+v\n", waterLevelInstances)
 		for _, instanceId := range waterLevelInstances.InstanceIds {
-			if instanceId == "SOLANA" {
+			if instanceId == "SOLANA_"+exchangeType {
 				// solana 已经启动水位调节
 				resp.SolWaterLevelState = true
-			} else if instanceId == "USDT" {
+			} else if instanceId == "USDT_"+exchangeType {
 				// 稳定币 已经启动水位调节
 				resp.StableCoinWaterLevelState = true
 			}
@@ -890,7 +958,7 @@ func (e *BusDexCexTriangularObserver) GetGlobalWaterLevelState() (*dto.BusDexCex
 	// 如果水位调节服务挂了，返回对应的错误，给到前端水位调节不可用的提示之类的。
 	//step 2 : 封装全局的水位调节启动结果以及配置到响应体
 	err = e.Orm.Model(&models.BusCommonConfig{}).
-		Where("category = ? and config_key = ?", common.WATER_LEVEL, common.GLOBAL_SOLANA_WATER_LEVEL_KEY).
+		Where("category = ? and config_key = ?", common.WATER_LEVEL, common.GLOBAL_SOLANA_WATER_LEVEL_KEY+"_"+exchangeType).
 		Order("created_at desc").
 		First(&data).Error
 
@@ -934,7 +1002,7 @@ func (e *BusDexCexTriangularObserver) GetGlobalWaterLevelState() (*dto.BusDexCex
 
 	var stableData models.BusCommonConfig
 	err = e.Orm.Model(&stableData).
-		Where("category = ? and config_key = ?", common.WATER_LEVEL, common.GLOBAL_STABLE_COIN_WATER_LEVEL_KEY).
+		Where("category = ? and config_key = ?", common.WATER_LEVEL, common.GLOBAL_STABLE_COIN_WATER_LEVEL_KEY+"_"+exchangeType).
 		Order("created_at desc").
 		First(&stableData).Error
 
@@ -965,6 +1033,7 @@ func (e *BusDexCexTriangularObserver) GetGlobalWaterLevelState() (*dto.BusDexCex
 func (e *BusDexCexTriangularObserver) UpdateGlobalWaterLevelConfig(req *dto.BusDexCexTriangularUpdateGlobalWaterLevelConfigReq) error {
 	var data models.BusCommonConfig
 	var instance models.BusDexCexTriangularObserver
+	exchangeType := req.ExchangeType
 
 	solWaterLevelConfigJsonStr, err := json.Marshal(req.SolWaterLevelConfig)
 	if err != nil {
@@ -998,7 +1067,7 @@ func (e *BusDexCexTriangularObserver) UpdateGlobalWaterLevelConfig(req *dto.BusD
 
 	isSolanaStarted := false
 	for _, instanceId := range waterLevelInstances.InstanceIds {
-		if instanceId == "SOLANA" {
+		if instanceId == "SOLANA_"+exchangeType {
 			// solana 已经启动水位调节
 			isSolanaStarted = true
 			break
@@ -1014,12 +1083,15 @@ func (e *BusDexCexTriangularObserver) UpdateGlobalWaterLevelConfig(req *dto.BusD
 			MinWithdrawAmountThreshold: strconv.FormatFloat(*req.SolWaterLevelConfig.MinWithdrawAmountThreshold, 'f', -1, 64),
 		}
 
+		secretKey := &waterLevelPb.SecretKey{}
+
 		clientRequest := &waterLevelPb.StartInstanceRequest{
-			InstanceId:           "SOLANA",
-			ExchangeType:         "Binance",
+			InstanceId:           "SOLANA_" + exchangeType,
+			ExchangeType:         exchangeType,
 			Currency:             "SOL",
 			CurrencyType:         0, // token
 			TokenThresholdConfig: tokenConfig,
+			SecretKey:            secretKey,
 		}
 
 		e.Log.Infof("启动solana全局水位调节 req: %v \r\n", clientRequest)
@@ -1039,7 +1111,7 @@ func (e *BusDexCexTriangularObserver) UpdateGlobalWaterLevelConfig(req *dto.BusD
 			MinWithdrawAmountThreshold: strconv.FormatFloat(*req.SolWaterLevelConfig.MinWithdrawAmountThreshold, 'f', -1, 64),
 		}
 		updateReq := &waterLevelPb.UpdateInstanceParamsRequest{
-			InstanceId:           "SOLANA",
+			InstanceId:           "SOLANA_" + exchangeType,
 			CurrencyType:         0, // token
 			TokenThresholdConfig: tokenConfig,
 		}
@@ -1053,7 +1125,7 @@ func (e *BusDexCexTriangularObserver) UpdateGlobalWaterLevelConfig(req *dto.BusD
 
 	// 保存配置到数据库
 	err = e.Orm.Model(&data).
-		Where("category = ? and config_key = ?", common.WATER_LEVEL, common.GLOBAL_SOLANA_WATER_LEVEL_KEY).
+		Where("category = ? and config_key = ?", common.WATER_LEVEL, common.GLOBAL_SOLANA_WATER_LEVEL_KEY+"_"+exchangeType).
 		Order("created_at desc").
 		First(&data).Error
 
@@ -1063,7 +1135,7 @@ func (e *BusDexCexTriangularObserver) UpdateGlobalWaterLevelConfig(req *dto.BusD
 			// 如果不存在，则新增
 			data = models.BusCommonConfig{
 				Category:   common.WATER_LEVEL,
-				ConfigKey:  common.GLOBAL_SOLANA_WATER_LEVEL_KEY,
+				ConfigKey:  common.GLOBAL_SOLANA_WATER_LEVEL_KEY + "_" + exchangeType,
 				ConfigJson: string(solWaterLevelConfigJsonStr),
 			}
 			err = e.Orm.Create(&data).Error
@@ -1102,8 +1174,8 @@ func (e *BusDexCexTriangularObserver) UpdateGlobalWaterLevelConfig(req *dto.BusD
 			}
 
 			clientRequest := &waterLevelPb.StartInstanceRequest{
-				InstanceId:                quoteToken,
-				ExchangeType:              "Binance",
+				InstanceId:                quoteToken + "_" + exchangeType,
+				ExchangeType:              exchangeType,
 				Currency:                  quoteToken,
 				CurrencyType:              1, // 稳定币
 				StableCoinThresholdConfig: tokenConfig,
@@ -1138,7 +1210,7 @@ func (e *BusDexCexTriangularObserver) UpdateGlobalWaterLevelConfig(req *dto.BusD
 	var stableData models.BusCommonConfig
 	// 稳定币水位调节参数处理
 	err = e.Orm.Model(&stableData).
-		Where("category = ? and config_key = ?", common.WATER_LEVEL, common.GLOBAL_STABLE_COIN_WATER_LEVEL_KEY).
+		Where("category = ? and config_key = ?", common.WATER_LEVEL, common.GLOBAL_STABLE_COIN_WATER_LEVEL_KEY+"_"+exchangeType).
 		Order("created_at desc").
 		First(&stableData).Error
 
@@ -1148,7 +1220,7 @@ func (e *BusDexCexTriangularObserver) UpdateGlobalWaterLevelConfig(req *dto.BusD
 			// 如果不存在，则新增
 			stableData = models.BusCommonConfig{
 				Category:   common.WATER_LEVEL,
-				ConfigKey:  common.GLOBAL_STABLE_COIN_WATER_LEVEL_KEY,
+				ConfigKey:  common.GLOBAL_STABLE_COIN_WATER_LEVEL_KEY + "_" + exchangeType,
 				ConfigJson: string(stableCoinWaterLevelConfigJsonStr),
 			}
 			err = e.Orm.Create(&stableData).Error
@@ -2352,16 +2424,49 @@ func DoStartObserver(observer *models.BusDexCexTriangularObserver) error {
 	return nil
 }
 
-func DoStartTrader(instance *models.BusDexCexTriangularObserver) error {
+func DoStartTrader(db *gorm.DB, instance *models.BusDexCexTriangularObserver) error {
 
 	exchangeType, err := instance.GetExchangeTypeForTrader()
 	if err != nil {
 		log.Errorf("获取ExchangeType参数异常，:%s \r\n", err)
 		return err
 	}
+	var dexWallet models.BusDexWallet
+	var cexAccount models.BusExchangeAccountInfo
+
+	err = db.Model(&dexWallet).
+		Where("id = ?", instance.DexWalletId).
+		First(&dexWallet).Error
+
+	if err != nil {
+		log.Errorf("查询DEX钱包参数失败:%s \r\n", err)
+		return err
+	}
+
+	err = db.Model(&cexAccount).
+		Where("id =?", instance.CexAccountId).
+		First(&cexAccount).Error
+	if err != nil {
+		log.Errorf("查询CEX账户参数失败:%s \r\n", err)
+		return err
+	}
+
+	privateKey, err := utils.DecryptWithSecretKey([]byte(ext.ExtConfig.Aes.Key), dexWallet.EncryptedPrivateKey)
+	if err != nil {
+		log.Errorf("解密私钥参数失败:%s \r\n", err)
+		return err
+	}
+
+	amberAccountToken, err := utils.DecryptWithSecretKey([]byte(ext.ExtConfig.Aes.Key), cexAccount.AmberAccountToken)
+	if err != nil {
+		log.Errorf("解密私钥参数失败:%s \r\n", err)
+		return err
+	}
 
 	amberTraderConfig := &pb.AmberTraderConfig{
 		ExchangeType: &exchangeType,
+		AccountId:    &cexAccount.AmberAccountName,
+		AccessToken:  &amberAccountToken,
 	}
 
 	jitoFee := instance.JitoFeeRate
@@ -2371,9 +2476,13 @@ func DoStartTrader(instance *models.BusDexCexTriangularObserver) error {
 		PriorityFee:  instance.PriorityFee,
 		JitoFeeRate:  jitoFee,
 	}
+	swapperConfig := &pb.SwapperConfig{
+		Trader: &privateKey,
+	}
+
 	if config.ApplicationConfig.Mode != "dev" {
 		instanceId := strconv.Itoa(instance.Id)
-		err := client.EnableTrader(instanceId, amberTraderConfig, traderParams)
+		err := client.EnableTrader(instanceId, amberTraderConfig, traderParams, swapperConfig)
 		if err != nil {
 			log.Errorf("GRPC 启动Trader for instanceId:%d 失败，异常:%s \r\n", instance.Id, err)
 			return err
@@ -2406,7 +2515,8 @@ func StartTokenWaterLevelWithCheckExists(observer *models.BusDexCexTriangularObs
 		}
 	} else {
 		//说明未启动实例，此时启动新的实例
-		err = DoStartTokenWaterLevel(observer)
+		db := sdk.Runtime.GetDbByKey("*")
+		err = DoStartTokenWaterLevel(db, observer)
 		if err != nil {
 			log.Errorf("grpc启动实例失败，异常信息:%s \r\n", err)
 			return err
@@ -2416,7 +2526,52 @@ func StartTokenWaterLevelWithCheckExists(observer *models.BusDexCexTriangularObs
 }
 
 // DoStartTokenWaterLevel 启动水位调节，不校验是否存在
-func DoStartTokenWaterLevel(observer *models.BusDexCexTriangularObserver) error {
+func DoStartTokenWaterLevel(db *gorm.DB, observer *models.BusDexCexTriangularObserver) error {
+
+	var dexWallet models.BusDexWallet
+	var cexAccount models.BusExchangeAccountInfo
+
+	err := db.Model(&dexWallet).
+		Where("id = ?", observer.DexWalletId).
+		First(&dexWallet).Error
+
+	if err != nil {
+		log.Errorf("查询DEX钱包参数失败:%s \r\n", err)
+		return err
+	}
+
+	err = db.Model(&cexAccount).
+		Where("id =?", observer.CexAccountId).
+		First(&cexAccount).Error
+	if err != nil {
+		log.Errorf("查询CEX账户参数失败:%s \r\n", err)
+		return err
+	}
+
+	privateKey, err := utils.DecryptWithSecretKey([]byte(ext.ExtConfig.Aes.Key), dexWallet.EncryptedPrivateKey)
+	if err != nil {
+		log.Errorf("解密私钥参数失败:%s \r\n", err)
+		return err
+	}
+
+	apiKey, err := utils.DecryptWithSecretKey([]byte(ext.ExtConfig.Aes.Key), cexAccount.EncryptedApiKey)
+	if err != nil {
+		log.Errorf("解密私钥参数失败:%s \r\n", err)
+		return err
+	}
+	secret, err := utils.DecryptWithSecretKey([]byte(ext.ExtConfig.Aes.Key), cexAccount.EncryptedApiSecret)
+	if err != nil {
+		log.Errorf("解密私钥参数失败:%s \r\n", err)
+		return err
+	}
+
+	secretConfig := &waterLevelPb.SecretKey{
+		ApiKey:                apiKey,
+		Secret:                secret,
+		Passphrase:            cexAccount.Passphrase,
+		ChainWalletPrivateKey: privateKey,
+	}
+
 	tokenConfig := &waterLevelPb.TokenThresholdConfig{
 		AlertThreshold:             strconv.FormatFloat(*observer.AlertThreshold, 'f', -1, 64),
 		BuyTriggerThreshold:        strconv.FormatFloat(*observer.BuyTriggerThreshold, 'f', -1, 64),
@@ -2432,10 +2587,11 @@ func DoStartTokenWaterLevel(observer *models.BusDexCexTriangularObserver) error 
 		CurrencyType:         0, // token
 		PubKey:               observer.TokenMint,
 		TokenThresholdConfig: tokenConfig,
+		SecretKey:            secretConfig,
 	}
 
 	log.Infof("restart water level with req: %v \r\n", clientRequest)
-	_, err := client.StartWaterLevelInstance(clientRequest)
+	_, err = client.StartWaterLevelInstance(clientRequest)
 	if err != nil {
 		log.Errorf("启动水位调节失败:%s \r\n", err)
 		return err

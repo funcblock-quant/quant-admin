@@ -3,10 +3,11 @@ package client
 import (
 	"context"
 	"fmt"
-	"google.golang.org/protobuf/types/known/emptypb"
 	"quanta-admin/app/grpc/pool"
 	"quanta-admin/app/grpc/proto/client/observer_service"
 	"time"
+
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 func StartNewArbitragerClient(instanceId *string, amberObserverConfig *observer_service.AmberObserverConfig, ammDexConfig *observer_service.DexConfig, observerParams *observer_service.ObserverParams) error {
@@ -191,7 +192,7 @@ func UpdateObserverParams(instanceId string, observerParams *observer_service.Ob
 	return nil
 }
 
-func EnableTrader(instanceId string, amberTraderConfig *observer_service.AmberTraderConfig, traderParams *observer_service.TraderParams) error {
+func EnableTrader(instanceId string, amberTraderConfig *observer_service.AmberTraderConfig, traderParams *observer_service.TraderParams, swapperConfig *observer_service.SwapperConfig) error {
 	// 获取 gRPC 客户端连接
 	clientConn, err := pool.GetGrpcClient("solana-observer")
 	if err != nil {
@@ -210,9 +211,10 @@ func EnableTrader(instanceId string, amberTraderConfig *observer_service.AmberTr
 	defer cancel()
 
 	req := &observer_service.EnableTraderRequest{
-		InstanceId:  &instanceId,
-		AmberConfig: amberTraderConfig,
-		Params:      traderParams,
+		InstanceId:    &instanceId,
+		AmberConfig:   amberTraderConfig,
+		Params:        traderParams,
+		SwapperConfig: swapperConfig,
 	}
 	_, err = c.EnableTrader(ctx, req)
 	if err != nil {

@@ -32,7 +32,8 @@ message StartRequest {
 message EnableTraderRequest {
   required string instance_id = 1;
   required AmberTraderConfig amber_config = 2;
-  required TraderParams params = 3;
+  required SwapperConfig swapper_config = 3;
+  required TraderParams params = 4;
 }
 
 message ListResponse {
@@ -68,6 +69,12 @@ message AmberObserverConfig {
 
 message AmberTraderConfig {
   required string exchange_type = 1; // BinanceClassicUnifiedMargin
+  required string account_id = 2; // QuantaVerse13
+  required string access_token = 3; // 1234567890
+}
+
+message SwapperConfig {
+  required string trader = 1;
 }
 
 message DexConfig {
@@ -109,6 +116,7 @@ message BasicInfo {
   required DexConfig dex_config = 4;
   required bool trader_enabled = 5;
   optional AmberTraderConfig amber_trader_config = 6;
+  optional SwapperConfig swapper_config = 7;
 }
 
 message ObserverState {

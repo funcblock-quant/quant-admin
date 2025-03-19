@@ -35,6 +35,7 @@ message StartInstanceRequest {
   optional string pub_key = 5; // 交易币种在solana mainnet链上的pubkey，SOL留空，其他token必填
   optional TokenThresholdConfig   token_threshold_config = 6; // 普通币种配置
   optional StableCoinThresholdConfig stable_coin_threshold_config = 7; // 稳定币配置
+  SecretKey secret_key = 8; //交易所密钥信息
 }
 
 message TokenThresholdConfig {
@@ -76,4 +77,11 @@ message GetStateResponse {
   string borrowed_amount = 6; 
   string max_borrowable_amount = 7;
   StartInstanceRequest instance_params = 8;
+}
+
+message SecretKey {
+  string api_key = 1;
+  string secret = 2;
+  string passphrase = 3;
+  string wallet_private_key = 4;
 }

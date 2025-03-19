@@ -52,11 +52,7 @@ func (s *BusExchangeAccountInfoInsertReq) Generate(model *models.BusExchangeAcco
 		model.Model = common.Model{Id: s.Id}
 	}
 	model.AccountName = s.AccountName
-	model.ExchangeId = s.ExchangeId
-	model.ExchangeName = s.ExchangeName
 	model.Uid = s.Uid
-	model.AccountType = s.AccountType
-	model.Status = s.Status
 	model.CreateBy = s.CreateBy // 添加这而，需要记录是被谁创建的
 }
 
@@ -81,11 +77,7 @@ func (s *BusExchangeAccountInfoUpdateReq) Generate(model *models.BusExchangeAcco
 		model.Model = common.Model{Id: s.Id}
 	}
 	model.AccountName = s.AccountName
-	model.ExchangeId = s.ExchangeId
-	model.ExchangeName = s.ExchangeName
 	model.Uid = s.Uid
-	model.AccountType = s.AccountType
-	model.Status = s.Status
 	model.UpdateBy = s.UpdateBy // 添加这而，需要记录是被谁更新的
 }
 

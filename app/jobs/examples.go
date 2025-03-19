@@ -301,8 +301,9 @@ type DexCexObserverInspection struct{}
 func (t DexCexObserverInspection) Exec(arg interface{}) error {
 	str := time.Now().Format(timeFormat) + " [INFO] JobCore DexCexObserverInspection exec success \r\n"
 	log.Infof("开始执行dex-cex 检查任务")
+	db := sdk.Runtime.GetDbByKey("*")
 	service := daos.BusDexCexTriangularObserverDAO{
-		Db: sdk.Runtime.GetDbByKey("*"),
+		Db: db,
 	}
 
 	observerInfos, err := client.ListArbitragerClient()
@@ -363,7 +364,7 @@ func (t DexCexObserverInspection) Exec(arg interface{}) error {
 
 			if !containsWaterLevelInstance(waterLevelInstances, strconv.Itoa(observer.Id)) {
 				// 服务端不存在的，重启
-				err = businessService.DoStartTokenWaterLevel(&observer)
+				err = businessService.DoStartTokenWaterLevel(db, &observer)
 				if err != nil {
 					//如果重启失败，则不进行下一步水位调节开启
 					continue
@@ -392,7 +393,7 @@ func (t DexCexObserverInspection) Exec(arg interface{}) error {
 
 			if !containsWaterLevelInstance(waterLevelInstances, strconv.Itoa(observer.Id)) {
 				// 服务端不存在的，重启
-				err = businessService.DoStartTokenWaterLevel(&observer)
+				err = businessService.DoStartTokenWaterLevel(db, &observer)
 				if err != nil {
 					//如果重启失败，则下次再重启
 					continue
@@ -401,7 +402,7 @@ func (t DexCexObserverInspection) Exec(arg interface{}) error {
 
 			if observer.IsTrading && !isTrading {
 				// 如果实例开启了交易，但是服务端没有启动交易功能，则还需要重启交易功能
-				err = businessService.DoStartTrader(&observer)
+				err = businessService.DoStartTrader(db, &observer)
 				if err != nil {
 					//如果重启失败，则下次再重启
 					continue

@@ -7,12 +7,17 @@ import (
 type BusExchangeAccountInfo struct {
 	models.Model
 
-	AccountName  string `json:"accountName" gorm:"type:varchar(255);comment:钱包名称"`
-	ExchangeId   string `json:"exchangeId" gorm:"type:bigint;comment:id"`
-	ExchangeName string `json:"exchangeName" gorm:"type:varchar(255);comment:交易所名称"`
-	Uid          string `json:"uid" gorm:"type:varchar(255);comment:交易所uid"`
-	AccountType  string `json:"accountType" gorm:"type:tinyint;comment:账户类型"`
-	Status       string `json:"status" gorm:"type:tinyint;comment:状态"`
+	AccountName        string `gorm:"type:varchar(255);not null;default:'';comment:交易所账户名称" json:"accountName"`
+	Uid                string `gorm:"type:varchar(255);not null;comment:交易所账户uid" json:"uid"`
+	ExchangeType       string `gorm:"type:varchar(64);not null;comment:交易所类型" json:"exchangeType"`
+	EncryptedApiKey    string `gorm:"type:varchar(512);comment:加密后的API_KEY" json:"-"`
+	EncryptedApiSecret string `gorm:"type:varchar(512);comment:加密后的API_SECRET" json:"-"`
+	IsAmberBound       bool   `gorm:"not null;default:false;comment:是否绑定amber" json:"isAmberBound"`
+	AmberExchangeType  string `gorm:"type:varchar(64);comment:amber对应的exchange type" json:"amberExchangeType"`
+	AmberAccountName   string `gorm:"type:varchar(255);comment:amber对应的account name" json:"amberAccountName"`
+	AmberAccountToken  string `gorm:"type:varchar(512);comment:amber对应的account token" json:"-"`
+	Status             int8   `gorm:"type:tinyint;not null;default:1;comment:钱包状态，1: 待启用, 2: 已启用" json:"status"`
+	Passphrase         string `json:"passphrase" gorm:"type:varchar(255)"`
 	models.ModelTime
 	models.ControlBy
 }

@@ -531,7 +531,7 @@ func (e *BusDexCexPriceSpreadData) restartObserver(observer models.BusDexCexTria
 
 	if isTrading {
 		// 启动交易功能
-		err = DoStartTrader(&observer)
+		err = DoStartTrader(e.Orm, &observer)
 		if err != nil {
 			e.Log.Errorf("[重启Observer]启动交易功能失败 error:%s \r\n", err)
 			return err

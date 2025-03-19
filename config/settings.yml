@@ -55,6 +55,8 @@ settings:
       trigger-service: 172.31.33.73:50051
       water-level-service: 172.31.47.132:8009
   #      jupserver: 127.0.0.1:2900
+    aes:
+      key: ${AES_SECRET_KEY}
   cache:
     #    redis:
     #      addr: 127.0.0.1:6379
