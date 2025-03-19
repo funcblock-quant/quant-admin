@@ -176,7 +176,6 @@ func (s *BusDexCexTriangularObserverBatchInsertReq) GenerateAmmConfig(ammConfig 
 			},
 		}
 	}
-	fmt.Printf("ammConfig: %v\n", *ammConfig)
 	return nil
 }
 

@@ -17,7 +17,7 @@ type BusDexCexPriceSpreadData struct {
 	CexSellPrice         float64   `json:"cexSellPrice" gorm:"type:float;comment:cex卖出价格"`
 	DexBuySpread         float64   `json:"dexBuySpread" gorm:"type:float;comment:Dex买入价差"`
 	DexSellSpread        float64   `json:"dexSellSpread" gorm:"type:float;comment:Dex卖出价差"`
-	DexBuySpreadPercent  string    `json:"dexSellSpreadPercent" gorm:"type:float;comment:Dex卖出价差百分比"`
+	DexBuySpreadPercent  string    `json:"dexBuySpreadPercent" gorm:"type:float;comment:Dex卖出价差百分比"`
 	DexBuyProfit         float64   `json:"dexBuyProfit" gorm:"type:float;comment:Dex买入利润"`
 	DexSellSpreadPercent string    `json:"dexSellSpreadPercent" gorm:"type:float;comment:Dex卖出价差百分比"`
 	DexSellProfit        float64   `json:"dexSellProfit" gorm:"type:float;comment:Dex卖出利润"`
