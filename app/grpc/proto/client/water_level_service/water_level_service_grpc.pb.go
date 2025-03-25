@@ -34,15 +34,15 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type InstanceClient interface {
 	// 开启实例
-	StartInstance(ctx context.Context, in *StartInstanceRequest, opts ...grpc.CallOption) (*InstantId, error)
+	StartInstance(ctx context.Context, in *StartInstanceRequest, opts ...grpc.CallOption) (*InstanceId, error)
 	// 更新实例参数
 	UpdateInstanceParams(ctx context.Context, in *UpdateInstanceParamsRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// 暂停实例
-	StopInstance(ctx context.Context, in *InstantId, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	StopInstance(ctx context.Context, in *InstanceId, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// 查看所有启动的实例ids
 	ListInstances(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*InstanceListResponse, error)
 	// 查看实例实时数据
-	GetInstanceState(ctx context.Context, in *InstantId, opts ...grpc.CallOption) (*GetStateResponse, error)
+	GetInstanceState(ctx context.Context, in *InstanceId, opts ...grpc.CallOption) (*GetStateResponse, error)
 }
 
 type instanceClient struct {
@@ -53,8 +53,8 @@ func NewInstanceClient(cc grpc.ClientConnInterface) InstanceClient {
 	return &instanceClient{cc}
 }
 
-func (c *instanceClient) StartInstance(ctx context.Context, in *StartInstanceRequest, opts ...grpc.CallOption) (*InstantId, error) {
-	out := new(InstantId)
+func (c *instanceClient) StartInstance(ctx context.Context, in *StartInstanceRequest, opts ...grpc.CallOption) (*InstanceId, error) {
+	out := new(InstanceId)
 	err := c.cc.Invoke(ctx, Instance_StartInstance_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -71,7 +71,7 @@ func (c *instanceClient) UpdateInstanceParams(ctx context.Context, in *UpdateIns
 	return out, nil
 }
 
-func (c *instanceClient) StopInstance(ctx context.Context, in *InstantId, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *instanceClient) StopInstance(ctx context.Context, in *InstanceId, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, Instance_StopInstance_FullMethodName, in, out, opts...)
 	if err != nil {
@@ -89,7 +89,7 @@ func (c *instanceClient) ListInstances(ctx context.Context, in *emptypb.Empty, o
 	return out, nil
 }
 
-func (c *instanceClient) GetInstanceState(ctx context.Context, in *InstantId, opts ...grpc.CallOption) (*GetStateResponse, error) {
+func (c *instanceClient) GetInstanceState(ctx context.Context, in *InstanceId, opts ...grpc.CallOption) (*GetStateResponse, error) {
 	out := new(GetStateResponse)
 	err := c.cc.Invoke(ctx, Instance_GetInstanceState_FullMethodName, in, out, opts...)
 	if err != nil {
@@ -103,15 +103,15 @@ func (c *instanceClient) GetInstanceState(ctx context.Context, in *InstantId, op
 // for forward compatibility
 type InstanceServer interface {
 	// 开启实例
-	StartInstance(context.Context, *StartInstanceRequest) (*InstantId, error)
+	StartInstance(context.Context, *StartInstanceRequest) (*InstanceId, error)
 	// 更新实例参数
 	UpdateInstanceParams(context.Context, *UpdateInstanceParamsRequest) (*emptypb.Empty, error)
 	// 暂停实例
-	StopInstance(context.Context, *InstantId) (*emptypb.Empty, error)
+	StopInstance(context.Context, *InstanceId) (*emptypb.Empty, error)
 	// 查看所有启动的实例ids
 	ListInstances(context.Context, *emptypb.Empty) (*InstanceListResponse, error)
 	// 查看实例实时数据
-	GetInstanceState(context.Context, *InstantId) (*GetStateResponse, error)
+	GetInstanceState(context.Context, *InstanceId) (*GetStateResponse, error)
 	mustEmbedUnimplementedInstanceServer()
 }
 
@@ -119,19 +119,19 @@ type InstanceServer interface {
 type UnimplementedInstanceServer struct {
 }
 
-func (UnimplementedInstanceServer) StartInstance(context.Context, *StartInstanceRequest) (*InstantId, error) {
+func (UnimplementedInstanceServer) StartInstance(context.Context, *StartInstanceRequest) (*InstanceId, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StartInstance not implemented")
 }
 func (UnimplementedInstanceServer) UpdateInstanceParams(context.Context, *UpdateInstanceParamsRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateInstanceParams not implemented")
 }
-func (UnimplementedInstanceServer) StopInstance(context.Context, *InstantId) (*emptypb.Empty, error) {
+func (UnimplementedInstanceServer) StopInstance(context.Context, *InstanceId) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StopInstance not implemented")
 }
 func (UnimplementedInstanceServer) ListInstances(context.Context, *emptypb.Empty) (*InstanceListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListInstances not implemented")
 }
-func (UnimplementedInstanceServer) GetInstanceState(context.Context, *InstantId) (*GetStateResponse, error) {
+func (UnimplementedInstanceServer) GetInstanceState(context.Context, *InstanceId) (*GetStateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetInstanceState not implemented")
 }
 func (UnimplementedInstanceServer) mustEmbedUnimplementedInstanceServer() {}
@@ -184,7 +184,7 @@ func _Instance_UpdateInstanceParams_Handler(srv interface{}, ctx context.Context
 }
 
 func _Instance_StopInstance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(InstantId)
+	in := new(InstanceId)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -196,7 +196,7 @@ func _Instance_StopInstance_Handler(srv interface{}, ctx context.Context, dec fu
 		FullMethod: Instance_StopInstance_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(InstanceServer).StopInstance(ctx, req.(*InstantId))
+		return srv.(InstanceServer).StopInstance(ctx, req.(*InstanceId))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -220,7 +220,7 @@ func _Instance_ListInstances_Handler(srv interface{}, ctx context.Context, dec f
 }
 
 func _Instance_GetInstanceState_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(InstantId)
+	in := new(InstanceId)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -232,7 +232,7 @@ func _Instance_GetInstanceState_Handler(srv interface{}, ctx context.Context, de
 		FullMethod: Instance_GetInstanceState_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(InstanceServer).GetInstanceState(ctx, req.(*InstantId))
+		return srv.(InstanceServer).GetInstanceState(ctx, req.(*InstanceId))
 	}
 	return interceptor(ctx, in, info, handler)
 }

@@ -8,15 +8,15 @@ import "google/protobuf/empty.proto";
 // Define the service
 service Instance {
   // 开启实例
-  rpc StartInstance (StartInstanceRequest) returns (InstantId);
+  rpc StartInstance (StartInstanceRequest) returns (InstanceId);
   // 更新实例参数
   rpc UpdateInstanceParams (UpdateInstanceParamsRequest) returns (google.protobuf.Empty);
   // 暂停实例
-  rpc StopInstance (InstantId) returns (google.protobuf.Empty);
+  rpc StopInstance (InstanceId) returns (google.protobuf.Empty);
   // 查看所有启动的实例ids
   rpc ListInstances (google.protobuf.Empty) returns (InstanceListResponse);
   // 查看实例实时数据
-  rpc GetInstanceState (InstantId) returns (GetStateResponse);
+  rpc GetInstanceState (InstanceId) returns (GetStateResponse);
 
 }
 
@@ -36,6 +36,7 @@ message StartInstanceRequest {
   optional TokenThresholdConfig   token_threshold_config = 6; // 普通币种配置
   optional StableCoinThresholdConfig stable_coin_threshold_config = 7; // 稳定币配置
   SecretKey secret_key = 8; //交易所密钥信息
+  bool         auto_borrow = 9; // 交易时是否自动借款，如果启用，则水位调节不再关心CEX账户里的余额是否足够，只要关心链上钱包余额是否足够
 }
 
 message TokenThresholdConfig {
@@ -58,13 +59,14 @@ message UpdateInstanceParamsRequest {
   int32    currency_type = 2; // 要保持和StartInstanceRequest中的currency_type一致，否则会报错
   optional TokenThresholdConfig   token_threshold_config = 3; // 普通币种配置
   optional StableCoinThresholdConfig stable_coin_threshold_config = 4; // 稳定币配置
+  bool auto_borrow = 5; // 交易时是否自动借款，如果启用，则水位调节不再关心CEX账户里的余额是否足够，只要关心链上钱包余额是否足够
 }
 
 message InstanceListResponse {
   repeated string instance_ids = 1;
 }
 
-message InstantId {
+message InstanceId {
   string instance_id = 1;
 }
 
@@ -80,10 +82,18 @@ message GetStateResponse {
 }
 
 message SecretKey {
-  string api_key = 1;
-  string secret = 2;
-  string passphrase = 3;
-  string account_name = 4;
-  string uid = 5;
-  string chain_wallet_private_key = 6;
+  // for cex 2025-03-19根据今日新约定，以后所有的交易所都是用子账号交易，母账号提现的模式
+  ExchangeAccount trader_account = 1;
+  ExchangeAccount master_account = 2;
+  // for dex
+  string chain_wallet_private_key = 3;
+}
+
+message ExchangeAccount {
+  string account_name = 1;
+  string uid = 2;
+  string email = 3;
+  string api_key = 4;
+  string secret = 5;
+  string passphrase = 6;
 }

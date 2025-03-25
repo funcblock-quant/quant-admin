@@ -81,6 +81,7 @@ message DexConfig {
   oneof config {
     RayAmmConfig ray_amm = 1;
     RayClmmConfig ray_clmm = 2;
+    OrcaWhirlPoolConfig orca_whirl_pool = 3;
   }
 }
 
@@ -93,6 +94,11 @@ message RayClmmConfig {
   required string pool = 1;
   required string token_mint = 2;
   optional uint32 max_array_size = 3;
+}
+
+message OrcaWhirlPoolConfig {
+  required string pool = 1;
+  required string token_mint = 2;
 }
 
 // Params
@@ -111,12 +117,11 @@ message TraderParams {
 
 message BasicInfo {
   required string instance_id = 1;
-  required DexType dex_type = 2;
-  required AmberObserverConfig amber_observer_config = 3;
-  required DexConfig dex_config = 4;
-  required bool trader_enabled = 5;
-  optional AmberTraderConfig amber_trader_config = 6;
-  optional SwapperConfig swapper_config = 7;
+  required AmberObserverConfig amber_observer_config = 2;
+  required DexConfig dex_config = 3;
+  required bool trader_enabled = 4;
+  optional AmberTraderConfig amber_trader_config = 5;
+  optional SwapperConfig swapper_config = 6;
 }
 
 message ObserverState {
@@ -126,11 +131,6 @@ message ObserverState {
   required double cex_sell_quote_amount = 4;
   required double cex_buy_quantity = 5;
   required double cex_buy_quote_amount = 6;
-}
-
-enum DexType {
-  RAY_AMM = 0;
-  RAY_CLMM = 1;
 }
 
 message InstantId {

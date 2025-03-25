@@ -4,6 +4,7 @@ import (
 	"quanta-admin/app/business/models"
 	pb "quanta-admin/app/grpc/proto/client/observer_service"
 	"quanta-admin/common/dto"
+	"quanta-admin/common/global"
 	common "quanta-admin/common/models"
 	"strconv"
 
@@ -159,19 +160,26 @@ func (s *BusDexCexTriangularObserverBatchInsertReq) GenerateAmmConfig(ammConfig 
 
 	maxArraySize := new(uint32)
 	*maxArraySize = uint32(s.MaxArraySize) //默认5， clmm使用参数
-	if s.DexType == "RAY_AMM" {
+	if s.DexType == global.DEX_TYPE_RAY_AMM {
 		ammConfig.Config = &pb.DexConfig_RayAmm{
 			RayAmm: &pb.RayAmmConfig{
 				Pool:      s.AmmPoolId,
 				TokenMint: s.TokenMint,
 			},
 		}
-	} else if s.DexType == "RAY_CLMM" {
+	} else if s.DexType == global.DEX_TYPE_RAY_CLMM {
 		ammConfig.Config = &pb.DexConfig_RayClmm{
 			RayClmm: &pb.RayClmmConfig{
 				Pool:         s.AmmPoolId,
 				TokenMint:    s.TokenMint,
 				MaxArraySize: maxArraySize,
+			},
+		}
+	} else if s.DexType == global.DEX_TYPE_ORCA_WHIRL_POOL {
+		ammConfig.Config = &pb.DexConfig_OrcaWhirlPool{
+			OrcaWhirlPool: &pb.OrcaWhirlPoolConfig{
+				Pool:      s.AmmPoolId,
+				TokenMint: s.TokenMint,
 			},
 		}
 	}
@@ -368,4 +376,15 @@ type BusGetCexAccountListReq struct {
 // BusGetCexExchangeListReq 获取请求参数
 type BusGetCexExchangeConfigListReq struct {
 	Exchange string `uri:"exchange"`
+}
+
+// 根据cex或dex账号，查询绑定的另一侧的账号列表
+type BusGetBoundAccountReq struct {
+	AccountType string `json:"accountType"` // Cex or Dex
+	AccountId   int64  `json:"accountId"`
+}
+
+type BusGetBoundAccountResp struct {
+	CexAccountList []models.BusExchangeAccountInfo `json:"cexAccountList"` // Cex or Dex
+	DexWalletList  []models.BusDexWallet           `json:"dexWalletList"`
 }

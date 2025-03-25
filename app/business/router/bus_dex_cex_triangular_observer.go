@@ -39,5 +39,6 @@ func registerBusDexCexTriangularObserverRouter(v1 *gin.RouterGroup, authMiddlewa
 	v1.GET("/busDexCexTriangularGetRiskConfig", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.GetGlobalRiskConfigState)
 	v1.POST("/busDexCexTriangularUpdateRiskConfig", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.UpdateGlobalRiskConfig)
 	v1.PUT("/busDexCexTriangularStopAllTrades", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.StopAllTrades)
-
+	v1.POST("/getRelatedAccounts", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.GetBoundAccountList)
+	v1.POST("/getCanBoundAccounts", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.GetCanBoundAccountList)
 }

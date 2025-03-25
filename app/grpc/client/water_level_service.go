@@ -3,10 +3,11 @@ package client
 import (
 	"context"
 	"fmt"
-	"google.golang.org/protobuf/types/known/emptypb"
 	"quanta-admin/app/grpc/pool"
 	pb "quanta-admin/app/grpc/proto/client/water_level_service"
 	"time"
+
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 func StartWaterLevelInstance(request *pb.StartInstanceRequest) (string, error) {
@@ -42,7 +43,7 @@ func StartWaterLevelInstance(request *pb.StartInstanceRequest) (string, error) {
 	return instanceID, nil
 }
 
-func StopWaterLevelInstance(instanceId *pb.InstantId) error {
+func StopWaterLevelInstance(instanceId *pb.InstanceId) error {
 	// 获取 gRPC 客户端连接
 	clientConn, err := pool.GetGrpcClient("water-level-service")
 	if err != nil {
@@ -100,7 +101,7 @@ func UpdateWaterLevelInstance(request *pb.UpdateInstanceParamsRequest) error {
 	return nil
 }
 
-func GetWaterLevelInstanceState(request *pb.InstantId) (*pb.GetStateResponse, error) {
+func GetWaterLevelInstanceState(request *pb.InstanceId) (*pb.GetStateResponse, error) {
 	// 获取 gRPC 客户端连接
 	clientConn, err := pool.GetGrpcClient("water-level-service")
 	if err != nil {
