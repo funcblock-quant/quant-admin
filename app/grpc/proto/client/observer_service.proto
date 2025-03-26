@@ -31,7 +31,7 @@ message StartRequest {
 
 message EnableTraderRequest {
   required string instance_id = 1;
-  required AmberTraderConfig amber_config = 2;
+  required CexConfig cex_config = 2;
   required SwapperConfig swapper_config = 3;
   required TraderParams params = 4;
 }
@@ -67,10 +67,25 @@ message AmberObserverConfig {
   required double taker_fee = 6; // 0.00023
 }
 
+message CexConfig {
+  oneof config {
+    AmberTraderConfig amber = 1;
+    GateioTraderConfig gateio = 2;
+  }
+}
+
 message AmberTraderConfig {
   required string exchange_type = 1; // BinanceClassicUnifiedMargin
-  required string account_id = 2; // QuantaVerse13
-  required string access_token = 3; // 1234567890
+  required string account_type = 2; // Exchange
+   required string contract_type = 3; // Spot
+   required string account_id = 4; // QuantaVerse13
+   required string access_token = 5; // 1234567890
+}
+
+message GateioTraderConfig {
+  required string account_type = 1; // Unified
+  required string api_key = 2;
+  required string api_secret = 3;
 }
 
 message SwapperConfig {
@@ -120,7 +135,7 @@ message BasicInfo {
   required AmberObserverConfig amber_observer_config = 2;
   required DexConfig dex_config = 3;
   required bool trader_enabled = 4;
-  optional AmberTraderConfig amber_trader_config = 5;
+  optional CexConfig cex_config = 5;
   optional SwapperConfig swapper_config = 6;
 }
 

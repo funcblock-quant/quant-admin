@@ -3037,16 +3037,47 @@ func DoStartTrader(db *gorm.DB, instance *models.BusDexCexTriangularObserver) er
 		return err
 	}
 
-	amberAccountToken, err := utils.DecryptWithSecretKey([]byte(ext.ExtConfig.Aes.Key), cexAccount.AmberAccountToken)
-	if err != nil {
-		log.Errorf("解密私钥参数失败:%s \r\n", err)
-		return err
-	}
+	cexConfig := &pb.CexConfig{}
+	if instance.ExchangeType == global.EXCHANGE_TYPE_BINANCE {
+		amberAccountToken, err := utils.DecryptWithSecretKey([]byte(ext.ExtConfig.Aes.Key), cexAccount.AmberAccountToken)
+		if err != nil {
+			log.Errorf("解密私钥参数失败:%s \r\n", err)
+			return err
+		}
+		accountType := "Exchange"
+		contractType := "Spot"
+		amberTraderConfig := &pb.AmberTraderConfig{
+			ExchangeType: &exchangeType,
+			AccountType:  &accountType,
+			ContractType: &contractType,
+			AccountId:    &cexAccount.AmberAccountName,
+			AccessToken:  &amberAccountToken,
+		}
+		cexConfig.Config = &pb.CexConfig_Amber{
+			Amber: amberTraderConfig,
+		}
 
-	amberTraderConfig := &pb.AmberTraderConfig{
-		ExchangeType: &exchangeType,
-		AccountId:    &cexAccount.AmberAccountName,
-		AccessToken:  &amberAccountToken,
+	} else if instance.ExchangeType == global.EXCHANGE_TYPE_GATEIO {
+
+		apiKey, err := utils.DecryptWithSecretKey([]byte(ext.ExtConfig.Aes.Key), cexAccount.EncryptedApiKey)
+		if err != nil {
+			log.Errorf("解密私钥参数失败:%s \r\n", err)
+			return err
+		}
+		secretKey, err := utils.DecryptWithSecretKey([]byte(ext.ExtConfig.Aes.Key), cexAccount.EncryptedApiSecret)
+		if err != nil {
+			log.Errorf("解密私钥参数失败:%s \r\n", err)
+			return err
+		}
+		accountType := "Unified"
+		gateConfig := &pb.GateioTraderConfig{
+			AccountType: &accountType,
+			ApiKey:      &apiKey,
+			ApiSecret:   &secretKey,
+		}
+		cexConfig.Config = &pb.CexConfig_Gateio{
+			Gateio: gateConfig,
+		}
 	}
 
 	jitoFee := instance.JitoFeeRate
@@ -3062,7 +3093,7 @@ func DoStartTrader(db *gorm.DB, instance *models.BusDexCexTriangularObserver) er
 
 	if config.ApplicationConfig.Mode != "dev" {
 		instanceId := strconv.Itoa(instance.Id)
-		err := client.EnableTrader(instanceId, amberTraderConfig, traderParams, swapperConfig)
+		err := client.EnableTrader(instanceId, cexConfig, traderParams, swapperConfig)
 		if err != nil {
 			log.Errorf("GRPC 启动Trader for instanceId:%d 失败，异常:%s \r\n", instance.Id, err)
 			return err
@@ -3129,18 +3160,27 @@ func DoStartTokenWaterLevel(db *gorm.DB, observer *models.BusDexCexTriangularObs
 	}
 
 	var masterCexAccount models.BusExchangeAccountInfo
-	err = db.Model(&cexAccount).
-		Where("id =?", cexAccount.MasterAccountId).
-		First(&cexAccount).Error
-	if err != nil {
-		log.Errorf("查询CEX账户参数失败:%s \r\n", err)
-		return err
-	}
-
-	secretConfig, err := generateSecretConfig(dexWallet, cexAccount, masterCexAccount)
-	if err != nil {
-		log.Errorf("生成SecretConfig参数失败:%s \r\n", err)
-		return err
+	var secretConfig *waterLevelPb.SecretKey
+	if cexAccount.MasterAccountId == 0 {
+		//如果没有设置主账号，则默认不传主账号信息
+		secretConfig, err = generateSecretConfig(dexWallet, cexAccount, models.BusExchangeAccountInfo{})
+		if err != nil {
+			log.Errorf("生成SecretConfig参数失败:%s \r\n", err)
+			return err
+		}
+	} else {
+		err = db.Model(&cexAccount).
+			Where("id =?", cexAccount.MasterAccountId).
+			First(&masterCexAccount).Error
+		if err != nil {
+			log.Errorf("查询CEX账户参数失败:%s \r\n", err)
+			return err
+		}
+		secretConfig, err = generateSecretConfig(dexWallet, cexAccount, masterCexAccount)
+		if err != nil {
+			log.Errorf("生成SecretConfig参数失败:%s \r\n", err)
+			return err
+		}
 	}
 
 	tokenConfig := &waterLevelPb.TokenThresholdConfig{
@@ -3189,20 +3229,23 @@ func generateSecretConfig(dexWallet models.BusDexWallet, cexAccount models.BusEx
 		return nil, err
 	}
 
-	masterApiKey, err := utils.DecryptWithSecretKey([]byte(ext.ExtConfig.Aes.Key), masterCexAccount.EncryptedApiKey)
-	if err != nil {
-		log.Errorf("解密私钥参数失败:%s \r\n", err)
-		return nil, err
-	}
-	masterSecret, err := utils.DecryptWithSecretKey([]byte(ext.ExtConfig.Aes.Key), masterCexAccount.EncryptedApiSecret)
-	if err != nil {
-		log.Errorf("解密私钥参数失败:%s \r\n", err)
-		return nil, err
-	}
+	var masterConfig *waterLevelPb.ExchangeAccount
+	if masterCexAccount.Id != 0 {
+		masterApiKey, err := utils.DecryptWithSecretKey([]byte(ext.ExtConfig.Aes.Key), masterCexAccount.EncryptedApiKey)
+		if err != nil {
+			log.Errorf("解密私钥参数失败:%s \r\n", err)
+			return nil, err
+		}
+		masterSecret, err := utils.DecryptWithSecretKey([]byte(ext.ExtConfig.Aes.Key), masterCexAccount.EncryptedApiSecret)
+		if err != nil {
+			log.Errorf("解密私钥参数失败:%s \r\n", err)
+			return nil, err
+		}
 
-	masterConfig := &waterLevelPb.ExchangeAccount{
-		ApiKey: masterApiKey,
-		Secret: masterSecret,
+		masterConfig = &waterLevelPb.ExchangeAccount{
+			ApiKey: masterApiKey,
+			Secret: masterSecret,
+		}
 	}
 
 	traderConfig := &waterLevelPb.ExchangeAccount{

@@ -192,7 +192,7 @@ func UpdateObserverParams(instanceId string, observerParams *observer_service.Ob
 	return nil
 }
 
-func EnableTrader(instanceId string, amberTraderConfig *observer_service.AmberTraderConfig, traderParams *observer_service.TraderParams, swapperConfig *observer_service.SwapperConfig) error {
+func EnableTrader(instanceId string, cexConfig *observer_service.CexConfig, traderParams *observer_service.TraderParams, swapperConfig *observer_service.SwapperConfig) error {
 	// 获取 gRPC 客户端连接
 	clientConn, err := pool.GetGrpcClient("solana-observer")
 	if err != nil {
@@ -212,7 +212,7 @@ func EnableTrader(instanceId string, amberTraderConfig *observer_service.AmberTr
 
 	req := &observer_service.EnableTraderRequest{
 		InstanceId:    &instanceId,
-		AmberConfig:   amberTraderConfig,
+		CexConfig:     cexConfig,
 		Params:        traderParams,
 		SwapperConfig: swapperConfig,
 	}
