@@ -3191,9 +3191,14 @@ func DoStartTokenWaterLevel(db *gorm.DB, observer *models.BusDexCexTriangularObs
 		MinWithdrawAmountThreshold: strconv.FormatFloat(*observer.MinWithdrawAmountThreshold, 'f', -1, 64),
 	}
 
+	exchangeType := observer.ExchangeType
+	if observer.ExchangeType == global.EXCHANGE_TYPE_GATEIO {
+		exchangeType = "Gate"
+	}
+
 	clientRequest := &waterLevelPb.StartInstanceRequest{
 		InstanceId:           strconv.Itoa(observer.Id),
-		ExchangeType:         observer.ExchangeType,
+		ExchangeType:         exchangeType,
 		Currency:             observer.TargetToken,
 		CurrencyType:         0, // token
 		PubKey:               observer.TokenMint,
