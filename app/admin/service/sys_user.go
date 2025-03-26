@@ -2,10 +2,11 @@ package service
 
 import (
 	"errors"
-	"github.com/pquerna/otp/totp"
 	"quanta-admin/app/admin/models"
 	"quanta-admin/app/admin/service/dto"
 	"quanta-admin/common/utils"
+
+	"github.com/pquerna/otp/totp"
 
 	log "github.com/go-admin-team/go-admin-core/logger"
 	"github.com/go-admin-team/go-admin-core/sdk/pkg"
@@ -392,9 +393,22 @@ func (e *SysUser) GetProfile(c *dto.SysUserById, user *models.SysUser, roles *[]
 	if err != nil {
 		return err
 	}
-	err = e.Orm.Find(roles, user.RoleId).Error
+
+	// 解析 RoleIds 字符串为 []int
+	roleIds, err := user.ParseRoleIds()
 	if err != nil {
 		return err
+	}
+
+	// 查询所有角色信息
+	if len(roleIds) > 0 {
+		err = e.Orm.Where("role_id IN (?)", roleIds).Find(roles).Error
+		if err != nil {
+			return err
+		}
+	} else {
+		// 如果没有角色ID，则返回空数组
+		*roles = []models.SysRole{}
 	}
 
 	return nil

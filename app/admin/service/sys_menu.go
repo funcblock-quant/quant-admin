@@ -377,8 +377,8 @@ func recursiveSetMenu(orm *gorm.DB, mIds []int, menus *[]models.SysMenu) error {
 }
 
 // SetMenuRole 获取左侧菜单树使用
-func (e *SysMenu) SetMenuRole(roleName string) (m []models.SysMenu, err error) {
-	menus, err := e.getByRoleName(roleName)
+func (e *SysMenu) SetMenuRole(roleNames string) (m []models.SysMenu, err error) {
+	menus, err := e.getByRoleName(roleNames)
 	m = make([]models.SysMenu, 0)
 	for i := 0; i < len(menus); i++ {
 		if menus[i].ParentId != 0 {
@@ -390,32 +390,54 @@ func (e *SysMenu) SetMenuRole(roleName string) (m []models.SysMenu, err error) {
 	return
 }
 
-func (e *SysMenu) getByRoleName(roleName string) ([]models.SysMenu, error) {
-	var role models.SysRole
+func (e *SysMenu) getByRoleName(roleNames string) ([]models.SysMenu, error) {
 	var err error
 	data := make([]models.SysMenu, 0)
 
-	if roleName == "admin" {
-		err = e.Orm.Where(" menu_type in ('M','C') and deleted_at is null").
+	// 拆分 roleNames 字符串
+	roleNameList := strings.Split(roleNames, ",")
+	e.Log.Infof("roleNames: %v", roleNameList)
+	e.Log.Infof("len: %v", len(roleNameList))
+	if len(roleNameList) == 0 {
+		return nil, nil // 如果角色名称列表为空，则返回空数组
+	}
+
+	// 判断是否存在 admin 角色
+	isAdmin := false
+	for _, roleName := range roleNameList {
+		if roleName == "admin" {
+			isAdmin = true
+			break
+		}
+	}
+	if isAdmin {
+		err := e.Orm.Where("menu_type in ('M','C') and deleted_at is null").
 			Order("sort").
 			Find(&data).
 			Error
-		err = errors.WithStack(err)
-	} else {
-		role.RoleKey = roleName
-		err = e.Orm.Model(&role).Where("role_key = ? ", roleName).Preload("SysMenu").First(&role).Error
+		return data, errors.WithStack(err)
+	}
+
+	menuIds := make([]int, 0)
+	for _, roleName := range roleNameList {
+		var role models.SysRole
+		err := e.Orm.Model(&role).Where("role_key = ?", roleName).Preload("SysMenu").First(&role).Error
+		if err != nil {
+			return nil, err
+		}
 
 		if role.SysMenu != nil {
-			mIds := make([]int, 0)
 			for _, menu := range *role.SysMenu {
-				mIds = append(mIds, menu.MenuId)
+				menuIds = append(menuIds, menu.MenuId)
 			}
-			if err := recursiveSetMenu(e.Orm, mIds, &data); err != nil {
-				return nil, err
-			}
-
-			data = menuDistinct(data)
 		}
+	}
+
+	if len(menuIds) > 0 {
+		if err := recursiveSetMenu(e.Orm, menuIds, &data); err != nil {
+			return nil, err
+		}
+		data = menuDistinct(data)
 	}
 
 	sort.Sort(models.SysMenuSlice(data))
