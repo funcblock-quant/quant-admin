@@ -62,7 +62,8 @@ func InitSimpleJob() {
 		s := service.BusDexCexTriangularObserver{}
 		s.Orm = orm
 		s.Log = log
-		err := s.StartGlobalWaterLevel()
+		// err := s.StartGlobalWaterLevel()
+		err := s.StartGlobalWaterLevelV2()
 		if err != nil {
 			log.Errorf("StartGlobalWaterLevelConfig Job run failed, err:%v\n", err)
 		}
@@ -152,7 +153,7 @@ func InitSimpleJob() {
 
 	c.AddFunc("@every 2s", func() {
 
-		//TODO  每2s计算一次滑点，这个目前只是计算，并不作展示，先和策略端对一下计算是否正确
+		// 每2s计算一次滑点，这个目前只是计算，并不作展示，先和策略端对一下计算是否正确
 		fmt.Println("Calculate Slippage For Instance Job running")
 		s := service.BusPriceTriggerStrategyInstance{}
 		s.Orm = orm

@@ -4,18 +4,19 @@ import (
 	"quanta-admin/common/models"
 )
 
-type BusDexCexTriangularArbitrageDexWallet struct {
+type BusDexWallet struct {
 	models.Model
 
 	WalletName          string `json:"walletName" gorm:"type:varchar(255);not null"`
 	WalletAddress       string `json:"walletAddress" gorm:"type:varchar(255);not null"`
 	EncryptedPrivateKey string `json:"-" gorm:"type:text;not null"`
+	Blockchain          string `json:"blockchain" gorm:"type:varchar(32);not null"`
 }
 
-func (BusDexCexTriangularArbitrageDexWallet) TableName() string {
-	return "bus_dex_cex_triangular_arbitrage_dex_wallet"
+func (BusDexWallet) TableName() string {
+	return "bus_dex_wallet"
 }
 
-func (e *BusDexCexTriangularArbitrageDexWallet) GetId() interface{} {
+func (e *BusDexWallet) GetId() interface{} {
 	return e.Id
 }

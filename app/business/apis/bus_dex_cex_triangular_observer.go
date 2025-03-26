@@ -8,6 +8,7 @@ import (
 	"github.com/go-admin-team/go-admin-core/sdk/pkg/jwtauth/user"
 	_ "github.com/go-admin-team/go-admin-core/sdk/pkg/response"
 
+	"quanta-admin/app/business/models"
 	"quanta-admin/app/business/service"
 	"quanta-admin/app/business/service/dto"
 	"quanta-admin/common/actions"
@@ -72,6 +73,83 @@ func (e BusDexCexTriangularObserver) GetSymbolList(c *gin.Context) {
 	err = s.GetSymbolList(p, &list)
 	if err != nil {
 		e.Error(500, err, fmt.Sprintf("获取链上链下三角套利观察币种列表失败，\r\n失败信息 %s", err.Error()))
+		return
+	}
+
+	e.OK(list, "查询成功")
+}
+
+// GetExchangeList 获取观察机器人所有的交易所列表
+func (e BusDexCexTriangularObserver) GetExchangeList(c *gin.Context) {
+	s := service.BusDexCexTriangularObserver{}
+	err := e.MakeContext(c).
+		MakeOrm().
+		MakeService(&s.Service).
+		Errors
+	if err != nil {
+		e.Logger.Error(err)
+		e.Error(500, err, err.Error())
+		return
+	}
+
+	p := actions.GetPermissionFromContext(c)
+	list := make([]dto.DexCexTriangularObserverExchangeListResp, 0)
+
+	err = s.GetExchangeList(p, &list)
+	if err != nil {
+		e.Error(500, err, fmt.Sprintf("获取链上链下三角套利观察币种列表失败，\r\n失败信息 %s", err.Error()))
+		return
+	}
+
+	e.OK(list, "查询成功")
+}
+
+// GetDexWalletList 获取观察机器人所有的dex钱包列表
+func (e BusDexCexTriangularObserver) GetDexWalletList(c *gin.Context) {
+	s := service.BusDexCexTriangularObserver{}
+	err := e.MakeContext(c).
+		MakeOrm().
+		MakeService(&s.Service).
+		Errors
+	if err != nil {
+		e.Logger.Error(err)
+		e.Error(500, err, err.Error())
+		return
+	}
+
+	p := actions.GetPermissionFromContext(c)
+	list := make([]models.BusDexWallet, 0)
+
+	err = s.GetDexWalletList(p, &list)
+	if err != nil {
+		e.Error(500, err, fmt.Sprintf("获取链上链下三角套利钱包列表失败，\r\n失败信息 %s", err.Error()))
+		return
+	}
+
+	e.OK(list, "查询成功")
+}
+
+// GetCexAccountList 获取观察机器人所有的Cex账户列表
+func (e BusDexCexTriangularObserver) GetCexAccountList(c *gin.Context) {
+	s := service.BusDexCexTriangularObserver{}
+	req := dto.BusGetCexAccountListReq{}
+	err := e.MakeContext(c).
+		MakeOrm().
+		Bind(&req).
+		MakeService(&s.Service).
+		Errors
+	if err != nil {
+		e.Logger.Error(err)
+		e.Error(500, err, err.Error())
+		return
+	}
+
+	p := actions.GetPermissionFromContext(c)
+	list := make([]models.BusExchangeAccountInfo, 0)
+
+	err = s.GetCexAccountList(&req, p, &list)
+	if err != nil {
+		e.Error(500, err, fmt.Sprintf("获取链上链下三角套利交易所账户列表失败，\r\n失败信息 %s", err.Error()))
 		return
 	}
 
@@ -393,8 +471,10 @@ func (e BusDexCexTriangularObserver) UpdateWaterLevel(c *gin.Context) {
 
 func (e BusDexCexTriangularObserver) GetGlobalWaterLevelState(c *gin.Context) {
 	s := service.BusDexCexTriangularObserver{}
+	req := dto.BusGetCexExchangeConfigListReq{}
 	err := e.MakeContext(c).
 		MakeOrm().
+		Bind(&req).
 		MakeService(&s.Service).
 		Errors
 	if err != nil {
@@ -402,7 +482,7 @@ func (e BusDexCexTriangularObserver) GetGlobalWaterLevelState(c *gin.Context) {
 		e.Error(500, err, err.Error())
 		return
 	}
-	resp, err := s.GetGlobalWaterLevelState()
+	resp, err := s.GetGlobalWaterLevelState(&req)
 	if err != nil {
 		e.Error(500, err, fmt.Sprintf("获取全局水位调节 参数失败，\r\n失败信息 %s", err.Error()))
 		return
@@ -424,7 +504,7 @@ func (e BusDexCexTriangularObserver) UpdateGlobalWaterLevel(c *gin.Context) {
 		e.Error(500, err, err.Error())
 		return
 	}
-	err = s.UpdateGlobalWaterLevelConfig(&req)
+	err = s.UpdateGlobalWaterLevelConfigV2(&req)
 	if err != nil {
 		e.Error(500, err, fmt.Sprintf("更新全局水位调节 参数失败，\r\n失败信息 %s", err.Error()))
 		return
@@ -473,4 +553,56 @@ func (e BusDexCexTriangularObserver) UpdateGlobalRiskConfig(c *gin.Context) {
 	}
 
 	e.OK(nil, "更新成功")
+}
+
+func (e BusDexCexTriangularObserver) GetBoundAccountList(c *gin.Context) {
+	req := dto.BusGetBoundAccountReq{}
+	s := service.BusDexCexTriangularObserver{}
+	err := e.MakeContext(c).
+		MakeOrm().
+		Bind(&req).
+		MakeService(&s.Service).
+		Errors
+	if err != nil {
+		e.Logger.Error(err)
+		e.Error(500, err, err.Error())
+		return
+	}
+
+	p := actions.GetPermissionFromContext(c)
+	resp := dto.BusGetBoundAccountResp{}
+
+	err = s.GetBoundAccountList(&req, p, &resp)
+	if err != nil {
+		e.Error(500, err, fmt.Sprintf("获取链上链下账号绑定列表失败，\r\n失败信息 %s", err.Error()))
+		return
+	}
+
+	e.OK(resp, "查询成功")
+}
+
+func (e BusDexCexTriangularObserver) GetCanBoundAccountList(c *gin.Context) {
+	req := dto.BusGetBoundAccountReq{}
+	s := service.BusDexCexTriangularObserver{}
+	err := e.MakeContext(c).
+		MakeOrm().
+		Bind(&req).
+		MakeService(&s.Service).
+		Errors
+	if err != nil {
+		e.Logger.Error(err)
+		e.Error(500, err, err.Error())
+		return
+	}
+
+	p := actions.GetPermissionFromContext(c)
+	resp := dto.BusGetBoundAccountResp{}
+
+	err = s.GetCanBoundAccountList(&req, p, &resp)
+	if err != nil {
+		e.Error(500, err, fmt.Sprintf("获取链上链下账号可绑定列表失败，\r\n失败信息 %s", err.Error()))
+		return
+	}
+
+	e.OK(resp, "查询成功")
 }

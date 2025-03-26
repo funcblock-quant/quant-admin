@@ -54,6 +54,8 @@ settings:
       market-making: 172.31.45.8:8000
       trigger-service: 172.31.33.73:50051
   #      jupserver: 127.0.0.1:2900
+    aes:
+      key: ${AES_SECRET_KEY}
   cache:
     #    redis:
     #      addr: 127.0.0.1:6379

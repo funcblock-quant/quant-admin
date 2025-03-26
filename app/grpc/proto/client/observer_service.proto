@@ -31,8 +31,9 @@ message StartRequest {
 
 message EnableTraderRequest {
   required string instance_id = 1;
-  required AmberTraderConfig amber_config = 2;
-  required TraderParams params = 3;
+  required CexConfig cex_config = 2;
+  required SwapperConfig swapper_config = 3;
+  required TraderParams params = 4;
 }
 
 message ListResponse {
@@ -66,14 +67,36 @@ message AmberObserverConfig {
   required double taker_fee = 6; // 0.00023
 }
 
+message CexConfig {
+  oneof config {
+    AmberTraderConfig amber = 1;
+    GateioTraderConfig gateio = 2;
+  }
+}
+
 message AmberTraderConfig {
   required string exchange_type = 1; // BinanceClassicUnifiedMargin
+  required string account_type = 2; // Exchange
+   required string contract_type = 3; // Spot
+   required string account_id = 4; // QuantaVerse13
+   required string access_token = 5; // 1234567890
+}
+
+message GateioTraderConfig {
+  required string account_type = 1; // Unified
+  required string api_key = 2;
+  required string api_secret = 3;
+}
+
+message SwapperConfig {
+  required string trader = 1;
 }
 
 message DexConfig {
   oneof config {
     RayAmmConfig ray_amm = 1;
     RayClmmConfig ray_clmm = 2;
+    OrcaWhirlPoolConfig orca_whirl_pool = 3;
   }
 }
 
@@ -86,6 +109,11 @@ message RayClmmConfig {
   required string pool = 1;
   required string token_mint = 2;
   optional uint32 max_array_size = 3;
+}
+
+message OrcaWhirlPoolConfig {
+  required string pool = 1;
+  required string token_mint = 2;
 }
 
 // Params
@@ -104,11 +132,11 @@ message TraderParams {
 
 message BasicInfo {
   required string instance_id = 1;
-  required DexType dex_type = 2;
-  required AmberObserverConfig amber_observer_config = 3;
-  required DexConfig dex_config = 4;
-  required bool trader_enabled = 5;
-  optional AmberTraderConfig amber_trader_config = 6;
+  required AmberObserverConfig amber_observer_config = 2;
+  required DexConfig dex_config = 3;
+  required bool trader_enabled = 4;
+  optional CexConfig cex_config = 5;
+  optional SwapperConfig swapper_config = 6;
 }
 
 message ObserverState {
@@ -118,11 +146,6 @@ message ObserverState {
   required double cex_sell_quote_amount = 4;
   required double cex_buy_quantity = 5;
   required double cex_buy_quote_amount = 6;
-}
-
-enum DexType {
-  RAY_AMM = 0;
-  RAY_CLMM = 1;
 }
 
 message InstantId {

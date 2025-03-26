@@ -531,7 +531,7 @@ func (e *BusDexCexPriceSpreadData) restartObserver(observer models.BusDexCexTria
 
 	if isTrading {
 		// 启动交易功能
-		err = DoStartTrader(&observer)
+		err = DoStartTrader(e.Orm, &observer)
 		if err != nil {
 			e.Log.Errorf("[重启Observer]启动交易功能失败 error:%s \r\n", err)
 			return err
@@ -611,4 +611,26 @@ func (e *BusDexCexPriceSpreadData) calculate_dex_cex_price(priceState *pb.Observ
 	}
 
 	return cexPrice, dexPrice
+}
+
+func CalculateCexSolPrice(priceState *pb.ObserverState, isDexBuy bool) float64 {
+	var cexSolPrice float64 //SOL/USDT
+	if isDexBuy {
+		// dex买入
+		if priceState.CexBuyQuantity != nil && priceState.CexBuyQuoteAmount != nil && *priceState.CexBuyQuantity != 0 {
+			cexSolPrice = *priceState.CexBuyQuoteAmount / *priceState.CexBuyQuantity
+		} else {
+			// 处理 nil 或除数为 0 的情况，避免 panic
+			cexSolPrice = 0
+		}
+	} else {
+		// dex卖出
+		if priceState.CexSellQuantity != nil && priceState.CexSellQuoteAmount != nil && *priceState.CexSellQuantity != 0 {
+			cexSolPrice = *priceState.CexSellQuoteAmount / *priceState.CexSellQuantity
+		} else {
+			// 处理 nil 或除数为 0 的情况，避免 panic
+			cexSolPrice = 0
+		}
+	}
+	return cexSolPrice
 }
