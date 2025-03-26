@@ -356,7 +356,7 @@ func (e *BusDexCexTriangularObserver) GetCexAccountList(req *dto.BusGetCexAccoun
 	//查出绑定了amber的交易所账户列表，别且状态是已启用
 	err = e.Orm.Model(&data).
 		Unscoped().
-		Where("exchange_type = ? and status = ? and is_amber_bound = ?", req.Exchange, 2, true).
+		Where("exchange_type = ? and status = ?", req.Exchange, 2).
 		Find(list).Error
 
 	if err != nil {
