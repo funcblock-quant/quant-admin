@@ -3,6 +3,7 @@ package apis
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-admin-team/go-admin-core/sdk/api"
@@ -45,8 +46,16 @@ func (e BusPriceTriggerStrategyInstance) GetPage(c *gin.Context) {
 	}
 	userId := user.GetUserId(c)
 	roleName := user.GetRoleName(c)
-	e.Logger.Infof("roleName: %s", roleName)
-	if roleName != "admin" {
+	roleNameList := strings.Split(roleName, ",")
+	isAdminOrSystemAdmin := false
+	for _, roleName := range roleNameList {
+		if roleName == "admin" || roleName == "系统管理员" {
+			isAdminOrSystemAdmin = true
+			break
+		}
+	}
+
+	if !isAdminOrSystemAdmin {
 		//如果不是管理员，只能自己看自己添加的下单规则
 		req.UserId = strconv.Itoa(userId)
 	}
