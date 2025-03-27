@@ -3,6 +3,7 @@ package apis
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-admin-team/go-admin-core/sdk/api"
@@ -42,10 +43,21 @@ func (e BusPriceTriggerStrategyApikeyConfig) GetPage(c *gin.Context) {
 		return
 	}
 	roleName := user.GetRoleName(c)
+	roleNameList := strings.Split(roleName, ",")
+	e.Logger.Infof("roleNameList: %v", roleNameList)
+	isAdminOrSystemAdmin := false
+	for _, roleName := range roleNameList {
+		if roleName == "admin" || roleName == "系统管理员" {
+			isAdminOrSystemAdmin = true
+			break
+		}
+	}
+
 	var userId int
-	if roleName != "admin" {
-		e.Logger.Debugf("admin user id is: %d", userId)
+	if !isAdminOrSystemAdmin {
+		// 如果不是管理员，只能自己看自己添加的api key配置
 		userId = user.GetUserId(c)
+		e.Logger.Debugf("user id is: %d", userId)
 	}
 	p := actions.GetPermissionFromContext(c)
 	list := make([]models.BusPriceTriggerStrategyApikeyConfig, 0)

@@ -1,6 +1,10 @@
 package apis
 
 import (
+	"net/http"
+	"quanta-admin/app/admin/models"
+	"strings"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-admin-team/go-admin-core/sdk/api"
@@ -8,8 +12,6 @@ import (
 	_ "github.com/go-admin-team/go-admin-core/sdk/pkg/response"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
-	"net/http"
-	"quanta-admin/app/admin/models"
 
 	"quanta-admin/app/admin/service"
 	"quanta-admin/app/admin/service/dto"
@@ -502,7 +504,8 @@ func (e SysUser) GetInfo(c *gin.Context) {
 	}
 	p := actions.GetPermissionFromContext(c)
 	var roles = make([]string, 1)
-	roles[0] = user.GetRoleName(c)
+	roleNameList := strings.Split(user.GetRoleName(c), ",")
+	roles = append(roles, roleNameList...) // 将每个角色名称添加到 roles 切片中
 	var permissions = make([]string, 1)
 	permissions[0] = "*:*:*"
 	var buttons = make([]string, 1)
@@ -510,11 +513,21 @@ func (e SysUser) GetInfo(c *gin.Context) {
 
 	var mp = make(map[string]interface{})
 	mp["roles"] = roles
-	if user.GetRoleName(c) == "admin" || user.GetRoleName(c) == "系统管理员" {
+
+	isAdminOrSystemAdmin := false
+	for _, roleName := range roleNameList {
+		if roleName == "admin" || roleName == "系统管理员" {
+			isAdminOrSystemAdmin = true
+			break
+		}
+	}
+
+	if isAdminOrSystemAdmin {
 		mp["permissions"] = permissions
 		mp["buttons"] = buttons
 	} else {
-		list, _ := r.GetById(user.GetRoleId(c))
+		// list, _ := r.GetById(user.GetRoleId(c))
+		list, _ := r.GetByUserId(user.GetUserId(c))
 		mp["permissions"] = list
 		mp["buttons"] = list
 	}

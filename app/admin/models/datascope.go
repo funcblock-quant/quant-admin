@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+
 	"github.com/go-admin-team/go-admin-core/sdk/pkg"
 	"gorm.io/gorm"
 
@@ -28,11 +29,25 @@ func (e *DataPermission) GetDataScope(tableName string, db *gorm.DB) (*gorm.DB, 
 	if err != nil {
 		return nil, errors.New("获取用户数据出错 msg:" + err.Error())
 	}
-	err = db.Find(role, user.RoleId).Error
+
+	roleIds, err := user.ParseRoleIds()
 	if err != nil {
-		return nil, errors.New("获取用户数据出错 msg:" + err.Error())
+		return nil, errors.New("解析用户角色出错 msg:" + err.Error())
 	}
-	if role.DataScope == "2" || role.DataScope == "" {
+
+	maxDataScope := "2"
+	for _, roleId := range roleIds {
+		err = db.Find(role, roleId).Error
+		if err != nil {
+			return nil, errors.New("获取用户数据出错 msg:" + err.Error())
+		}
+		if role.DataScope == "1" {
+			maxDataScope = "1"
+			break
+		}
+	}
+
+	if maxDataScope == "2" {
 		db = db.Where(tableName+".create_by = ?", e.UserId)
 	}
 

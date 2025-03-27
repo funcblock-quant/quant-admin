@@ -5,7 +5,10 @@ import (
 	"net/http"
 	"quanta-admin/app/admin/models"
 	"quanta-admin/common"
+	"strings"
 	"time"
+
+	"quanta-admin/common/global"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-admin-team/go-admin-core/sdk"
@@ -16,14 +19,13 @@ import (
 	"github.com/go-admin-team/go-admin-core/sdk/pkg/jwtauth/user"
 	"github.com/go-admin-team/go-admin-core/sdk/pkg/response"
 	"github.com/mssola/user_agent"
-	"quanta-admin/common/global"
 )
 
 func PayloadFunc(data interface{}) jwt.MapClaims {
 	if v, ok := data.(map[string]interface{}); ok {
 		step, _ := v["loginStep"].(int)
 		u, _ := v["user"].(SysUser)
-		r, _ := v["role"].(SysRole)
+		r, _ := v["roles"].([]SysRole)
 		fmt.Printf("user %v\n, role %v\n", u, r)
 		if step == 1 {
 			// 生成two fa临时jwt凭证
@@ -36,13 +38,29 @@ func PayloadFunc(data interface{}) jwt.MapClaims {
 		} else {
 			// 直接生成登陆的jwt凭证
 			fmt.Println("生成正式jwt payload")
+			var roleIds, roleNames, roleKeys, dataScopes string
+			for _, role := range r {
+				roleIds += fmt.Sprintf("%d,", role.RoleId)
+				roleNames += fmt.Sprintf("%s,", role.RoleName)
+				roleKeys += fmt.Sprintf("%s,", role.RoleKey)
+				dataScopes += fmt.Sprintf("%s,", role.DataScope)
+			}
+			// 去除末尾的逗号
+			roleIds = strings.TrimRight(roleIds, ",")
+			roleNames = strings.TrimRight(roleNames, ",")
+			roleKeys = strings.TrimRight(roleKeys, ",")
+			dataScopes = strings.TrimRight(dataScopes, ",")
+			println("roleIds", roleIds)
+			println("roleNames", roleNames)
+			println("roleKeys", roleKeys)
+			println("dataScopes", dataScopes)
 			return jwt.MapClaims{
 				jwt.IdentityKey:  u.UserId,
-				jwt.RoleIdKey:    r.RoleId,
-				jwt.RoleKey:      r.RoleKey,
+				jwt.RoleIdKey:    roleIds,
+				jwt.RoleKey:      roleKeys,
 				jwt.NiceKey:      u.Username,
-				jwt.DataScopeKey: r.DataScope,
-				jwt.RoleNameKey:  r.RoleName,
+				jwt.DataScopeKey: dataScopes,
+				jwt.RoleNameKey:  roleNames,
 				jwt.LoginStepKey: step,
 			}
 		}
@@ -120,7 +138,7 @@ func Authenticator(c *gin.Context) (interface{}, error) {
 	//		return nil, jwt.ErrInvalidVerificationode
 	//	}
 	//}
-	sysUser, role, e := loginVals.GetUser(db)
+	sysUser, roles, e := loginVals.GetUser(db)
 	if e == nil {
 		if sysUser.ActiveTwoFa {
 			msg = "2FA验证"
@@ -130,7 +148,7 @@ func Authenticator(c *gin.Context) (interface{}, error) {
 		}
 		username = loginVals.Username
 
-		return map[string]interface{}{"loginStep": 2, "user": sysUser, "role": role}, nil
+		return map[string]interface{}{"loginStep": 2, "user": sysUser, "roles": roles}, nil
 	} else {
 		msg = "登录失败"
 		status = "1"
@@ -176,10 +194,10 @@ func TwoFaAuthenticator(c *gin.Context) (interface{}, error) {
 		return nil, jwt.ErrMissingLoginValues
 	}
 	fmt.Printf("loginVals: %#v\n", loginVals)
-	sysUser, role, e := loginVals.GetUser(db)
+	sysUser, roles, e := loginVals.GetUser(db)
 	if e == nil {
 		username = loginVals.Username
-		return map[string]interface{}{"loginStep": 2, "user": sysUser, "role": role}, nil
+		return map[string]interface{}{"loginStep": 2, "user": sysUser, "roles": roles}, nil
 	} else {
 		msg = "2FA验证失败"
 		status = "1"

@@ -2,6 +2,7 @@ package dto
 
 import (
 	"quanta-admin/app/admin/models"
+	"strconv"
 
 	"quanta-admin/common/dto"
 	common "quanta-admin/common/models"
@@ -89,7 +90,7 @@ type SysUserInsertReq struct {
 	Password string `json:"password" comment:"密码"`
 	NickName string `json:"nickName" comment:"昵称" vd:"len($)>0"`
 	Phone    string `json:"phone" comment:"手机号" vd:"len($)>0"`
-	RoleId   int    `json:"roleId" comment:"角色ID"`
+	RoleIds  []int  `json:"roleIds" comment:"角色ID"`
 	Avatar   string `json:"avatar" comment:"头像"`
 	Sex      string `json:"sex" comment:"性别"`
 	Email    string `json:"email" comment:"邮箱" vd:"len($)>0,email"`
@@ -106,13 +107,22 @@ func (s *SysUserInsertReq) Generate(model *models.SysUser) {
 	model.Password = s.Password
 	model.NickName = s.NickName
 	model.Phone = s.Phone
-	model.RoleId = s.RoleId
 	model.Avatar = s.Avatar
 	model.Sex = s.Sex
 	model.Email = s.Email
 	model.Remark = s.Remark
 	model.Status = s.Status
 	model.CreateBy = s.CreateBy
+
+	// 拼接 RoleIds 字符串
+	roleIdsStr := ""
+	for i, roleId := range s.RoleIds {
+		roleIdsStr += strconv.Itoa(roleId)
+		if i < len(s.RoleIds)-1 {
+			roleIdsStr += ","
+		}
+	}
+	model.RoleIds = roleIdsStr
 }
 
 func (s *SysUserInsertReq) GetId() interface{} {
@@ -137,7 +147,7 @@ type SysUserUpdateReq struct {
 	Username string `json:"username" comment:"用户名" vd:"len($)>0"`
 	NickName string `json:"nickName" comment:"昵称" vd:"len($)>0"`
 	Phone    string `json:"phone" comment:"手机号" vd:"len($)>0"`
-	RoleId   int    `json:"roleId" comment:"角色ID"`
+	RoleIds  []int  `json:"roleIds" comment:"角色ID数组"`
 	Avatar   string `json:"avatar" comment:"头像"`
 	Sex      string `json:"sex" comment:"性别"`
 	Email    string `json:"email" comment:"邮箱" vd:"len($)>0,email"`
@@ -153,12 +163,21 @@ func (s *SysUserUpdateReq) Generate(model *models.SysUser) {
 	model.Username = s.Username
 	model.NickName = s.NickName
 	model.Phone = s.Phone
-	model.RoleId = s.RoleId
 	model.Avatar = s.Avatar
 	model.Sex = s.Sex
 	model.Email = s.Email
 	model.Remark = s.Remark
 	model.Status = s.Status
+
+	// 拼接 RoleIds 字符串
+	roleIdsStr := ""
+	for i, roleId := range s.RoleIds {
+		roleIdsStr += strconv.Itoa(roleId)
+		if i < len(s.RoleIds)-1 {
+			roleIdsStr += ","
+		}
+	}
+	model.RoleIds = roleIdsStr
 }
 
 func (s *SysUserUpdateReq) GetId() interface{} {

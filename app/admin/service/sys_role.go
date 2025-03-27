@@ -2,6 +2,8 @@ package service
 
 import (
 	"errors"
+	"strconv"
+	"strings"
 
 	"github.com/go-admin-team/go-admin-core/sdk/config"
 	"gorm.io/gorm/clause"
@@ -337,6 +339,44 @@ func (e *SysRole) GetById(roleId int) ([]string, error) {
 	for i := 0; i < len(l); i++ {
 		if l[i].Permission != "" {
 			permissions = append(permissions, l[i].Permission)
+		}
+	}
+	return permissions, nil
+}
+
+// GetByUserId 获取SysRole对象
+func (e *SysRole) GetByUserId(userId int) ([]string, error) {
+	permissions := make([]string, 0)
+	sysUser := models.SysUser{}
+	if err := e.Orm.Model(&sysUser).First(&sysUser, userId).Error; err != nil {
+		return nil, err
+	}
+
+	roleIds := sysUser.RoleIds
+	roleIdList := strings.Split(roleIds, ",")
+
+	permissionMap := make(map[string]bool) // 用于去重
+
+	for _, roleIdStr := range roleIdList {
+		roleId, err := strconv.Atoi(roleIdStr)
+		if err != nil {
+			return nil, err
+		}
+
+		model := models.SysRole{}
+		model.RoleId = roleId
+		if err := e.Orm.Model(&model).Preload("SysMenu").First(&model).Error; err != nil {
+			return nil, err
+		}
+
+		l := *model.SysMenu
+		for i := 0; i < len(l); i++ {
+			if l[i].Permission != "" {
+				if _, ok := permissionMap[l[i].Permission]; !ok {
+					permissions = append(permissions, l[i].Permission)
+					permissionMap[l[i].Permission] = true
+				}
+			}
 		}
 	}
 	return permissions, nil
