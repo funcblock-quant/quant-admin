@@ -448,7 +448,7 @@ func (e *BusDexCexTriangularObserver) GetCanBoundAccountList(req *dto.BusGetBoun
 			e.Log.Errorf("BusDexCexTriangularObserverService GetCanBoundAccountList error:%s \r\n", err)
 			return err
 		}
-
+		e.Log.Infof("get bound dex wallet ids: %v", boundIds)
 		var dexWalletList []models.BusDexWallet
 		// 查询出绑定的dex账户列表
 		err = e.Orm.Model(&models.BusDexWallet{}).
@@ -472,9 +472,9 @@ func (e *BusDexCexTriangularObserver) GetCanBoundAccountList(req *dto.BusGetBoun
 			e.Log.Errorf("BusDexCexTriangularObserverService GetCanBoundAccountList error:%s \r\n", err)
 			return err
 		}
-
+		e.Log.Infof("get bound dex wallet ids: %v", boundIds)
 		var cexAccountList []models.BusExchangeAccountInfo
-		// 查询出绑定的dex账户列表
+		// 查询出绑定的cex账户列表
 		err = e.Orm.Model(&models.BusExchangeAccountInfo{}).
 			Where("id not in (?)", boundIds).
 			Find(&cexAccountList).Error
