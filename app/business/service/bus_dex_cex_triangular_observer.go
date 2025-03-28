@@ -448,12 +448,17 @@ func (e *BusDexCexTriangularObserver) GetCanBoundAccountList(req *dto.BusGetBoun
 			e.Log.Errorf("BusDexCexTriangularObserverService GetCanBoundAccountList error:%s \r\n", err)
 			return err
 		}
-		e.Log.Infof("get bound dex wallet ids: %v", boundIds)
 		var dexWalletList []models.BusDexWallet
 		// 查询出绑定的dex账户列表
-		err = e.Orm.Model(&models.BusDexWallet{}).
-			Where("id not in (?)", boundIds).
-			Find(&dexWalletList).Error
+		if len(boundIds) == 0 {
+			err = e.Orm.Model(&models.BusDexWallet{}).
+				Find(&dexWalletList).Error
+		} else {
+			err = e.Orm.Model(&models.BusDexWallet{}).
+				Where("id not in (?)", boundIds).
+				Find(&dexWalletList).Error
+		}
+
 		if err != nil {
 			e.Log.Errorf("BusDexCexTriangularObserverService GetCanBoundAccountList error:%s \r\n", err)
 			return err
@@ -475,9 +480,14 @@ func (e *BusDexCexTriangularObserver) GetCanBoundAccountList(req *dto.BusGetBoun
 		e.Log.Infof("get bound dex wallet ids: %v", boundIds)
 		var cexAccountList []models.BusExchangeAccountInfo
 		// 查询出绑定的cex账户列表
-		err = e.Orm.Model(&models.BusExchangeAccountInfo{}).
-			Where("id not in (?)", boundIds).
-			Find(&cexAccountList).Error
+		if len(boundIds) == 0 {
+			err = e.Orm.Model(&models.BusExchangeAccountInfo{}).
+				Find(&cexAccountList).Error
+		} else {
+			err = e.Orm.Model(&models.BusExchangeAccountInfo{}).
+				Where("id not in (?)", boundIds).
+				Find(&cexAccountList).Error
+		}
 		if err != nil {
 			e.Log.Errorf("BusDexCexTriangularObserverService GetCanBoundAccountList error:%s \r\n", err)
 			return err
