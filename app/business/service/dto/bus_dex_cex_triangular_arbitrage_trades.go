@@ -145,7 +145,8 @@ type StrategyDexCexTriangularArbitrageTradesInsertReq struct {
 	DexTxSig           string `json:"dexTxSig" comment:"Dex trade tx signature"`
 	DexSolAmount       string `json:"dexSolAmount" comment:"Dex trade SOL amount"`
 	DexTargetAmount    string `json:"dexTargetAmount" comment:"Dex trade target amount"`
-	CexAmberAccount    string `json:"cexAmberAccount" comment:"Cex amber account"`
+	CexAccountId       string `json:"cexAccountId" comment:"Cex account id"`
+	CexAccountType     string `json:"cexAccountType" comment:"Cex account type"`
 	CexExchangeType    string `json:"cexExchangeType" comment:"Cex exchange type"`
 	CexSellSuccess     string `json:"cexSellSuccess" comment:"Is cex sell success"`
 	CexSellOrderId     string `json:"cexSellOrderId" comment:"Cex sell order id"`
@@ -176,7 +177,8 @@ func (s *StrategyDexCexTriangularArbitrageTradesInsertReq) Generate(model *model
 	model.DexTxSig = s.DexTxSig
 	model.DexSolAmount = s.DexSolAmount
 	model.DexTargetAmount = s.DexTargetAmount
-	model.CexAmberAccount = s.CexAmberAccount
+	model.CexAccountId = s.CexAccountId
+	model.CexAccountType = s.CexAccountType
 	model.CexExchangeType = s.CexExchangeType
 	model.CexSellSuccess = s.CexSellSuccess
 	model.CexSellOrderId = s.CexSellOrderId
@@ -208,7 +210,8 @@ type StrategyDexCexTriangularArbitrageTradesUpdateReq struct {
 	DexTxSig           string `json:"dexTxSig" comment:"Dex trade tx signature"`
 	DexSolAmount       string `json:"dexSolAmount" comment:"Dex trade SOL amount"`
 	DexTargetAmount    string `json:"dexTargetAmount" comment:"Dex trade target amount"`
-	CexAmberAccount    string `json:"cexAmberAccount" comment:"Cex amber account"`
+	CexAccountId       string `json:"cexAccountId" comment:"Cex account id"`
+	CexAccountType     string `json:"cexAccountType" comment:"Cex account type"`
 	CexExchangeType    string `json:"cexExchangeType" comment:"Cex exchange type"`
 	CexSellSuccess     string `json:"cexSellSuccess" comment:"Is cex sell success"`
 	CexSellOrderId     string `json:"cexSellOrderId" comment:"Cex sell order id"`
@@ -239,7 +242,8 @@ func (s *StrategyDexCexTriangularArbitrageTradesUpdateReq) Generate(model *model
 	model.DexTxSig = s.DexTxSig
 	model.DexSolAmount = s.DexSolAmount
 	model.DexTargetAmount = s.DexTargetAmount
-	model.CexAmberAccount = s.CexAmberAccount
+	model.CexAccountId = s.CexAccountId
+	model.CexAccountType = s.CexAccountType
 	model.CexExchangeType = s.CexExchangeType
 	model.CexSellSuccess = s.CexSellSuccess
 	model.CexSellOrderId = s.CexSellOrderId
