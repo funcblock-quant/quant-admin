@@ -1233,7 +1233,6 @@ func (e *BusDexCexTriangularObserver) UpdateGlobalWaterLevelConfig(req *dto.BusD
 			SecretKey:            secretKey,
 		}
 
-		e.Log.Infof("启动solana全局水位调节 req: %v \r\n", clientRequest)
 		_, err = client.StartWaterLevelInstance(clientRequest)
 		if err != nil {
 			e.Log.Errorf("启动solana全局水位调节失败:%s \r\n", err)
@@ -1674,7 +1673,6 @@ func (e *BusDexCexTriangularObserver) StartGlobalWaterLevel() error {
 			TokenThresholdConfig: tokenConfig,
 		}
 
-		e.Log.Infof("启动solana全局水位调节 req: %v \r\n", clientRequest)
 		_, err = client.StartWaterLevelInstance(clientRequest)
 		if err != nil {
 			e.Log.Errorf("启动solana全局水位调节失败:%s \r\n", err)
@@ -2005,6 +2003,11 @@ func (e *BusDexCexTriangularObserver) startGlobalSolanaWaterLevelForAccountPair(
 			MinWithdrawAmountThreshold: strconv.FormatFloat(solMinWithdrawAmountThreshold, 'f', -1, 64),
 		}
 
+		exchangeType := cexAccount.ExchangeType
+		if exchangeType == global.EXCHANGE_TYPE_GATEIO {
+			exchangeType = "Gate"
+		}
+
 		clientRequest := &waterLevelPb.StartInstanceRequest{
 			InstanceId:           instanceIdKey,
 			ExchangeType:         cexAccount.ExchangeType,
@@ -2014,7 +2017,6 @@ func (e *BusDexCexTriangularObserver) startGlobalSolanaWaterLevelForAccountPair(
 			SecretKey:            secretKey,
 		}
 
-		e.Log.Infof("启动solana全局水位调节 req: %v \r\n", clientRequest)
 		_, err = client.StartWaterLevelInstance(clientRequest)
 		if err != nil {
 			e.Log.Errorf("启动solana全局水位调节失败:%s \r\n", err)
