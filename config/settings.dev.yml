@@ -54,7 +54,8 @@ settings:
      solanaserver: 127.0.0.1:2790
 #      jupserver: 127.0.0.1:2900
     aes:
-      key: your-32-byte-secret-key-for-aess
+      # key: your-32-byte-secret-key-for-aess
+      key: ${AES_SECRET_KEY}
   cache:
 #    redis:
 #      addr: 127.0.0.1:6379
