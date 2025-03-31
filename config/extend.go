@@ -10,10 +10,10 @@ var ExtConfig Extend
 //
 // 使用方法： config.ExtConfig......即可！！
 type Extend struct {
-	AMap AMap // 这里配置对应配置文件的结构即可
-	Lark LarkConfig
+	AMap AMap              // 这里配置对应配置文件的结构即可
+	Lark LarkConfig        `yaml:"aes"`
 	Grpc map[string]string `yaml:"grpc"`
-	Aes  AesConfig         `yaml:"aes"`
+	Aes  AesConfig
 }
 
 type AMap struct {
@@ -26,7 +26,7 @@ type LarkConfig struct {
 }
 
 type AesConfig struct {
-	Key string `yaml:"key"`
+	Key string
 }
 
 func (e *Extend) GetGrpcWithURL(endpoint string) string {
