@@ -56,7 +56,7 @@ settings:
       water-level-service: 172.31.47.132:8009
   #      jupserver: 127.0.0.1:2900
     aes:
-      secretkey: your-32-byte-secret-key-for-aess
+      key: ${AES_SECRET_KEY}
   cache:
     #    redis:
     #      addr: 127.0.0.1:6379
