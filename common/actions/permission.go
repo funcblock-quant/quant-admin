@@ -2,6 +2,8 @@ package actions
 
 import (
 	"errors"
+	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	log "github.com/go-admin-team/go-admin-core/logger"
@@ -15,7 +17,7 @@ import (
 type DataPermission struct {
 	DataScope string
 	UserId    int
-	RoleId    int
+	RoleIds   []int
 }
 
 func PermissionAction() gin.HandlerFunc {
@@ -45,15 +47,36 @@ func PermissionAction() gin.HandlerFunc {
 func newDataPermission(tx *gorm.DB, userId interface{}) (*DataPermission, error) {
 	var err error
 	p := &DataPermission{}
+	var roleIdsStr string
 
 	err = tx.Table("sys_user").
-		Select("sys_user.user_id", "sys_role.role_id", "sys_role.data_scope").
-		Joins("left join sys_role on sys_role.role_id = sys_user.role_id").
+		Select("sys_user.user_id", "sys_user.role_ids", "sys_role.data_scope").
+		Joins("left join sys_role on FIND_IN_SET(sys_role.role_id, sys_user.role_ids) > 0"). // 使用 FIND_IN_SET
 		Where("sys_user.user_id = ?", userId).
-		Scan(p).Error
+		Scan(&struct {
+			UserId    int
+			RoleIds   string
+			DataScope string
+		}{
+			UserId:    p.UserId,
+			RoleIds:   roleIdsStr,
+			DataScope: p.DataScope,
+		}).Error
 	if err != nil {
 		err = errors.New("获取用户数据出错 msg:" + err.Error())
 		return nil, err
+	}
+
+	// 解析 role_ids 字符串为 []int
+	if roleIdsStr != "" {
+		roleIds := strings.Split(roleIdsStr, ",")
+		for _, roleIdStr := range roleIds {
+			roleId, err := strconv.Atoi(roleIdStr)
+			if err != nil {
+				return nil, err // 如果转换失败，返回错误
+			}
+			p.RoleIds = append(p.RoleIds, roleId)
+		}
 	}
 	return p, nil
 }

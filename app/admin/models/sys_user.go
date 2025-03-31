@@ -1,9 +1,12 @@
 package models
 
 import (
+	"quanta-admin/common/models"
+	"strconv"
+	"strings"
+
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
-	"quanta-admin/common/models"
 )
 
 type SysUser struct {
@@ -12,14 +15,14 @@ type SysUser struct {
 	Password           string `json:"-" gorm:"size:128;comment:密码"`
 	NickName           string `json:"nickName" gorm:"size:128;comment:昵称"`
 	Phone              string `json:"phone" gorm:"size:11;comment:手机号"`
-	RoleId             int    `json:"roleId" gorm:"size:20;comment:角色ID"`
+	RoleIds            string `json:"roleId" gorm:"size:64;comment:角色ID"`
 	Salt               string `json:"-" gorm:"size:255;comment:加盐"`
 	Avatar             string `json:"avatar" gorm:"size:255;comment:头像"`
 	Sex                string `json:"sex" gorm:"size:255;comment:性别"`
 	Email              string `json:"email" gorm:"size:128;comment:邮箱"`
 	Remark             string `json:"remark" gorm:"size:255;comment:备注"`
 	Status             string `json:"status" gorm:"size:4;comment:状态"`
-	RoleIds            []int  `json:"roleIds" gorm:"-"`
+	RoleIdsArr         []int  `json:"roleIds" gorm:"-"`
 	ActiveTwoFa        bool   `json:"activeTwoFa" gorm:"comment:是否开启"`
 	TwoFaSecret        string `json:"-" gorm:"size:255;comment:2fa密钥"`
 	TwoFaRecoverSecret string `json:"-" gorm:"size:255;comment:2fa一次性恢复密钥"`
@@ -68,6 +71,30 @@ func (e *SysUser) BeforeUpdate(_ *gorm.DB) error {
 }
 
 func (e *SysUser) AfterFind(_ *gorm.DB) error {
-	e.RoleIds = []int{e.RoleId}
+	roleIds, err := e.ParseRoleIds()
+	if err != nil {
+		return err
+	}
+	e.RoleIdsArr = roleIds
 	return nil
+}
+
+// ParseRoleIds 将 RoleIds 字符串解析为 []int 数组
+func (u *SysUser) ParseRoleIds() ([]int, error) {
+	if u.RoleIds == "" {
+		return nil, nil // 如果 RoleIds 为空，返回 nil
+	}
+
+	roleIdsStr := strings.Split(u.RoleIds, ",")
+	roleIds := make([]int, 0, len(roleIdsStr))
+
+	for _, roleIdStr := range roleIdsStr {
+		roleId, err := strconv.Atoi(roleIdStr)
+		if err != nil {
+			return nil, err // 如果转换失败，返回错误
+		}
+		roleIds = append(roleIds, roleId)
+	}
+
+	return roleIds, nil
 }

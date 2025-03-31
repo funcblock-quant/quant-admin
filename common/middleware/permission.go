@@ -1,8 +1,10 @@
 package middleware
 
 import (
-	"github.com/casbin/casbin/v2/util"
 	"net/http"
+	"strings"
+
+	"github.com/casbin/casbin/v2/util"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-admin-team/go-admin-core/sdk"
@@ -20,12 +22,18 @@ func AuthCheckRole() gin.HandlerFunc {
 		e := sdk.Runtime.GetCasbinKey(c.Request.Host)
 		var res, casbinExclude bool
 		var err error
+		var hasPermission bool // 添加一个变量，用于标记是否有权限
+		var enforceErr error   // 添加一个变量，用于存储 Enforce 错误
 		//检查权限
-		if v["rolekey"] == "admin" {
-			res = true
-			c.Next()
-			return
+		roleKeyList := strings.Split(v["rolekey"].(string), ",")
+		for _, roleKey := range roleKeyList {
+			if roleKey == "admin" {
+				res = true
+				c.Next()
+				return
+			}
 		}
+
 		for _, i := range CasbinExclude {
 			if util.KeyMatch2(c.Request.URL.Path, i.Url) && c.Request.Method == i.Method {
 				casbinExclude = true
@@ -37,14 +45,26 @@ func AuthCheckRole() gin.HandlerFunc {
 			c.Next()
 			return
 		}
-		res, err = e.Enforce(v["rolekey"], c.Request.URL.Path, c.Request.Method)
-		if err != nil {
-			log.Errorf("AuthCheckRole error:%s method:%s path:%s", err, c.Request.Method, c.Request.URL.Path)
-			response.Error(c, 500, err, "")
+		// Casbin 权限验证
+		for _, roleKey := range roleKeyList {
+			res, err = e.Enforce(roleKey, c.Request.URL.Path, c.Request.Method)
+			if err != nil && enforceErr == nil { // 记录第一个 Enforce 错误
+				enforceErr = err
+			}
+			if res {
+				hasPermission = true // 标记有权限
+				break
+			}
+		}
+
+		if enforceErr != nil { // 检查是否有 Enforce 错误
+			log.Errorf("AuthCheckRole error:%s method:%s path:%s", enforceErr, c.Request.Method, c.Request.URL.Path)
+			response.Error(c, 500, enforceErr, "")
+			c.Abort()
 			return
 		}
 
-		if res {
+		if hasPermission { // 检查是否有权限
 			log.Infof("isTrue: %v role: %s method: %s path: %s", res, v["rolekey"], c.Request.Method, c.Request.URL.Path)
 			c.Next()
 		} else {
