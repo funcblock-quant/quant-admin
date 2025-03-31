@@ -292,8 +292,8 @@ type BusDexCexTriangularObserverStartTraderReq struct {
 	SlippageBpsRate            *float64 `json:"slippageBpsRate"`
 	PriorityFee                *float64 `json:"priorityFee"`
 	JitoFeeRate                *float64 `json:"jitoFeeRate"`
-	CexAccount                 int      `json:"cexAccount"`
-	DexWallet                  int      `json:"DexWallet"`
+	CexAccount                 int64    `json:"cexAccount"`
+	DexWallet                  int64    `json:"DexWallet"`
 	common.ControlBy
 }
 
