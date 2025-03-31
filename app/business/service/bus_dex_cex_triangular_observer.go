@@ -680,12 +680,12 @@ func (e *BusDexCexTriangularObserver) StartTrader(c *dto.BusDexCexTriangularObse
 		"sell_trigger_threshold":        c.SellTriggerThreshold,
 		"min_deposit_amount_threshold":  c.MinDepositAmountThreshold,
 		"min_withdraw_amount_threshold": c.MinWithdrawAmountThreshold,
-		//"slippage_bps":           slippageBpsUint,
-		"priority_fee":   priorityFee,
-		"jito_fee_rate":  c.JitoFeeRate,
-		"status":         INSTANCE_STATUS_WATERLEVEL, // 水位调节中
-		"cex_account_id": c.CexAccount,
-		"dex_wallet_id":  c.DexWallet,
+		"slippage_bps_rate":             c.SlippageBpsRate,
+		"priority_fee":                  priorityFee,
+		"jito_fee_rate":                 c.JitoFeeRate,
+		"status":                        INSTANCE_STATUS_WATERLEVEL, // 水位调节中
+		"cex_account_id":                c.CexAccount,
+		"dex_wallet_id":                 c.DexWallet,
 	}
 
 	if err := e.Orm.Model(&models.BusDexCexTriangularObserver{}).
@@ -1822,6 +1822,8 @@ func (e *BusDexCexTriangularObserver) StartGlobalWaterLevelV2() error {
 		e.Log.Errorf("获取solana价格异常:%s \r\n", err)
 		return err
 	}
+
+	e.Log.Infof("获取到solana价格：%f \r\n", cexSolPrice)
 
 	//solana的阈值通过公式计算
 	//1. 统计出所有的账户组合，循环处理每个账户组合的全局水位调整
