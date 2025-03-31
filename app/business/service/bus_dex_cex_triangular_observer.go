@@ -674,10 +674,12 @@ func (e *BusDexCexTriangularObserver) StartTrader(c *dto.BusDexCexTriangularObse
 
 	// 启动水位调节后，更新数据库中的相关参数
 	updateData := map[string]interface{}{
-		"is_trading":             false,
-		"alert_threshold":        c.AlertThreshold,
-		"buy_trigger_threshold":  c.BuyTriggerThreshold,
-		"sell_trigger_threshold": c.SellTriggerThreshold,
+		"is_trading":                    false,
+		"alert_threshold":               c.AlertThreshold,
+		"buy_trigger_threshold":         c.BuyTriggerThreshold,
+		"sell_trigger_threshold":        c.SellTriggerThreshold,
+		"min_deposit_amount_threshold":  c.MinDepositAmountThreshold,
+		"min_withdraw_amount_threshold": c.MinWithdrawAmountThreshold,
 		//"slippage_bps":           slippageBpsUint,
 		"priority_fee":   priorityFee,
 		"jito_fee_rate":  c.JitoFeeRate,
