@@ -18,7 +18,8 @@ services:
       - DATABASE_PASSWORD=${DATABASE_PASSWORD}
       - DATABASE_USERNAME=${DATABASE_USERNAME}
       - JWT_SECRET=${JWT_SECRET}
-      - ENVIRONMENT=production  # 添加环境变量来区分环境
+      - ENVIRONMENT=production  
+      - AES_SECRET_KEY=${AES_SECRET_KEY}# 添加环境变量来区分环境
 
 #networks:
 #  myweb:
