@@ -2010,7 +2010,7 @@ func (e *BusDexCexTriangularObserver) startGlobalSolanaWaterLevelForAccountPair(
 
 		clientRequest := &waterLevelPb.StartInstanceRequest{
 			InstanceId:           instanceIdKey,
-			ExchangeType:         cexAccount.ExchangeType,
+			ExchangeType:         exchangeType,
 			Currency:             "SOL",
 			CurrencyType:         0, // token
 			TokenThresholdConfig: tokenConfig,
