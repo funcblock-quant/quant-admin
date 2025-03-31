@@ -18,7 +18,7 @@ services:
       - DATABASE_PASSWORD=${DATABASE_PASSWORD}
       - DATABASE_USERNAME=${DATABASE_USERNAME}
       - JWT_SECRET=${JWT_SECRET}
-      - AES_SECRET_KEY=${AES_SECRET_KEY}
+      - AES_SECRET_KEY=${AES_SECRET}
 networks:
   myweb:
     driver: bridge
