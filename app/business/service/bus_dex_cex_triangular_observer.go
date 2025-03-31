@@ -3229,8 +3229,6 @@ func DoStartTokenWaterLevel(db *gorm.DB, observer *models.BusDexCexTriangularObs
 }
 
 func generateSecretConfig(dexWallet models.BusDexWallet, cexAccount models.BusExchangeAccountInfo, masterCexAccount models.BusExchangeAccountInfo) (*waterLevelPb.SecretKey, error) {
-	//TODO prod删除日志
-	log.Errorf("ext.ExtConfig.Aes.Key:%+s \r\n", ext.ExtConfig.Aes.Key)
 	privateKey, err := utils.DecryptWithSecretKey([]byte(ext.ExtConfig.Aes.Key), dexWallet.EncryptedPrivateKey)
 	if err != nil {
 		log.Errorf("解密私钥参数失败:%s \r\n", err)
