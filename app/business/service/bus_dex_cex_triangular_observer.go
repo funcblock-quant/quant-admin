@@ -1969,12 +1969,17 @@ func (e *BusDexCexTriangularObserver) startGlobalSolanaWaterLevelForAccountPair(
 	}
 
 	var cexMasterAccount models.BusExchangeAccountInfo
-	err = db.Model(&models.BusExchangeAccountInfo{}).
-		Where("id = ?", cexAccount.MasterAccountId).
-		First(&cexMasterAccount).Error
-	if err != nil {
-		e.Log.Errorf("get cex master account info failed, cexMasterAccountId: %s", cexAccount.MasterAccountId)
-		return err
+	if cexAccount.MasterAccountId == 0 {
+		e.Log.Infof("cexAccountId: %d 没有绑定主账户", accountPair.CexAccountId)
+		cexMasterAccount = models.BusExchangeAccountInfo{}
+	} else {
+		err = db.Model(&models.BusExchangeAccountInfo{}).
+			Where("id = ?", cexAccount.MasterAccountId).
+			First(&cexMasterAccount).Error
+		if err != nil {
+			e.Log.Errorf("get cex master account info failed, cexMasterAccountId: %s", cexAccount.MasterAccountId)
+			return err
+		}
 	}
 
 	var dexWallet models.BusDexWallet
@@ -1988,6 +1993,9 @@ func (e *BusDexCexTriangularObserver) startGlobalSolanaWaterLevelForAccountPair(
 
 	if !isSolanaStarted {
 		secretKey, err := generateSecretConfig(dexWallet, cexAccount, cexMasterAccount)
+		if err != nil {
+			return err
+		}
 
 		tokenConfig := &waterLevelPb.TokenThresholdConfig{
 			AlertThreshold:             strconv.FormatFloat(solanaAlertThreshold, 'f', -1, 64),
