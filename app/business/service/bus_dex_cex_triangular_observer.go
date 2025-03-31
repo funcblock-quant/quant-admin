@@ -674,10 +674,12 @@ func (e *BusDexCexTriangularObserver) StartTrader(c *dto.BusDexCexTriangularObse
 
 	// 启动水位调节后，更新数据库中的相关参数
 	updateData := map[string]interface{}{
-		"is_trading":             false,
-		"alert_threshold":        c.AlertThreshold,
-		"buy_trigger_threshold":  c.BuyTriggerThreshold,
-		"sell_trigger_threshold": c.SellTriggerThreshold,
+		"is_trading":                    false,
+		"alert_threshold":               c.AlertThreshold,
+		"buy_trigger_threshold":         c.BuyTriggerThreshold,
+		"sell_trigger_threshold":        c.SellTriggerThreshold,
+		"min_deposit_amount_threshold":  c.MinDepositAmountThreshold,
+		"min_withdraw_amount_threshold": c.MinWithdrawAmountThreshold,
 		//"slippage_bps":           slippageBpsUint,
 		"priority_fee":   priorityFee,
 		"jito_fee_rate":  c.JitoFeeRate,
@@ -3229,8 +3231,6 @@ func DoStartTokenWaterLevel(db *gorm.DB, observer *models.BusDexCexTriangularObs
 }
 
 func generateSecretConfig(dexWallet models.BusDexWallet, cexAccount models.BusExchangeAccountInfo, masterCexAccount models.BusExchangeAccountInfo) (*waterLevelPb.SecretKey, error) {
-	//TODO prod删除日志
-	log.Errorf("ext.ExtConfig.Aes.Key:%+s \r\n", ext.ExtConfig.Aes.Key)
 	privateKey, err := utils.DecryptWithSecretKey([]byte(ext.ExtConfig.Aes.Key), dexWallet.EncryptedPrivateKey)
 	if err != nil {
 		log.Errorf("解密私钥参数失败:%s \r\n", err)
