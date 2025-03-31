@@ -13,7 +13,7 @@ type Extend struct {
 	AMap AMap              // 这里配置对应配置文件的结构即可
 	Lark LarkConfig        `yaml:"aes"`
 	Grpc map[string]string `yaml:"grpc"`
-	Aes  AesConfig
+	Aes  AesConfig         `yaml:"aes"`
 }
 
 type AMap struct {
@@ -26,7 +26,7 @@ type LarkConfig struct {
 }
 
 type AesConfig struct {
-	Key string
+	Key string `yaml:"key"`
 }
 
 func (e *Extend) GetGrpcWithURL(endpoint string) string {
