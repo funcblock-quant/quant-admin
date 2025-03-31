@@ -643,6 +643,8 @@ func (e *BusDexCexTriangularObserver) StartTrader(c *dto.BusDexCexTriangularObse
 	data.SellTriggerThreshold = c.SellTriggerThreshold
 	data.MinDepositAmountThreshold = c.MinDepositAmountThreshold
 	data.MinWithdrawAmountThreshold = c.MinWithdrawAmountThreshold
+	data.CexAccountId = &c.CexAccount
+	data.DexWalletId = &c.DexWallet
 	// step1 先启动水位调节实例
 	if config.ApplicationConfig.Mode != "dev" {
 		err = StartTokenWaterLevelWithCheckExists(&data)
