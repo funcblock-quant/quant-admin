@@ -61,6 +61,8 @@ func (e *BusDexCexTriangularObserver) GetId() interface{} {
 func (e *BusDexCexTriangularObserver) GetExchangeTypeForTrader() (string, error) {
 	if e.ExchangeType == "Binance" {
 		return "BinanceClassicUnifiedMargin", nil
+	} else if e.ExchangeType == "GateIO" {
+		return "GateIO", nil
 	} else {
 		return "", errors.New("not support exchange type")
 	}
