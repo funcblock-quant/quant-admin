@@ -39,8 +39,8 @@ type BusDexCexTriangularObserver struct {
 	MinDepositAmountThreshold  *float64 `gorm:"null;comment:最低充值金额阈值" json:"minDepositAmountThreshold"`
 	MinWithdrawAmountThreshold *float64 `gorm:"null;comment:最低提现金额阈值" json:"minWithdrawAmountThreshold"`
 	IsTradingBlocked           bool     `gorm:"null;comment:交易功能是否被风控" json:"isTradingBlocked"`
-	DexWalletId                *int64   `gorm:"null;comment:dex交易钱包id" json:"dexWalletId"`
-	CexAccountId               *int64   `gorm:"null;comment:cex交易账户id" json:"cexAccountId"`
+	DexWalletId                *int64   `gorm:"null;comment:dex交易钱包id" json:"dexWallet"`
+	CexAccountId               *int64   `gorm:"null;comment:cex交易账户id" json:"cexAccount"`
 	models.ModelTime
 	models.ControlBy
 }
