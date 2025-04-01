@@ -61,14 +61,11 @@ func (s *BusExchangeAccountInfoInsertReq) GetId() interface{} {
 }
 
 type BusExchangeAccountInfoUpdateReq struct {
-	Id              int      `uri:"id" comment:""` //
-	AccountName     string   `json:"accountName" comment:"钱包名称"`
-	ExchangeId      string   `json:"exchangeId" comment:"id"`
-	ExchangeName    string   `json:"exchangeName" comment:"交易所名称"`
-	Uid             string   `json:"uid" comment:"交易所uid"`
-	AccountType     string   `json:"accountType" comment:"账户类型"`
-	Status          string   `json:"status" comment:"状态"`
-	AccountGroupIds []string `json:"accountGroupIds" comment:"绑定的账户组id"`
+	Id           int    `uri:"id" comment:""` //
+	AccountName  string `json:"accountName" comment:"钱包名称"`
+	ExchangeType string `json:"exchangeType" comment:"交易所名称"`
+	Uid          string `json:"uid" comment:"交易所uid"`
+	Status       int8   `json:"status" comment:"状态"`
 	common.ControlBy
 }
 
@@ -77,8 +74,10 @@ func (s *BusExchangeAccountInfoUpdateReq) Generate(model *models.BusExchangeAcco
 		model.Model = common.Model{Id: s.Id}
 	}
 	model.AccountName = s.AccountName
+	model.ExchangeType = s.ExchangeType
+	model.Status = s.Status
 	model.Uid = s.Uid
-	model.UpdateBy = s.UpdateBy // 添加这而，需要记录是被谁更新的
+	model.UpdateBy = s.UpdateBy // 添加这行，需要记录是被谁更新的
 }
 
 func (s *BusExchangeAccountInfoUpdateReq) GetId() interface{} {
@@ -109,4 +108,24 @@ type BusGroupAccountInfoGetReq struct {
 
 func (s *BusGroupAccountInfoGetReq) GetId() interface{} {
 	return s.GroupId
+}
+
+type CexExchangeListResp struct {
+	ExchangeType string `json:"exchangeType" gorm:"column:exchange_type"`
+}
+
+type ProtfolioUnwindingInfoReq struct {
+	TokenName    string `json:"tokenName" comment:"token名称"`
+	TokenAddress string `json:"tokenAddress" comment:"token地址"`
+	CexAccountId int64  `json:"cexAccountId" comment:"交易所账户id"`
+	DexWalletId  int64  `json:"dexWalletId" comment:"钱包id"`
+}
+
+type ProtfolioUnwindingInfoResp struct {
+	TokenName                  string `json:"tokenName" comment:"token名称"`
+	WalletBalance              string `json:"walletBalance" comment:"钱包余额"`
+	TraderAccountMarginBalance string `json:"traderAccountMarginBalance" comment:"交易所杠杆账户余额"`
+	TraderAccountSpotBalance   string `json:"traderAccountSpotBalance" comment:"交易所现货账户余额"`
+	MasterAccountSpotBalance   string `json:"masterAccountSpotBalance" comment:"主账户现货账户余额"`
+	TraderAccountBorrowed      string `json:"traderAccountBorrowed" comment:"交易所借贷账户余额"`
 }

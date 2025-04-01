@@ -216,5 +216,77 @@ func (e BusExchangeAccountInfo) GetAccountListByGroupId(c *gin.Context) {
 		e.Error(500, err, fmt.Sprintf("删除账户配置失败，\r\n失败信息 %s", err.Error()))
 		return
 	}
-	e.OK(list, "删除成功")
+	e.OK(list, "查询成功")
+}
+func (e BusExchangeAccountInfo) QueryExchangeListInUse(c *gin.Context) {
+	s := service.BusExchangeAccountInfo{}
+	req := dto.BusGroupAccountInfoGetReq{}
+	err := e.MakeContext(c).
+		MakeOrm().
+		Bind(&req).
+		MakeService(&s.Service).
+		Errors
+	if err != nil {
+		e.Logger.Error(err)
+		e.Error(500, err, err.Error())
+		return
+	}
+
+	p := actions.GetPermissionFromContext(c)
+
+	list := make([]dto.CexExchangeListResp, 0)
+	err = s.QueryExchangeListInUse(&req, p, &list)
+	if err != nil {
+		e.Error(500, err, fmt.Sprintf("删除账户配置失败，\r\n失败信息 %s", err.Error()))
+		return
+	}
+	e.OK(list, "查询成功")
+}
+
+func (e BusExchangeAccountInfo) GetPortfolioUnwindingInfo(c *gin.Context) {
+	s := service.BusExchangeAccountInfo{}
+	req := dto.ProtfolioUnwindingInfoReq{}
+	err := e.MakeContext(c).
+		MakeOrm().
+		Bind(&req).
+		MakeService(&s.Service).
+		Errors
+	if err != nil {
+		e.Logger.Error(err)
+		e.Error(500, err, err.Error())
+		return
+	}
+
+	p := actions.GetPermissionFromContext(c)
+
+	resp := dto.ProtfolioUnwindingInfoResp{}
+	err = s.GetPortfolioUnwindingInfo(&req, p, &resp)
+	if err != nil {
+		e.Error(500, err, fmt.Sprintf("查询账户资金情况失败，\r\n失败信息 %s", err.Error()))
+		return
+	}
+	e.OK(resp, "查询成功")
+}
+
+func (e BusExchangeAccountInfo) PortfolioUnwinding(c *gin.Context) {
+	s := service.BusExchangeAccountInfo{}
+	req := dto.ProtfolioUnwindingInfoReq{}
+	err := e.MakeContext(c).
+		MakeOrm().
+		Bind(&req).
+		MakeService(&s.Service).
+		Errors
+	if err != nil {
+		e.Logger.Error(err)
+		e.Error(500, err, err.Error())
+		return
+	}
+
+	p := actions.GetPermissionFromContext(c)
+	err = s.PortfolioUnwinding(&req, p)
+	if err != nil {
+		e.Error(500, err, fmt.Sprintf("资金归集失败，\r\n失败信息 %s", err.Error()))
+		return
+	}
+	e.OK("归集成功", "操作成功")
 }

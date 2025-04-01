@@ -22,11 +22,13 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Instance_StartInstance_FullMethodName        = "/water_level_service.Instance/StartInstance"
-	Instance_UpdateInstanceParams_FullMethodName = "/water_level_service.Instance/UpdateInstanceParams"
-	Instance_StopInstance_FullMethodName         = "/water_level_service.Instance/StopInstance"
-	Instance_ListInstances_FullMethodName        = "/water_level_service.Instance/ListInstances"
-	Instance_GetInstanceState_FullMethodName     = "/water_level_service.Instance/GetInstanceState"
+	Instance_StartInstance_FullMethodName             = "/water_level_service.Instance/StartInstance"
+	Instance_UpdateInstanceParams_FullMethodName      = "/water_level_service.Instance/UpdateInstanceParams"
+	Instance_StopInstance_FullMethodName              = "/water_level_service.Instance/StopInstance"
+	Instance_ListInstances_FullMethodName             = "/water_level_service.Instance/ListInstances"
+	Instance_GetInstanceState_FullMethodName          = "/water_level_service.Instance/GetInstanceState"
+	Instance_GetPortfolioUnwindingInfo_FullMethodName = "/water_level_service.Instance/GetPortfolioUnwindingInfo"
+	Instance_PortfolioUnwinding_FullMethodName        = "/water_level_service.Instance/PortfolioUnwinding"
 )
 
 // InstanceClient is the client API for Instance service.
@@ -43,6 +45,10 @@ type InstanceClient interface {
 	ListInstances(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*InstanceListResponse, error)
 	// 查看实例实时数据
 	GetInstanceState(ctx context.Context, in *InstanceId, opts ...grpc.CallOption) (*GetStateResponse, error)
+	// 资金归集时查询信息
+	GetPortfolioUnwindingInfo(ctx context.Context, in *PortfolioUnwindingRequest, opts ...grpc.CallOption) (*GetPortfolioUnwindingResponse, error)
+	// 资金归集
+	PortfolioUnwinding(ctx context.Context, in *PortfolioUnwindingRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type instanceClient struct {
@@ -98,6 +104,24 @@ func (c *instanceClient) GetInstanceState(ctx context.Context, in *InstanceId, o
 	return out, nil
 }
 
+func (c *instanceClient) GetPortfolioUnwindingInfo(ctx context.Context, in *PortfolioUnwindingRequest, opts ...grpc.CallOption) (*GetPortfolioUnwindingResponse, error) {
+	out := new(GetPortfolioUnwindingResponse)
+	err := c.cc.Invoke(ctx, Instance_GetPortfolioUnwindingInfo_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *instanceClient) PortfolioUnwinding(ctx context.Context, in *PortfolioUnwindingRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, Instance_PortfolioUnwinding_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // InstanceServer is the server API for Instance service.
 // All implementations must embed UnimplementedInstanceServer
 // for forward compatibility
@@ -112,6 +136,10 @@ type InstanceServer interface {
 	ListInstances(context.Context, *emptypb.Empty) (*InstanceListResponse, error)
 	// 查看实例实时数据
 	GetInstanceState(context.Context, *InstanceId) (*GetStateResponse, error)
+	// 资金归集时查询信息
+	GetPortfolioUnwindingInfo(context.Context, *PortfolioUnwindingRequest) (*GetPortfolioUnwindingResponse, error)
+	// 资金归集
+	PortfolioUnwinding(context.Context, *PortfolioUnwindingRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedInstanceServer()
 }
 
@@ -133,6 +161,12 @@ func (UnimplementedInstanceServer) ListInstances(context.Context, *emptypb.Empty
 }
 func (UnimplementedInstanceServer) GetInstanceState(context.Context, *InstanceId) (*GetStateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetInstanceState not implemented")
+}
+func (UnimplementedInstanceServer) GetPortfolioUnwindingInfo(context.Context, *PortfolioUnwindingRequest) (*GetPortfolioUnwindingResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetPortfolioUnwindingInfo not implemented")
+}
+func (UnimplementedInstanceServer) PortfolioUnwinding(context.Context, *PortfolioUnwindingRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PortfolioUnwinding not implemented")
 }
 func (UnimplementedInstanceServer) mustEmbedUnimplementedInstanceServer() {}
 
@@ -237,6 +271,42 @@ func _Instance_GetInstanceState_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Instance_GetPortfolioUnwindingInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PortfolioUnwindingRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InstanceServer).GetPortfolioUnwindingInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Instance_GetPortfolioUnwindingInfo_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InstanceServer).GetPortfolioUnwindingInfo(ctx, req.(*PortfolioUnwindingRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Instance_PortfolioUnwinding_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PortfolioUnwindingRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InstanceServer).PortfolioUnwinding(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Instance_PortfolioUnwinding_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InstanceServer).PortfolioUnwinding(ctx, req.(*PortfolioUnwindingRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Instance_ServiceDesc is the grpc.ServiceDesc for Instance service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -263,6 +333,14 @@ var Instance_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetInstanceState",
 			Handler:    _Instance_GetInstanceState_Handler,
+		},
+		{
+			MethodName: "GetPortfolioUnwindingInfo",
+			Handler:    _Instance_GetPortfolioUnwindingInfo_Handler,
+		},
+		{
+			MethodName: "PortfolioUnwinding",
+			Handler:    _Instance_PortfolioUnwinding_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
