@@ -2107,6 +2107,7 @@ func calculateGlobalSolWalterLevelConfig(db *gorm.DB, accountPair DexCexPair, ce
 	var traders []models.BusDexCexTriangularObserver
 	err := db.Model(&models.BusDexCexTriangularObserver{}).
 		Where("dex_wallet_id =? AND cex_account_id =?", accountPair.DexWalletId, accountPair.CexAccountId).
+		Where("status = ? AND is_trading = ?", INSTANCE_STATUS_TRADING, true).
 		Find(&traders).Error
 	if err != nil {
 		log.Errorf("获取 trader 失败:%s \r\n", err)
