@@ -18,12 +18,23 @@ service Instance {
   // 查看实例实时数据
   rpc GetInstanceState (InstanceId) returns (GetStateResponse);
 
+  // 资金归集时查询信息
+  rpc GetPortfolioUnwindingInfo (PortfolioUnwindingRequest) returns (GetPortfolioUnwindingResponse);
+  // 资金归集
+  rpc PortfolioUnwinding (PortfolioUnwindingRequest) returns (google.protobuf.Empty);
 }
 
 
 enum CurrencyType {
   Token = 0;
   StableCoin = 1;
+}
+
+// 定义一个枚举类型
+enum ExchangeType {
+  Unknown = 0;  // 枚举必须从 0 开始
+  Binance = 1; //  Binance.com
+  Gate = 2; //  Gate.io
 }
 
 // Message definitions
@@ -96,4 +107,21 @@ message ExchangeAccount {
   string api_key = 4;
   string secret = 5;
   string passphrase = 6;
+}
+
+message PortfolioUnwindingRequest {
+  ExchangeType  exchange_type = 1;
+  string        token_name = 2; // 交易币种/token name
+  optional string token_address = 3; // 交易币种在solana mainnet链上的pubkey，SOL留空，其他token必填
+  SecretKey    secret_key = 4; // 交易所的api-key，secret，passphrase 以及 chain wallet private key
+}
+
+message GetPortfolioUnwindingResponse {
+  string token_name = 1;
+  string wallet_balance = 2;
+  string trader_account_margin_balance = 3;
+  string trader_account_spot_balance = 4;
+  string master_account_spot_balance = 5; // 如果request里的master_account为空（即trader_account和master_account是同一个账户），则返回的master_account_*总为0
+  string borrowed = 6;
+  string borrowable = 7;
 }

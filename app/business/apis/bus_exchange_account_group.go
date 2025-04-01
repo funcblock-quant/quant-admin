@@ -212,5 +212,5 @@ func (e BusExchangeAccountGroup) GetAccountGroupListByAccountId(c *gin.Context) 
 		e.Error(500, err, fmt.Sprintf("获取账户绑定账户组失败，\r\n失败信息 %s", err.Error()))
 		return
 	}
-	e.OK(list, "删除成功")
+	e.OK(list, "查询成功")
 }

@@ -364,6 +364,7 @@ func (e BusDexCexTriangularObserver) StopTrader(c *gin.Context) {
 		return
 	}
 	req.SetUpdateBy(user.GetUserId(c))
+	e.Logger.Infof("User: %d Stop Trader req: %+v", req.UpdateBy, req)
 	err = s.StopTrader(&req, false)
 	if err != nil {
 		e.Error(500, err, fmt.Sprintf("停止交易失败，\r\n失败信息 %s", err.Error()))

@@ -25,4 +25,7 @@ func registerBusExchangeAccountInfoRouter(v1 *gin.RouterGroup, authMiddleware *j
 		r.DELETE("", api.Delete)
 	}
 	r = v1.GET("/queryAccountByGroupId/:groupId", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.GetAccountListByGroupId)
+	r = v1.GET("/queryExchangeListInUse", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.QueryExchangeListInUse)
+	r = v1.POST("/getPortfolioUnwindingInfo", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.GetPortfolioUnwindingInfo)
+	r = v1.POST("/portfolioUnwinding", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.PortfolioUnwinding)
 }
