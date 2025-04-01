@@ -2064,6 +2064,8 @@ func (e *BusDexCexTriangularObserver) startGlobalSolanaWaterLevelForAccountPair(
 					MinDepositAmountThreshold:  strconv.FormatFloat(solMinDepositAmountThreshold, 'f', -1, 64),
 					MinWithdrawAmountThreshold: strconv.FormatFloat(solMinWithdrawAmountThreshold, 'f', -1, 64),
 				}
+
+				log.Infof("账户组合 %d,%d 全局水位调节参数：solanaAlertThreshold: %f, solBuyTriggerThreshold: %f, solSellTriggerThreshold: %f \n", accountPair.DexWalletId, accountPair.CexAccountId, tokenConfig.AlertThreshold, tokenConfig.BuyTriggerThreshold, tokenConfig.SellTriggerThreshold)
 				updateReq := &waterLevelPb.UpdateInstanceParamsRequest{
 					InstanceId:           instanceIdKey,
 					CurrencyType:         0, // token
@@ -2132,7 +2134,7 @@ func calculateGlobalSolWalterLevelConfig(db *gorm.DB, accountPair DexCexPair, ce
 	// 这里使用3，7的系数，是经过计算，当solana价格只要不高于200，可以避免因为n的波动导致的频繁触发充提，因为可以保证两档之间的中间值在相邻档位的阈值范围内。避免
 	*solBuyTriggerThreshold = solMaxTradeVolume * 3 * multiplier
 	*solSellTriggerThreshold = solMaxTradeVolume * 7 * multiplier
-
+	log.Infof("账户组合 %d,%d 全局水位调节参数：solanaAlertThreshold: %f, solBuyTriggerThreshold: %f, solSellTriggerThreshold: %f \n", accountPair.DexWalletId, accountPair.CexAccountId, *solanaAlertThreshold, *solBuyTriggerThreshold, *solSellTriggerThreshold)
 	return nil
 }
 
