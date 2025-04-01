@@ -2129,8 +2129,9 @@ func calculateGlobalSolWalterLevelConfig(db *gorm.DB, accountPair DexCexPair, ce
 	}
 
 	*solanaAlertThreshold = solMaxTradeVolume * multiplier
-	*solBuyTriggerThreshold = solMaxTradeVolume * 4 * multiplier
-	*solSellTriggerThreshold = solMaxTradeVolume * 6 * multiplier
+	// 这里使用3，7的系数，是经过计算，当solana价格只要不高于200，可以避免因为n的波动导致的频繁触发充提，因为可以保证两档之间的中间值在相邻档位的阈值范围内。避免磨损
+	*solBuyTriggerThreshold = solMaxTradeVolume * 3 * multiplier
+	*solSellTriggerThreshold = solMaxTradeVolume * 7 * multiplier
 
 	return nil
 }
