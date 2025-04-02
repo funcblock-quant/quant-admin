@@ -30,7 +30,7 @@ func StartTriggerInstance(request *trigger_service.StartTriggerRequest) (string,
 	defer cancel()
 
 	// 发送 gRPC 请求
-	fmt.Println("开始请求trigger server to start instance")
+	fmt.Println("开始请求trigger server to start instance, req:", request)
 	resp, err := c.StartInstance(ctx, request)
 	if err != nil {
 		fmt.Println("启动 trigger_server失败: %w", err)
