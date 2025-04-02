@@ -147,9 +147,7 @@ func (e *BusPriceTriggerStrategyInstance) Insert(c *dto.BusPriceTriggerStrategyI
 		e.Log.Errorf("BusPriceTriggerStrategyInstanceService Insert error:%s \r\n", err)
 		return err
 	}
-	e.Log.Infof("instance id : %d\r\n", data.Id)
-
-	e.Log.Infof("api config key: %d", c.ApiConfig)
+	e.Log.Infof("create price trigger instance success:%v", data)
 	var apiKeyConfig models.BusPriceTriggerStrategyApikeyConfig
 	err = tx.First(&apiKeyConfig, c.ApiConfig).Error
 	if err != nil {
