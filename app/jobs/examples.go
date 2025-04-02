@@ -221,7 +221,7 @@ func (t PriceTriggerInspection) Exec(arg interface{}) error {
 				ExecuteConfig:      &execConfig,
 				CloseOrderType:     instance.CloseOrderType,
 			}
-
+			log.Infof("start price trigger instance request:%+v\n", request)
 			_, err = client.StartTriggerInstance(request)
 			if err != nil {
 				log.Errorf("Service grpc start error:%s \r\n", err)
