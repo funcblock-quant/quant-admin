@@ -133,8 +133,8 @@ func (e *BusPriceTriggerStrategyInstance) Insert(c *dto.BusPriceTriggerStrategyI
 	var err error
 	var data models.BusPriceTriggerStrategyInstance
 	c.Generate(&data)
-	e.Log.Infof("create price trigger instance:%v", data)
 	data.Status = "created"
+	e.Log.Infof("create price trigger instance:%+v", data)
 	//启动事务
 	tx := e.Orm.Begin()
 	if tx.Error != nil {
@@ -147,7 +147,6 @@ func (e *BusPriceTriggerStrategyInstance) Insert(c *dto.BusPriceTriggerStrategyI
 		e.Log.Errorf("BusPriceTriggerStrategyInstanceService Insert error:%s \r\n", err)
 		return err
 	}
-	e.Log.Infof("create price trigger instance success:%v", data)
 	var apiKeyConfig models.BusPriceTriggerStrategyApikeyConfig
 	err = tx.First(&apiKeyConfig, c.ApiConfig).Error
 	if err != nil {

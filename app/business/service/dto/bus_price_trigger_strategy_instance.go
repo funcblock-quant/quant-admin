@@ -150,6 +150,7 @@ func (s *BusPriceTriggerStrategyInstanceInsertReq) Generate(model *models.BusPri
 		model.CutoffRatio = &cutoffRatio
 		model.MinProfit = &s.MinProfit
 	}
+	model.AverageSlippage = "0"
 }
 
 func (s *BusPriceTriggerStrategyInstanceInsertReq) GetId() interface{} {
