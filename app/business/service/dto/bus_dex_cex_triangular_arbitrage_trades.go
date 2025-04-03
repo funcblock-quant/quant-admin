@@ -35,7 +35,6 @@ type StrategyDexCexTriangularArbitrageTradesOrder struct {
 	DexTxSig           string `form:"dexTxSigOrder"  search:"type:order;column:dex_tx_sig;table:strategy_dex_cex_triangular_arbitrage_trades"`
 	DexSolAmount       string `form:"dexSolAmountOrder"  search:"type:order;column:dex_sol_amount;table:strategy_dex_cex_triangular_arbitrage_trades"`
 	DexTargetAmount    string `form:"dexTargetAmountOrder"  search:"type:order;column:dex_target_amount;table:strategy_dex_cex_triangular_arbitrage_trades"`
-	CexAmberAccount    string `form:"cexAmberAccountOrder"  search:"type:order;column:cex_amber_account;table:strategy_dex_cex_triangular_arbitrage_trades"`
 	CexExchangeType    string `form:"cexExchangeTypeOrder"  search:"type:order;column:cex_exchange_type;table:strategy_dex_cex_triangular_arbitrage_trades"`
 	CexSellSuccess     string `form:"cexSellSuccessOrder"  search:"type:order;column:cex_sell_success;table:strategy_dex_cex_triangular_arbitrage_trades"`
 	CexSellOrderId     string `form:"cexSellOrderIdOrder"  search:"type:order;column:cex_sell_order_id;table:strategy_dex_cex_triangular_arbitrage_trades"`
@@ -71,7 +70,8 @@ type StrategyDexCexTriangularArbitrageTradesGetPageResp struct {
 	DexTxSig           string    `json:"dexTxSig"`
 	DexSolAmount       string    `json:"dexSolAmount"`
 	DexTargetAmount    string    `json:"dexTargetAmount"`
-	CexAmberAccount    string    `json:"cexAmberAccount"`
+	CexAccountId       string    `json:"cexAccountId"`
+	CexAccountType     string    `json:"cexAccountType"`
 	CexExchangeType    string    `json:"cexExchangeType"`
 	CexSellSuccess     string    `json:"cexSellSuccess"`
 	CexSellOrderId     string    `json:"cexSellOrderId"`
@@ -101,7 +101,8 @@ type StrategyDexCexTriangularArbitrageTradesGetDetailResp struct {
 	DexTxSig           string    `json:"dexTxSig"`
 	DexSolAmount       string    `json:"dexSolAmount"`
 	DexTargetAmount    string    `json:"dexTargetAmount"`
-	CexAmberAccount    string    `json:"cexAmberAccount"`
+	CexAccountId       string    `json:"cexAccountId"`
+	CexAccountType     string    `json:"cexAccountType"`
 	CexExchangeType    string    `json:"cexExchangeType"`
 	CexSellSuccess     string    `json:"cexSellSuccess"`
 	CexSellOrderId     string    `json:"cexSellOrderId"`
