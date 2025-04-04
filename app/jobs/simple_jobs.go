@@ -63,7 +63,7 @@ func InitSimpleJob() {
 		s.Orm = orm
 		s.Log = log
 		// err := s.StartGlobalWaterLevel()
-		err := s.StartGlobalWaterLevelV2()
+		err := s.StartGlobalWaterLevelV3()
 		if err != nil {
 			log.Errorf("StartGlobalWaterLevelConfig Job run failed, err:%v\n", err)
 		}

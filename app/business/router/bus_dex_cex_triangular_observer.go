@@ -41,4 +41,5 @@ func registerBusDexCexTriangularObserverRouter(v1 *gin.RouterGroup, authMiddlewa
 	v1.PUT("/busDexCexTriangularStopAllTrades", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.StopAllTrades)
 	v1.POST("/getRelatedAccounts", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.GetBoundAccountList)
 	v1.POST("/getCanBoundAccounts", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.GetCanBoundAccountList)
+	v1.GET("/getActiveAccountPairs", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.GetActiveAccountPairs) //获取当前交易中的账户对
 }

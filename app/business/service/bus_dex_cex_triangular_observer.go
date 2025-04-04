@@ -499,6 +499,151 @@ func (e *BusDexCexTriangularObserver) GetCanBoundAccountList(req *dto.BusGetBoun
 	}
 }
 
+// GetActiveAccountPairs 获取dex cex套利的交易中的账户对，以及账户是否配置全局水位调节
+func (e *BusDexCexTriangularObserver) GetActiveAccountPairs(p *actions.DataPermission, resp *[]dto.BusAccountPairInfo) error {
+	var err error
+
+	//1. 统计出所有的账户组合，循环处理获取账户组合的全局水位调整参数
+	var accountPairs []DexCexPair
+	err = e.Orm.Model(&models.BusDexCexTriangularObserver{}).
+		Select("DISTINCT dex_wallet_id, cex_account_id").
+		Where("dex_wallet_id IS NOT NULL AND cex_account_id IS NOT NULL").
+		Where("status > ?", INSTANCE_STATUS_CREATED).
+		Find(&accountPairs).Error
+
+	if err != nil {
+		e.Log.Errorf("获取账户组合失败:%s \r\n", err)
+		return err
+	}
+
+	if len(accountPairs) == 0 {
+		return nil
+	}
+
+	for _, accountPair := range accountPairs {
+		var dexWallet models.BusDexWallet
+		err = e.Orm.Model(&models.BusDexWallet{}).
+			Where("id = ?", accountPair.DexWalletId).
+			First(&dexWallet).Error
+
+		if err != nil {
+			e.Log.Errorf("获取dex钱包失败:%s \r\n", err)
+			return err
+		}
+
+		var cexAccount models.BusExchangeAccountInfo
+		err = e.Orm.Model(&models.BusExchangeAccountInfo{}).
+			Where("id = ?", accountPair.CexAccountId).
+			First(&cexAccount).Error
+		if err != nil {
+			e.Log.Errorf("获取cex账户失败:%s \r\n", err)
+			return err
+		}
+
+		accountPairInfo := dto.BusAccountPairInfo{
+			DexwalletId:    dexWallet.Id,
+			CexAccountId:   cexAccount.Id,
+			CexAccountName: cexAccount.AccountName,
+			DexWalletName:  dexWallet.WalletName,
+			CexAccountUid:  cexAccount.Uid,
+			DexWalletAddr:  dexWallet.WalletAddress,
+		}
+
+		solWaterLevelConfigKey := generateGlobalWaterLevelConfigKey(common.GLOBAL_SOLANA_WATER_LEVEL_KEY, accountPair.DexWalletId, accountPair.CexAccountId)
+		stableWaterLevelConfigKey := generateGlobalWaterLevelConfigKey(common.GLOBAL_STABLE_COIN_WATER_LEVEL_KEY, accountPair.DexWalletId, accountPair.CexAccountId)
+		//step 2 : 封装全局的水位调节启动结果以及配置到响应体
+		var solanaConfig models.BusCommonConfig
+		err = e.Orm.Model(&models.BusCommonConfig{}).
+			Where("category = ? and config_key = ?", common.WATER_LEVEL, solWaterLevelConfigKey).
+			Order("created_at desc").
+			First(&solanaConfig).Error
+
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			e.Log.Errorf("获取solana全局水位调节配置失败:%s \r\n", err)
+			return err
+		}
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			// 如果没有找到配置，则表示没有配置全局水位调节
+			e.Log.Info("未配置solana全局水位调节:%s \r\n")
+			accountPairInfo.HasGlobalConfig = false
+			*resp = append(*resp, accountPairInfo)
+			continue
+		}
+
+		accountPairInfo.HasGlobalConfig = true
+
+		configJsonStr := solanaConfig.ConfigJson
+		var configMap map[string]interface{}
+
+		// 解析 JSON
+		err := json.Unmarshal([]byte(configJsonStr), &configMap)
+		if err != nil {
+			e.Log.Error("JSON 解析失败:", err)
+		} else {
+			var solMinDepositAmountThreshold, solMinWithdrawAmountThreshold float64
+			alertThreshold := configMap["alertThreshold"].(float64)
+			buyTriggerThreshold := configMap["buyTriggerThreshold"].(float64)
+			sellTriggerThreshold := configMap["sellTriggerThreshold"].(float64)
+			if v, ok := configMap["minDepositAmountThreshold"].(float64); ok {
+				solMinDepositAmountThreshold = v
+			} else {
+				solMinDepositAmountThreshold = 0
+			}
+
+			if v, ok := configMap["minWithdrawAmountThreshold"].(float64); ok {
+				solMinWithdrawAmountThreshold = v
+			} else {
+				solMinWithdrawAmountThreshold = 0
+			}
+			accountPairInfo.SolanaConfig = &dto.BusDexCexTriangularUpdateWaterLevelParamsReq{
+				AlertThreshold:             &alertThreshold,
+				BuyTriggerThreshold:        &buyTriggerThreshold,
+				SellTriggerThreshold:       &sellTriggerThreshold,
+				MinDepositAmountThreshold:  &solMinDepositAmountThreshold,
+				MinWithdrawAmountThreshold: &solMinWithdrawAmountThreshold,
+			}
+		}
+
+		// 稳定币的全局水位配置
+		var stableConfig models.BusCommonConfig
+		err = e.Orm.Model(&models.BusCommonConfig{}).
+			Where("category = ? and config_key = ?", common.WATER_LEVEL, stableWaterLevelConfigKey).
+			Order("created_at desc").
+			First(&stableConfig).Error
+
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			e.Log.Info("获取solana全局水位调节配置失败:%s \r\n", err)
+			return err
+		}
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			// 如果没有找到配置，则表示没有启用全局水位调节
+			accountPairInfo.HasGlobalConfig = false
+			*resp = append(*resp, accountPairInfo)
+			continue
+		}
+
+		configJsonStr = stableConfig.ConfigJson
+
+		// 解析 JSON
+		err = json.Unmarshal([]byte(configJsonStr), &configMap)
+		if err != nil {
+			e.Log.Error("JSON 解析失败:", err)
+		} else {
+			alertThreshold := configMap["alertThreshold"].(float64)
+			accountPairInfo.StableCoinConfig = &dto.BusDexCexTriangularUpdateWaterLevelParamsReq{
+				AlertThreshold: &alertThreshold,
+			}
+		}
+		*resp = append(*resp, accountPairInfo)
+	}
+
+	e.Log.Infof("get account pairs: %v", *resp)
+	return nil
+
+}
+
 // Insert 创建BusDexCexTriangularObserver对象
 func (e *BusDexCexTriangularObserver) Insert(c *dto.BusDexCexTriangularObserverInsertReq) error {
 	var err error
@@ -1387,7 +1532,11 @@ func (e *BusDexCexTriangularObserver) UpdateGlobalWaterLevelConfig(req *dto.BusD
 // UpdateGlobalWaterLevelConfigV2 更新全局WaterLevel 参数
 func (e *BusDexCexTriangularObserver) UpdateGlobalWaterLevelConfigV2(req *dto.BusDexCexTriangularUpdateGlobalWaterLevelConfigReq) error {
 	var data models.BusCommonConfig
-	exchangeType := req.ExchangeType
+	cexAccountId := req.CexAccountId
+	dexWalletId := req.DexWalletId
+
+	solanaConfigKey := generateGlobalWaterLevelConfigKey(common.GLOBAL_SOLANA_WATER_LEVEL_KEY, dexWalletId, cexAccountId)
+	stableConfigKey := generateGlobalWaterLevelConfigKey(common.GLOBAL_STABLE_COIN_WATER_LEVEL_KEY, dexWalletId, cexAccountId)
 
 	solWaterLevelConfigJsonStr, err := json.Marshal(req.SolWaterLevelConfig)
 	if err != nil {
@@ -1403,17 +1552,17 @@ func (e *BusDexCexTriangularObserver) UpdateGlobalWaterLevelConfigV2(req *dto.Bu
 
 	// 保存配置到数据库
 	err = e.Orm.Model(&data).
-		Where("category = ? and config_key = ?", common.WATER_LEVEL, common.GLOBAL_SOLANA_WATER_LEVEL_KEY+"_"+exchangeType).
+		Where("category = ? and config_key = ?", common.WATER_LEVEL, solanaConfigKey).
 		Order("created_at desc").
 		First(&data).Error
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			e.Log.Info("当前不存在全局solana水位调节参数")
+			e.Log.Info("当前账户组不存在全局solana水位调节参数")
 			// 如果不存在，则新增
 			data = models.BusCommonConfig{
 				Category:   common.WATER_LEVEL,
-				ConfigKey:  common.GLOBAL_SOLANA_WATER_LEVEL_KEY + "_" + exchangeType,
+				ConfigKey:  solanaConfigKey,
 				ConfigJson: string(solWaterLevelConfigJsonStr),
 			}
 			err = e.Orm.Create(&data).Error
@@ -1441,7 +1590,7 @@ func (e *BusDexCexTriangularObserver) UpdateGlobalWaterLevelConfigV2(req *dto.Bu
 	var stableData models.BusCommonConfig
 	// 稳定币水位调节参数处理
 	err = e.Orm.Model(&stableData).
-		Where("category = ? and config_key = ?", common.WATER_LEVEL, common.GLOBAL_STABLE_COIN_WATER_LEVEL_KEY+"_"+exchangeType).
+		Where("category = ? and config_key = ?", common.WATER_LEVEL, stableConfigKey).
 		Order("created_at desc").
 		First(&stableData).Error
 
@@ -1451,7 +1600,7 @@ func (e *BusDexCexTriangularObserver) UpdateGlobalWaterLevelConfigV2(req *dto.Bu
 			// 如果不存在，则新增
 			stableData = models.BusCommonConfig{
 				Category:   common.WATER_LEVEL,
-				ConfigKey:  common.GLOBAL_STABLE_COIN_WATER_LEVEL_KEY + "_" + exchangeType,
+				ConfigKey:  stableConfigKey,
 				ConfigJson: string(stableCoinWaterLevelConfigJsonStr),
 			}
 			err = e.Orm.Create(&stableData).Error
@@ -1895,6 +2044,151 @@ func (e *BusDexCexTriangularObserver) StartGlobalWaterLevelV2() error {
 			e.Log.Error("failed to start global solana water level for dexWalletId:%d, cexAccountId:%d ", accountPair.DexWalletId, accountPair.CexAccountId)
 			continue
 		}
+
+	}
+
+	// 遍历水位调节实例，对于不存在绑定关系的实例进行暂停
+	waterLevelInstances, err := client.ListWaterLevelInstance()
+	if err != nil {
+		e.Log.Errorf("获取水位调节实例失败, %s", err)
+		return err
+	}
+
+	for _, instanceId := range waterLevelInstances.InstanceIds {
+		if strings.Contains(instanceId, "SOLANA") {
+			dexWalletId, cexAccountId, err := parseSolanaWaterLevelInstanceId(instanceId)
+			if err != nil {
+				fmt.Println("解析失败:", err)
+				continue
+			}
+
+			var traders []models.BusDexCexTriangularObserver
+
+			err = db.Model(&models.BusDexCexTriangularObserver{}).
+				Where("dex_wallet_id =? AND cex_account_id =?", dexWalletId, cexAccountId).
+				Where("status = ? AND is_trading = ?", INSTANCE_STATUS_TRADING, true).
+				Find(&traders).Error
+			if err != nil {
+				e.Log.Errorf("查询trader failed, dexWalletId: %d, cexAccountId: %d", dexWalletId, cexAccountId)
+				continue
+			}
+			if len(traders) < 1 {
+				e.Log.Infof("instanceId: %s has no bound account relation, stop it", instanceId)
+				stopReq := &waterLevelPb.InstanceId{
+					InstanceId: instanceId,
+				}
+				err = client.StopWaterLevelInstance(stopReq)
+				if err != nil {
+					e.Log.Errorf("grpc暂停实例：:%d 水位调节功能失败，异常：%s \r\n", instanceId, err)
+					continue
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+// StartGlobalWaterLevelV3 启动全局水位调整功能
+func (e *BusDexCexTriangularObserver) StartGlobalWaterLevelV3() error {
+
+	// 获取一个 observer
+	db := e.Orm
+	//solana的阈值通过公式计算
+	//1. 统计出所有的账户组合，循环处理每个账户组合的全局水位调整
+	var accountPairs []DexCexPair
+	err := e.Orm.Model(&models.BusDexCexTriangularObserver{}).
+		Select("DISTINCT dex_wallet_id, cex_account_id").
+		Where("dex_wallet_id IS NOT NULL AND cex_account_id IS NOT NULL").
+		Where("status = ? AND is_trading = ?", INSTANCE_STATUS_TRADING, true).
+		Find(&accountPairs).Error
+
+	if err != nil {
+		e.Log.Errorf("获取账户组合失败:%s \r\n", err)
+		return err
+	}
+
+	if len(accountPairs) == 0 {
+		e.Log.Warn("没有账户组合，跳过全局水位调节任务")
+		return nil
+	}
+
+	for _, accountPair := range accountPairs {
+		//2. 每个账户组合，计算出一套阈值标准
+		solanaConfigKey := generateGlobalWaterLevelConfigKey(common.GLOBAL_SOLANA_WATER_LEVEL_KEY, accountPair.DexWalletId, accountPair.CexAccountId)
+		stableConfigKey := generateGlobalWaterLevelConfigKey(common.GLOBAL_STABLE_COIN_WATER_LEVEL_KEY, accountPair.DexWalletId, accountPair.CexAccountId)
+
+		var solData models.BusCommonConfig
+		err = e.Orm.Model(&solData).
+			Where("category = ? and config_key = ?", common.WATER_LEVEL, solanaConfigKey).
+			Order("created_at desc").
+			First(&solData).Error
+
+		var solanaAlertThreshold, solBuyTriggerThreshold, solSellTriggerThreshold, stableCoinAlertThreshold, solMinDepositAmountThreshold, solMinWithdrawAmountThreshold float64
+
+		if err != nil {
+			e.Log.Errorf("获取solana水位调节参数失败, 跳过本次启动全局水位调节任务")
+			return err
+		} else {
+			configJsonStr := solData.ConfigJson
+			e.Log.Infof("获取到solana水位调节参数：%s\r\n", configJsonStr)
+			var configMap map[string]interface{}
+
+			// 解析 JSON
+			err := json.Unmarshal([]byte(configJsonStr), &configMap)
+			if err != nil {
+				e.Log.Error("JSON 解析失败:", err)
+				return err
+			} else {
+				solanaAlertThreshold = configMap["alertThreshold"].(float64)
+				solBuyTriggerThreshold = configMap["buyTriggerThreshold"].(float64)
+				solSellTriggerThreshold = configMap["sellTriggerThreshold"].(float64)
+				if v, ok := configMap["minDepositAmountThreshold"].(float64); ok {
+					solMinDepositAmountThreshold = v
+				} else {
+					solMinDepositAmountThreshold = 0
+				}
+
+				if v, ok := configMap["minWithdrawAmountThreshold"].(float64); ok {
+					solMinWithdrawAmountThreshold = v
+				} else {
+					solMinWithdrawAmountThreshold = 0
+				}
+			}
+		}
+
+		var stableData models.BusCommonConfig
+		err = e.Orm.Model(&stableData).
+			Where("category = ? and config_key = ?", common.WATER_LEVEL, stableConfigKey).
+			Order("created_at desc").
+			First(&stableData).Error
+
+		if err != nil {
+			e.Log.Errorf("获取稳定币水位调节参数失败, 跳过本次启动全局水位调节任务")
+			return err
+		} else {
+			configJsonStr := stableData.ConfigJson
+			e.Log.Infof("获取到稳定币水位调节参数：%s\r\n", configJsonStr)
+			var configMap map[string]interface{}
+
+			// 解析 JSON
+			err := json.Unmarshal([]byte(configJsonStr), &configMap)
+			if err != nil {
+				e.Log.Error("JSON 解析失败:", err)
+				return err
+			} else {
+				stableCoinAlertThreshold = configMap["alertThreshold"].(float64)
+			}
+		}
+
+		// 启动solana水位调节
+		err = e.startGlobalSolanaWaterLevelForAccountPair(db, accountPair, solanaAlertThreshold, solBuyTriggerThreshold, solSellTriggerThreshold, solMinDepositAmountThreshold, solMinWithdrawAmountThreshold)
+		if err != nil {
+			e.Log.Error("failed to start global solana water level for dexWalletId:%d, cexAccountId:%d ", accountPair.DexWalletId, accountPair.CexAccountId)
+			continue
+		}
+		// TODO 启动稳定币水位调节
+		e.Log.Infof("启动稳定币 %s 全局水位调节 stableCoinAlertThreshold: %v \r\n", stableCoinAlertThreshold)
 
 	}
 
@@ -3242,6 +3536,10 @@ func DoStartTokenWaterLevel(db *gorm.DB, observer *models.BusDexCexTriangularObs
 	}
 	log.Infof("水位调节启动成功")
 	return nil
+}
+
+func generateGlobalWaterLevelConfigKey(commonKey string, dexWalletId int, cexAccountId int) string {
+	return commonKey + "_" + strconv.Itoa(int(dexWalletId)) + "_" + strconv.Itoa(int(cexAccountId))
 }
 
 func generateSecretConfig(dexWallet models.BusDexWallet, cexAccount models.BusExchangeAccountInfo, masterCexAccount models.BusExchangeAccountInfo) (*waterLevelPb.SecretKey, error) {

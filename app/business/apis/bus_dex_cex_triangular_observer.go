@@ -607,3 +607,27 @@ func (e BusDexCexTriangularObserver) GetCanBoundAccountList(c *gin.Context) {
 
 	e.OK(resp, "查询成功")
 }
+
+func (e BusDexCexTriangularObserver) GetActiveAccountPairs(c *gin.Context) {
+	s := service.BusDexCexTriangularObserver{}
+	err := e.MakeContext(c).
+		MakeOrm().
+		MakeService(&s.Service).
+		Errors
+	if err != nil {
+		e.Logger.Error(err)
+		e.Error(500, err, err.Error())
+		return
+	}
+
+	p := actions.GetPermissionFromContext(c)
+	resp := make([]dto.BusAccountPairInfo, 0)
+
+	err = s.GetActiveAccountPairs(p, &resp)
+	if err != nil {
+		e.Error(500, err, fmt.Sprintf("获取链上链下账号可绑定列表失败，\r\n失败信息 %s", err.Error()))
+		return
+	}
+
+	e.OK(resp, "查询成功")
+}
