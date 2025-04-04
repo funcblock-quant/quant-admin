@@ -51,7 +51,7 @@ settings:
       secret: PC8UjZAbQw3IA4za7bIKOg
     grpc:
       # solana-observer: 172.32.11.163:8000 // 美国ip
-      solana-observer: 172.31.47.132:8000 // 日本ip
+      solana-observer: 172.31.47.132:8000
       market-making: 172.31.45.8:8000
       trigger-service: 172.31.33.73:50051
       water-level-service: 172.31.47.132:8009
