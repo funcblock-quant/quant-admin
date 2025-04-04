@@ -346,7 +346,9 @@ type BusDexCexTriangularGlobalWaterLevelStateResp struct {
 }
 
 type BusDexCexTriangularUpdateGlobalWaterLevelConfigReq struct {
-	ExchangeType               string                                        `json:"exchangeType" `
+	ExchangeType               string                                        `json:"exchangeType"`
+	DexWalletId                int                                           `json:"dexWalletId" comment:"策略端实例id"`
+	CexAccountId               int                                           `json:"cexAccountId"`
 	SolWaterLevelConfig        *BusDexCexTriangularUpdateWaterLevelParamsReq `json:"solWaterLevelConfig"`
 	StableCoinWaterLevelConfig *BusDexCexTriangularUpdateWaterLevelParamsReq `json:"stableCoinWaterLevelConfig"`
 }
@@ -387,4 +389,16 @@ type BusGetBoundAccountReq struct {
 type BusGetBoundAccountResp struct {
 	CexAccountList []models.BusExchangeAccountInfo `json:"cexAccountList"` // Cex or Dex
 	DexWalletList  []models.BusDexWallet           `json:"dexWalletList"`
+}
+
+type BusAccountPairInfo struct {
+	CexAccountId     int                                           `json:"cexAccountId"`
+	CexAccountName   string                                        `json:"cexAccountName"`
+	CexAccountUid    string                                        `json:"cexAccountUid"`
+	DexwalletId      int                                           `json:"dexWalletId"`
+	DexWalletName    string                                        `json:"dexWalletName"`
+	DexWalletAddr    string                                        `json:"dexWalletAddr"`
+	HasGlobalConfig  bool                                          `json:"hasGlobalConfig"` // 是否有全局水位配置
+	SolanaConfig     *BusDexCexTriangularUpdateWaterLevelParamsReq `json:"solanaConfig"`
+	StableCoinConfig *BusDexCexTriangularUpdateWaterLevelParamsReq `json:"stableCoinConfig"`
 }
