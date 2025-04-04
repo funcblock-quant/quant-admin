@@ -50,7 +50,7 @@ settings:
       webhook: ${LARK_WEBHOOK}
       secret: ${LARK_SECRET}
     grpc:
-      solana-observer: 172.31.47.132:8000
+      solana-observer: 172.32.11.163:8000
       market-making: 172.31.45.8:8000
       trigger-service: 172.31.33.73:50051
   #      jupserver: 127.0.0.1:2900
