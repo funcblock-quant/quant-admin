@@ -98,6 +98,7 @@ message ExecuteConfig {
 
 /* 枚举 **/
 enum ProfitTargetType {
-  FLOATING = 0;
+  UNKNOWN = 0; 
   LIMIT = 1;
+  FLOATING = 2;
 }
