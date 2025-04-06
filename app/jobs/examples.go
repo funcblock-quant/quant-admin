@@ -221,6 +221,7 @@ func (t PriceTriggerInspection) Exec(arg interface{}) error {
 				ExecuteConfig:      &execConfig,
 				CloseOrderType:     instance.CloseOrderType,
 			}
+			log.Infof("start price trigger instance with profit target type :%+v\n", request.ProfitTargetConfig.ProfitTargetType)
 			log.Infof("start price trigger instance request:%+v\n", request)
 			_, err = client.StartTriggerInstance(request)
 			if err != nil {
@@ -345,7 +346,8 @@ func (t DexCexObserverInspection) Exec(arg interface{}) error {
 		} else if observer.Status == "2" {
 			// 水位调节中的，需要校验1. observer是否开启，水位调节是否开启
 			log.Infof("observer: %d\n status is 2, check observer and water level \r\n", observer.Id)
-			if exist, _ := containsObserver(observerInfos, strconv.Itoa(observer.Id)); !exist {
+			exist, isTrading := containsObserver(observerInfos, strconv.Itoa(observer.Id))
+			if !exist {
 				// 服务端不存在的，重启
 				err = businessService.DoStartObserver(&observer)
 				if err != nil {
@@ -370,6 +372,16 @@ func (t DexCexObserverInspection) Exec(arg interface{}) error {
 					continue
 				}
 			}
+
+			if !isTrading {
+				// 如果实例水位调节中，按照讨论，不暂停交易的话，恢复现场就需要启动交易，但是服务端没有启动交易功能，则还需要重启交易功能
+				err = businessService.DoStartTrader(db, &observer)
+				if err != nil {
+					//如果重启失败，则下次再重启
+					continue
+				}
+			}
+
 		} else if observer.Status == "3" {
 			// 中台显示状态为3，启动交易中，但需要根据isTrading字段一起判断
 			log.Infof("observer: %d\n status is: 3, is trading is: %t, check observer, water level, trader \r\n", observer.Id, observer.IsTrading)
