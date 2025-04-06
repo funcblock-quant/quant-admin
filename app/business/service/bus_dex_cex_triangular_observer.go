@@ -874,11 +874,11 @@ func (e *BusDexCexTriangularObserver) MonitorWaterLevelToStartTrader() error {
 			e.Log.Infof("currency: %s, cex spot balance:%s, cex margin balance:%s, dex balance: %s", waterLevelState.Currency, waterLevelState.SpotAccountBalance, waterLevelState.MarginAccountBalance, waterLevelState.ChainWalletBalance)
 			//开启交易功能
 
-			err = DoStartTrader(e.Orm, &instance)
-			if err != nil {
-				e.Log.Errorf("start trader error:%s \r\n", err)
-				return err
-			}
+			// err = DoStartTrader(e.Orm, &instance)
+			// if err != nil {
+			// 	e.Log.Errorf("start trader error:%s \r\n", err)
+			// 	return err
+			// }
 
 			// 启动成功后，更新状态
 			updateData := map[string]interface{}{
@@ -927,11 +927,12 @@ func (e *BusDexCexTriangularObserver) MonitorWaterLevelToStopTrader() error {
 			e.Log.Infof("waterlevel state for instancId: %d is: failed", instanceId)
 			//关闭交易功能
 
-			err = client.DisableTrader(instanceId)
-			if err != nil {
-				e.Log.Errorf("grpc暂停实例：:%s 交易功能失败，异常：%s \r\n", instanceId, err)
-				return err
-			}
+			// 经讨论，水位调节中，可能并不影响交易，所以调节的时候，只是改状态，并不真实暂停交易功能
+			// err = client.DisableTrader(instanceId)
+			// if err != nil {
+			// 	e.Log.Errorf("grpc暂停实例：:%s 交易功能失败，异常：%s \r\n", instanceId, err)
+			// 	return err
+			// }
 
 			// 暂停交易成功后，更新状态
 			updateData := map[string]interface{}{
@@ -1980,7 +1981,7 @@ func (e *BusDexCexTriangularObserver) StartGlobalWaterLevelV2() error {
 	err = e.Orm.Model(&models.BusDexCexTriangularObserver{}).
 		Select("DISTINCT dex_wallet_id, cex_account_id").
 		Where("dex_wallet_id IS NOT NULL AND cex_account_id IS NOT NULL").
-		Where("status = ? AND is_trading = ?", INSTANCE_STATUS_TRADING, true).
+		Where("status > ?", INSTANCE_STATUS_CREATED).
 		Find(&accountPairs).Error
 
 	if err != nil {
@@ -2100,7 +2101,7 @@ func (e *BusDexCexTriangularObserver) StartGlobalWaterLevelV3() error {
 	err := e.Orm.Model(&models.BusDexCexTriangularObserver{}).
 		Select("DISTINCT dex_wallet_id, cex_account_id").
 		Where("dex_wallet_id IS NOT NULL AND cex_account_id IS NOT NULL").
-		Where("status = ? AND is_trading = ?", INSTANCE_STATUS_TRADING, true).
+		Where("status > ?", INSTANCE_STATUS_CREATED).
 		Find(&accountPairs).Error
 
 	if err != nil {
