@@ -22,6 +22,8 @@ service Instance {
   rpc GetPortfolioUnwindingInfo (PortfolioUnwindingRequest) returns (GetPortfolioUnwindingResponse);
   // 资金归集
   rpc PortfolioUnwinding (PortfolioUnwindingRequest) returns (google.protobuf.Empty);
+
+  rpc GetInterestRates (GetInterestRatesRequest) returns (GetInterestRatesResponse);
 }
 
 
@@ -124,4 +126,19 @@ message GetPortfolioUnwindingResponse {
   string master_account_spot_balance = 5; // 如果request里的master_account为空（即trader_account和master_account是同一个账户），则返回的master_account_*总为0
   string borrowed = 6;
   string borrowable = 7;
+}
+
+message GetInterestRatesRequest {
+  ExchangeType  exchange_type = 1;
+  SecretKey    secret_key = 2; // 交易所的api-key，secret，passphrase 以及 chain wallet private key
+  repeated string currencies = 3; // 需要查询的币种列表
+}
+
+message GetInterestRatesResponse {
+  message InterestRate {
+    string currency = 1;
+    string interest_rate = 2;
+  }
+
+  repeated InterestRate list = 1;
 }

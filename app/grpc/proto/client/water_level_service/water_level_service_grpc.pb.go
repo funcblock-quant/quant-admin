@@ -29,6 +29,7 @@ const (
 	Instance_GetInstanceState_FullMethodName          = "/water_level_service.Instance/GetInstanceState"
 	Instance_GetPortfolioUnwindingInfo_FullMethodName = "/water_level_service.Instance/GetPortfolioUnwindingInfo"
 	Instance_PortfolioUnwinding_FullMethodName        = "/water_level_service.Instance/PortfolioUnwinding"
+	Instance_GetInterestRates_FullMethodName          = "/water_level_service.Instance/GetInterestRates"
 )
 
 // InstanceClient is the client API for Instance service.
@@ -49,6 +50,7 @@ type InstanceClient interface {
 	GetPortfolioUnwindingInfo(ctx context.Context, in *PortfolioUnwindingRequest, opts ...grpc.CallOption) (*GetPortfolioUnwindingResponse, error)
 	// 资金归集
 	PortfolioUnwinding(ctx context.Context, in *PortfolioUnwindingRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	GetInterestRates(ctx context.Context, in *GetInterestRatesRequest, opts ...grpc.CallOption) (*GetInterestRatesResponse, error)
 }
 
 type instanceClient struct {
@@ -122,6 +124,15 @@ func (c *instanceClient) PortfolioUnwinding(ctx context.Context, in *PortfolioUn
 	return out, nil
 }
 
+func (c *instanceClient) GetInterestRates(ctx context.Context, in *GetInterestRatesRequest, opts ...grpc.CallOption) (*GetInterestRatesResponse, error) {
+	out := new(GetInterestRatesResponse)
+	err := c.cc.Invoke(ctx, Instance_GetInterestRates_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // InstanceServer is the server API for Instance service.
 // All implementations must embed UnimplementedInstanceServer
 // for forward compatibility
@@ -140,6 +151,7 @@ type InstanceServer interface {
 	GetPortfolioUnwindingInfo(context.Context, *PortfolioUnwindingRequest) (*GetPortfolioUnwindingResponse, error)
 	// 资金归集
 	PortfolioUnwinding(context.Context, *PortfolioUnwindingRequest) (*emptypb.Empty, error)
+	GetInterestRates(context.Context, *GetInterestRatesRequest) (*GetInterestRatesResponse, error)
 	mustEmbedUnimplementedInstanceServer()
 }
 
@@ -167,6 +179,9 @@ func (UnimplementedInstanceServer) GetPortfolioUnwindingInfo(context.Context, *P
 }
 func (UnimplementedInstanceServer) PortfolioUnwinding(context.Context, *PortfolioUnwindingRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PortfolioUnwinding not implemented")
+}
+func (UnimplementedInstanceServer) GetInterestRates(context.Context, *GetInterestRatesRequest) (*GetInterestRatesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetInterestRates not implemented")
 }
 func (UnimplementedInstanceServer) mustEmbedUnimplementedInstanceServer() {}
 
@@ -307,6 +322,24 @@ func _Instance_PortfolioUnwinding_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Instance_GetInterestRates_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetInterestRatesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InstanceServer).GetInterestRates(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Instance_GetInterestRates_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InstanceServer).GetInterestRates(ctx, req.(*GetInterestRatesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Instance_ServiceDesc is the grpc.ServiceDesc for Instance service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -341,6 +374,10 @@ var Instance_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "PortfolioUnwinding",
 			Handler:    _Instance_PortfolioUnwinding_Handler,
+		},
+		{
+			MethodName: "GetInterestRates",
+			Handler:    _Instance_GetInterestRates_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

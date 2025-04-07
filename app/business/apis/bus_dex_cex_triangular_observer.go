@@ -631,3 +631,29 @@ func (e BusDexCexTriangularObserver) GetActiveAccountPairs(c *gin.Context) {
 
 	e.OK(resp, "查询成功")
 }
+
+func (e BusDexCexTriangularObserver) GetRealtimeInterestRate(c *gin.Context) {
+	req := dto.BusGetInterestRateReq{}
+	s := service.BusDexCexTriangularObserver{}
+	err := e.MakeContext(c).
+		MakeOrm().
+		Bind(&req).
+		MakeService(&s.Service).
+		Errors
+	if err != nil {
+		e.Logger.Error(err)
+		e.Error(500, err, err.Error())
+		return
+	}
+
+	p := actions.GetPermissionFromContext(c)
+	resp := dto.BusGetInterestRateResp{}
+
+	err = s.GetRealtimeInterestRate(&req, p, &resp)
+	if err != nil {
+		e.Error(500, err, fmt.Sprintf("获取实时汇率失败，\r\n失败信息 %s", err.Error()))
+		return
+	}
+
+	e.OK(resp, "查询成功")
+}

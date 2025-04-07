@@ -290,6 +290,7 @@ type BusDexCexTriangularObserverStartTraderReq struct {
 	MinDepositAmountThreshold  *float64 `json:"minDepositAmountThreshold"`
 	MinWithdrawAmountThreshold *float64 `json:"minWithdrawAmountThreshold"`
 	SlippageBpsRate            *float64 `json:"slippageBpsRate"`
+	PreferJito                 bool     `json:"preferJito"`
 	PriorityFee                *float64 `json:"priorityFee"`
 	JitoFeeRate                *float64 `json:"jitoFeeRate"`
 	CexAccount                 int64    `json:"cexAccount"`
@@ -325,6 +326,7 @@ type BusDexCexTriangularUpdateTraderParamsReq struct {
 	SlippageBpsRate *float64 `json:"slippageBpsRate"`
 	PriorityFee     *float64 `json:"priorityFee"`
 	JitoFeeRate     *float64 `json:"jitoFeeRate"`
+	PreferJito      bool     `json:"preferJito"`
 	common.ControlBy
 }
 
@@ -401,4 +403,15 @@ type BusAccountPairInfo struct {
 	HasGlobalConfig  bool                                          `json:"hasGlobalConfig"` // 是否有全局水位配置
 	SolanaConfig     *BusDexCexTriangularUpdateWaterLevelParamsReq `json:"solanaConfig"`
 	StableCoinConfig *BusDexCexTriangularUpdateWaterLevelParamsReq `json:"stableCoinConfig"`
+}
+
+type BusGetInterestRateReq struct {
+	CexAccountId int    `json:"cexAccount"`
+	ExchangeType string `json:"exchangeType"`
+	Currency     string `json:"currency"`
+}
+
+type BusGetInterestRateResp struct {
+	Currency     string `json:"currency"`
+	InterestRate string `json:"interestRate"`
 }

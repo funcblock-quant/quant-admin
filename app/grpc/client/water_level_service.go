@@ -206,3 +206,29 @@ func PortfolioUnwinding(request *pb.PortfolioUnwindingRequest) error {
 	fmt.Printf("portfolio unwinding 成功. Resp: %v\r\n", resp)
 	return nil
 }
+
+func GetInterestRates(request *pb.GetInterestRatesRequest) (*pb.GetInterestRatesResponse, error) {
+	// 获取 gRPC 客户端连接
+	clientConn, err := pool.GetGrpcClient("water-level-service")
+	if err != nil {
+		return nil, fmt.Errorf("获取grpc客户端失败: %w", err)
+	}
+	if clientConn == nil || clientConn.ClientConn == nil { // 再次检查 clientConn 是否为 nil
+		return nil, fmt.Errorf("grpc客户端连接为空")
+	}
+	defer clientConn.Close() // 确保连接在使用后返回连接池
+
+	// 创建 gRPC 客户端实例
+	c := pb.NewInstanceClient(clientConn)
+
+	// 设置超时 Context
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	resp, err := c.GetInterestRates(ctx, request)
+	if err != nil {
+		return nil, fmt.Errorf("获取实时汇率失败: %w", err)
+	}
+	fmt.Printf("获取实时汇率成功. Resp: %v\r\n", resp)
+	return resp, nil
+}

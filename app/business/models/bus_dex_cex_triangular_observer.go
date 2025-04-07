@@ -41,6 +41,7 @@ type BusDexCexTriangularObserver struct {
 	IsTradingBlocked           bool     `gorm:"null;comment:交易功能是否被风控" json:"isTradingBlocked"`
 	DexWalletId                *int64   `gorm:"null;comment:dex交易钱包id" json:"dexWallet"`
 	CexAccountId               *int64   `gorm:"null;comment:cex交易账户id" json:"cexAccount"`
+	PreferJito                 bool     `gorm:"null;default:false;comment:是否优先使用jito" json:"preferJito"`
 	models.ModelTime
 	models.ControlBy
 }

@@ -77,9 +77,9 @@ message CexConfig {
 message AmberTraderConfig {
   required string exchange_type = 1; // BinanceClassicUnifiedMargin
   required string account_type = 2; // Exchange
-   required string contract_type = 3; // Spot
-   required string account_id = 4; // QuantaVerse13
-   required string access_token = 5; // 1234567890
+  required string contract_type = 3; // Spot
+  required string account_id = 4; // QuantaVerse13
+  required string access_token = 5; // 1234567890
 }
 
 message GateioTraderConfig {
@@ -125,9 +125,10 @@ message ObserverParams {
 }
 
 message TraderParams {
-  optional double priority_fee = 1;
-  required double slippage_rate = 2; // 0% - 1%
-  required double jito_fee_rate = 3; // 0% - 50%
+  required bool prefer_jito = 1;
+  required double priority_fee = 2; // 0.0001
+  required double slippage_rate = 3; // 0% - 100%
+  required double jito_fee_rate = 4; // 0% - 100%
 }
 
 message BasicInfo {

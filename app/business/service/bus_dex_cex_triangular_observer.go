@@ -644,6 +644,64 @@ func (e *BusDexCexTriangularObserver) GetActiveAccountPairs(p *actions.DataPermi
 
 }
 
+// GetRealtimeInterestRate 获取dex cex套利的交易中的账户对的实时汇率
+func (e *BusDexCexTriangularObserver) GetRealtimeInterestRate(req *dto.BusGetInterestRateReq, p *actions.DataPermission, resp *dto.BusGetInterestRateResp) error {
+	var err error
+
+	var cexAccount models.BusExchangeAccountInfo
+	err = e.Orm.Model(&models.BusExchangeAccountInfo{}).
+		Where("id = ?", req.CexAccountId).
+		First(&cexAccount).Error
+	if err != nil {
+		e.Log.Errorf("get cex account info failed, cexAccountId: %s", req.CexAccountId)
+		return err
+	}
+	e.Log.Infof("获取到交易所账号Id: %v", *resp)
+
+	// 获取实时汇率
+	interestRateReq := &waterLevelPb.GetInterestRatesRequest{
+		Currencies: []string{req.Currency},
+	}
+
+	exchangeType := req.ExchangeType
+	if exchangeType == "Binance" {
+		interestRateReq.ExchangeType = waterLevelPb.ExchangeType_Binance
+	} else if exchangeType == "GateIO" {
+		interestRateReq.ExchangeType = waterLevelPb.ExchangeType_Gate
+	} else {
+		e.Log.Errorf("不支持的交易所类型: %s", exchangeType)
+		return errors.New("不支持的交易所类型")
+	}
+
+	//不传主账号信息, 不传dex信息
+	secretConfig, err := generateSecretConfig(models.BusDexWallet{}, cexAccount, models.BusExchangeAccountInfo{})
+	if err != nil {
+		e.Log.Errorf("获取秘钥配置失败:%s \r\n", err)
+		return err
+	}
+	interestRateReq.SecretKey = secretConfig
+	interestRateResp, err := client.GetInterestRates(interestRateReq)
+
+	if err != nil {
+		e.Log.Errorf("获取实时汇率失败:%s \r\n", err)
+		return err
+	}
+	if interestRateResp == nil {
+		e.Log.Errorf("获取实时汇率失败，返回值为空")
+		return nil
+	}
+
+	for _, rate := range interestRateResp.List {
+		resp.InterestRate = rate.InterestRate
+		resp.Currency = rate.Currency
+		// 这里我们系统只支持一个币种的实时汇率
+		break
+	}
+
+	return nil
+
+}
+
 // Insert 创建BusDexCexTriangularObserver对象
 func (e *BusDexCexTriangularObserver) Insert(c *dto.BusDexCexTriangularObserverInsertReq) error {
 	var err error
@@ -826,6 +884,7 @@ func (e *BusDexCexTriangularObserver) StartTrader(c *dto.BusDexCexTriangularObse
 		"min_deposit_amount_threshold":  c.MinDepositAmountThreshold,
 		"min_withdraw_amount_threshold": c.MinWithdrawAmountThreshold,
 		"slippage_bps_rate":             c.SlippageBpsRate,
+		"prefer_jito":                   c.PreferJito,
 		"priority_fee":                  priorityFee,
 		"jito_fee_rate":                 c.JitoFeeRate,
 		"status":                        INSTANCE_STATUS_WATERLEVEL, // 水位调节中
@@ -1073,6 +1132,7 @@ func (e *BusDexCexTriangularObserver) UpdateTrader(c *dto.BusDexCexTriangularUpd
 		SlippageRate: c.SlippageBpsRate,
 		PriorityFee:  c.PriorityFee,
 		JitoFeeRate:  c.JitoFeeRate,
+		PreferJito:   &c.PreferJito,
 	}
 	if config.ApplicationConfig.Mode != "dev" {
 		instanceId := strconv.Itoa(data.Id)
@@ -1087,6 +1147,7 @@ func (e *BusDexCexTriangularObserver) UpdateTrader(c *dto.BusDexCexTriangularUpd
 		"slippage_bps_rate": c.SlippageBpsRate,
 		"priority_fee":      c.PriorityFee,
 		"jito_fee_rate":     *c.JitoFeeRate,
+		"prefer_jito":       c.PreferJito,
 	}
 	// 更新observer的trader相关参数
 	if err := e.Orm.Model(&models.BusDexCexTriangularObserver{}).
@@ -3409,6 +3470,7 @@ func DoStartTrader(db *gorm.DB, instance *models.BusDexCexTriangularObserver) er
 		SlippageRate: instance.SlippageBpsRate,
 		PriorityFee:  instance.PriorityFee,
 		JitoFeeRate:  jitoFee,
+		PreferJito:   &instance.PreferJito,
 	}
 	swapperConfig := &pb.SwapperConfig{
 		Trader: &privateKey,
@@ -3544,10 +3606,14 @@ func generateGlobalWaterLevelConfigKey(commonKey string, dexWalletId int, cexAcc
 }
 
 func generateSecretConfig(dexWallet models.BusDexWallet, cexAccount models.BusExchangeAccountInfo, masterCexAccount models.BusExchangeAccountInfo) (*waterLevelPb.SecretKey, error) {
-	privateKey, err := utils.DecryptWithSecretKey([]byte(ext.ExtConfig.Aes.Key), dexWallet.EncryptedPrivateKey)
-	if err != nil {
-		log.Errorf("解密私钥参数失败:%s \r\n", err)
-		return nil, err
+	var privateKey string
+	var err error
+	if dexWallet.EncryptedPrivateKey != "" {
+		privateKey, err = utils.DecryptWithSecretKey([]byte(ext.ExtConfig.Aes.Key), dexWallet.EncryptedPrivateKey)
+		if err != nil {
+			log.Errorf("解密私钥参数失败:%s \r\n", err)
+			return nil, err
+		}
 	}
 
 	apiKey, err := utils.DecryptWithSecretKey([]byte(ext.ExtConfig.Aes.Key), cexAccount.EncryptedApiKey)
