@@ -403,7 +403,7 @@ func (e *StrategyDexCexTriangularArbitrageTrades) DailyTradeSnapshot() error {
 		e.Log.Infof("previous_total_profit : %d", previousTotalProfit)
 		// 计算当天利润增长百分比
 		if previousTotalProfit > 0 {
-			profitGrowthRate = (totalProfit - previousTotalProfit) / previousTotalProfit
+			profitGrowthRate = totalProfit / previousTotalProfit
 		} else {
 			profitGrowthRate = 0
 		}
