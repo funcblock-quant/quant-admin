@@ -96,13 +96,13 @@ func InitSimpleJob() {
 
 	c.AddFunc("@every 1s", func() {
 		// 每1s一次，查看期权下单策略的是否存在止盈
-		fmt.Println("Monitor Price Trigger ExecuteNum Job running")
+		fmt.Println("Monitor Price Trigger Stop Profit Status Job running")
 		s := service.BusPriceTriggerStrategyInstance{}
 		s.Orm = orm
 		s.Log = log
 		err := s.MonitorStopProfitStatus()
 		if err != nil {
-			log.Errorf("Monitor Price Trigger ExecuteNum Job run failed, err:%v\n", err)
+			log.Errorf("Monitor Price Trigger Stop Profit Status Job run failed, err:%v\n", err)
 		}
 
 	})
