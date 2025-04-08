@@ -241,6 +241,39 @@ func (e BusPriceTriggerStrategyInstance) StopInstance(c *gin.Context) {
 	e.OK("", "暂停实例成功")
 }
 
+// RestartInstance 重启策略
+// @Summary 重启策略
+// @Description 重启策略
+// @Tags 重启策略
+// @Accept application/json
+// @Product application/json
+// @Param data body dto.BusPriceTriggerStrategyInstanceInsertReq true "data"
+// @Success 200 {object} response.Response	"{"code": 200, "message": "重启实例成功"}"
+// @Router /api/v1/restartTriggerInstance [post]
+// @Security Bearer
+func (e BusPriceTriggerStrategyInstance) RestartInstance(c *gin.Context) {
+	req := dto.RestartTriggerInstanceRequest{}
+	s := service.BusPriceTriggerStrategyInstance{}
+	err := e.MakeContext(c).
+		MakeOrm().
+		Bind(&req).
+		MakeService(&s.Service).
+		Errors
+	if err != nil {
+		e.Logger.Error(err)
+		e.Error(500, err, err.Error())
+		return
+	}
+	e.Logger.Infof("req:%#v", req)
+	err = s.RestartInstance(&req)
+	if err != nil {
+		e.Error(500, err, fmt.Sprintf("重启实例失败，\r\n失败信息 %s", err.Error()))
+		return
+	}
+
+	e.OK("", "重启实例成功")
+}
+
 // UpdateProfitTarget 修改止盈配置
 // @Summary 修改止盈配置
 // @Description 修改止盈配置

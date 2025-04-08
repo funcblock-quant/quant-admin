@@ -19,18 +19,18 @@ func InitSimpleJob() {
 	fmt.Printf("Init simple job \n")
 	orm := sdk.Runtime.GetDbByKey("*")               // 复用数据库连接
 	log := logger.NewHelper(sdk.Runtime.GetLogger()) // 复用日志对象
-	c.AddFunc("@every 5s", func() {
+	// c.AddFunc("@every 5s", func() {
 
-		// 每5s一次，获取最新的实时价差
-		fmt.Println("GetLatestSpreadData Job running")
-		s := service.BusDexCexPriceSpreadData{}
-		s.Orm = orm
-		s.Log = log
-		err := s.GetLatestSpreadData()
-		if err != nil {
-			log.Errorf("GetLatestSpreadData failed, err:%v\n", err)
-		}
-	})
+	// 	// 每5s一次，获取最新的实时价差
+	// 	fmt.Println("GetLatestSpreadData Job running")
+	// 	s := service.BusDexCexPriceSpreadData{}
+	// 	s.Orm = orm
+	// 	s.Log = log
+	// 	err := s.GetLatestSpreadData()
+	// 	if err != nil {
+	// 		log.Errorf("GetLatestSpreadData failed, err:%v\n", err)
+	// 	}
+	// })
 
 	c.AddFunc("@every 5s", func() {
 		// 每5s一次，获查看链上链下套利实例水位调节情况
@@ -88,6 +88,19 @@ func InitSimpleJob() {
 		s.Orm = orm
 		s.Log = log
 		err := s.MonitorExecuteNum()
+		if err != nil {
+			log.Errorf("Monitor Price Trigger ExecuteNum Job run failed, err:%v\n", err)
+		}
+
+	})
+
+	c.AddFunc("@every 1s", func() {
+		// 每1s一次，查看期权下单策略的是否存在止盈
+		fmt.Println("Monitor Price Trigger ExecuteNum Job running")
+		s := service.BusPriceTriggerStrategyInstance{}
+		s.Orm = orm
+		s.Log = log
+		err := s.MonitorStopProfitStatus()
 		if err != nil {
 			log.Errorf("Monitor Price Trigger ExecuteNum Job run failed, err:%v\n", err)
 		}
