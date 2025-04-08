@@ -571,6 +571,7 @@ func (e *BusPriceTriggerStrategyInstance) MonitorStopProfitStatus() error {
 				e.Log.Errorf("BusPriceTriggerStrategyInstance MonitorStopProfitStatus error:%s \r\n", err)
 				continue
 			}
+			e.Log.Infof("update price trigger instance,  instanceId: %d, status: %s \n", instance.Id, TRIGGER_INSTANCE_STATUS_PAUSE)
 		}
 	}
 	return nil
