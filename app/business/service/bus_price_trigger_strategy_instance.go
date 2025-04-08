@@ -546,6 +546,8 @@ func (e *BusPriceTriggerStrategyInstance) MonitorStopProfitStatus() error {
 		e.Log.Errorf("BusPriceTriggerStrategyInstance MonitorExecuteNum error:%s \r\n", err)
 		return err
 	}
+	e.Log.Infof("get started instance list : %+v \n", data)
+
 	for _, instance := range data {
 		// 查询2s内是否有止盈单
 		// 如果有，暂停实例
@@ -561,6 +563,8 @@ func (e *BusPriceTriggerStrategyInstance) MonitorStopProfitStatus() error {
 			e.Log.Errorf("BusPriceTriggerStrategyInstance MonitorStopProfitStatus error:%s \r\n", err)
 			continue
 		}
+
+		e.Log.Infof("get trading for instance : %d, trading: %+v \n", instance.Id, results)
 
 		if len(results) > 0 {
 			// 如果有止盈单，修改实例状态
