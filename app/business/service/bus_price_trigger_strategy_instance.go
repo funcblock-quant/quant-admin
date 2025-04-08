@@ -10,6 +10,7 @@ import (
 	"quanta-admin/common/actions"
 	cDto "quanta-admin/common/dto"
 	"strconv"
+	"time"
 
 	"github.com/go-admin-team/go-admin-core/sdk/config"
 	"github.com/go-admin-team/go-admin-core/sdk/service"
@@ -21,20 +22,42 @@ type BusPriceTriggerStrategyInstance struct {
 	service.Service
 }
 
+const (
+	TRIGGER_INSTANCE_STATUS_CREATED = "created"
+	TRIGGER_INSTANCE_STATUS_STARTED = "started"
+	TRIGGER_INSTANCE_STATUS_PAUSE   = "paused" // 暂停，目前代表已止盈
+	TRIGGER_INSTANCE_STATUS_EXPIRED = "expired"
+	TRIGGER_INSTANCE_STATUS_STOP    = "stopped" //已停止
+)
+
 // GetPage 获取BusPriceTriggerStrategyInstance列表
 func (e *BusPriceTriggerStrategyInstance) GetPage(c *dto.BusPriceTriggerStrategyInstanceGetPageReq, p *actions.DataPermission, list *[]dto.BusPriceTriggerStrategyResp, count *int64) error {
 	var err error
 	var data models.BusPriceTriggerStrategyInstance
 	var detail models.BusPriceMonitorForOptionHedging
 
-	err = e.Orm.Model(&data).
-		Scopes(
-			cDto.MakeCondition(c.GetNeedSearch()),
-			cDto.Paginate(c.GetPageSize(), c.GetPageIndex()),
-			actions.Permission(data.TableName(), p),
-		).
-		Find(list).Limit(-1).Offset(-1).
-		Count(count).Error
+	if !c.IsHistory && c.Status == TRIGGER_INSTANCE_STATUS_PAUSE {
+		//如果是查询止盈状态，并且不是历史数据，则需要查询close time 晚于当前时间的数据
+		err = e.Orm.Model(&data).
+			Where("close_time > ?", time.Now()).
+			Scopes(
+				cDto.MakeCondition(c.GetNeedSearch()),
+				cDto.Paginate(c.GetPageSize(), c.GetPageIndex()),
+				actions.Permission(data.TableName(), p),
+			).
+			Find(list).Limit(-1).Offset(-1).
+			Count(count).Error
+
+	} else {
+		err = e.Orm.Model(&data).
+			Scopes(
+				cDto.MakeCondition(c.GetNeedSearch()),
+				cDto.Paginate(c.GetPageSize(), c.GetPageIndex()),
+				actions.Permission(data.TableName(), p),
+			).
+			Find(list).Limit(-1).Offset(-1).
+			Count(count).Error
+	}
 
 	for index, strategy := range *list {
 		statistical := dto.BusPriceTriggerStrategyStatistical{}
@@ -133,7 +156,7 @@ func (e *BusPriceTriggerStrategyInstance) Insert(c *dto.BusPriceTriggerStrategyI
 	var err error
 	var data models.BusPriceTriggerStrategyInstance
 	c.Generate(&data)
-	data.Status = "created"
+	data.Status = TRIGGER_INSTANCE_STATUS_CREATED
 	e.Log.Infof("create price trigger instance:%+v", data)
 	//启动事务
 	tx := e.Orm.Begin()
@@ -182,7 +205,7 @@ func (e *BusPriceTriggerStrategyInstance) Insert(c *dto.BusPriceTriggerStrategyI
 
 	tx.Commit()
 
-	err = e.Orm.Model(&data).Update("status", "started").Error
+	err = e.Orm.Model(&data).Update("status", TRIGGER_INSTANCE_STATUS_STARTED).Error
 	if err != nil {
 		e.Log.Errorf("start trigger update status failed:%s \r\n", err)
 		return err
@@ -221,11 +244,51 @@ func (e *BusPriceTriggerStrategyInstance) StopInstance(req *dto.StopTriggerInsta
 		return err
 	}
 	err = e.Orm.Model(&data).
-		Update("status", "stopped").
+		Update("status", TRIGGER_INSTANCE_STATUS_STOP).
 		Error
 
 	if err != nil {
 		e.Log.Errorf("Service StopInstance throw db error:%s \r\n", err)
+		return err
+	}
+	return nil
+}
+
+// RestartInstance
+// @Summary 重启实例
+// @Description 获取JSON
+// @Tags 用户
+// @Accept  application/json
+// @Product application/json
+// @Param
+// @Success 200 {object} response.Response "{"code": 200, "data": [...]}"
+// @Router /api/v1/restartInstance [post]
+// @Security Bearer
+func (e *BusPriceTriggerStrategyInstance) RestartInstance(req *dto.RestartTriggerInstanceRequest) error {
+	var err error
+	data := models.BusPriceTriggerStrategyInstance{}
+
+	err = e.Orm.Model(&data).First(&data, req.InstanceId).Error
+	if err != nil {
+		e.Log.Errorf("Service StopInstance error:%s \r\n", err)
+		return err
+	}
+
+	// 校验参数
+	// 1. 检查停止时间是否晚于当前时间
+	if data.CloseTime.Before(time.Now()) {
+		e.Log.Errorf("Service RestartInstance error: close time must be later than current time\r\n")
+		return errors.New("任务已过期，无法重启")
+	}
+
+	e.Log.Infof("stop instance id : %d\r\n", data.Id)
+	// 更新状态为 started，由定时任务去触发
+	err = e.Orm.Model(&data).
+		Update("status", TRIGGER_INSTANCE_STATUS_STARTED).
+		Error
+
+	if err != nil {
+		e.Log.Errorf("Service RestartInstance throw db error:%s \r\n", err)
 		return err
 	}
 	return nil
@@ -434,7 +497,7 @@ func (e *BusPriceTriggerStrategyInstance) MonitorExecuteNum() error {
 	var count int64
 
 	err := e.Orm.Model(&models.BusPriceTriggerStrategyInstance{}).
-		Where("status = ?", "started").
+		Where("status = ?", TRIGGER_INSTANCE_STATUS_STARTED).
 		Find(&data).Error
 	if err != nil {
 		e.Log.Errorf("BusPriceTriggerStrategyInstance MonitorExecuteNum error:%s \r\n", err)
@@ -462,9 +525,50 @@ func (e *BusPriceTriggerStrategyInstance) MonitorExecuteNum() error {
 
 			err = e.Orm.Model(&models.BusPriceTriggerStrategyInstance{}).
 				Where("id = ?", instance.Id).
-				Update("status", "stopped").Error
+				Update("status", TRIGGER_INSTANCE_STATUS_STOP).Error
 			if err != nil {
 				e.Log.Errorf("BusPriceTriggerStrategyInstance MonitorExecuteNum error:%s \r\n", err)
+				continue
+			}
+		}
+	}
+	return nil
+}
+
+func (e *BusPriceTriggerStrategyInstance) MonitorStopProfitStatus() error {
+	// 获取所有运行中的实例，并检查他们的止盈情况
+	var data []models.BusPriceTriggerStrategyInstance
+
+	err := e.Orm.Model(&models.BusPriceTriggerStrategyInstance{}).
+		Where("status = ?", TRIGGER_INSTANCE_STATUS_STARTED).
+		Find(&data).Error
+	if err != nil {
+		e.Log.Errorf("BusPriceTriggerStrategyInstance MonitorExecuteNum error:%s \r\n", err)
+		return err
+	}
+	for _, instance := range data {
+		// 查询2s内是否有止盈单
+		// 如果有，暂停实例
+		// 获取2秒前的时间点
+		var results []models.BusPriceMonitorForOptionHedging
+
+		oneSecondAgo := time.Now().Add(-2 * time.Second)
+
+		err := e.Orm.Model(&models.BusPriceMonitorForOptionHedging{}).
+			Where("strategy_instance_id = ? AND extra IS NULL AND created_at > ? AND pnl > 0", instance.Id, oneSecondAgo).
+			Find(&results).Error
+		if err != nil {
+			e.Log.Errorf("BusPriceTriggerStrategyInstance MonitorStopProfitStatus error:%s \r\n", err)
+			continue
+		}
+
+		if len(results) > 0 {
+			// 如果有止盈单，修改实例状态
+			err = e.Orm.Model(&models.BusPriceTriggerStrategyInstance{}).
+				Where("id = ?", instance.Id).
+				Update("status", TRIGGER_INSTANCE_STATUS_PAUSE).Error
+			if err != nil {
+				e.Log.Errorf("BusPriceTriggerStrategyInstance MonitorStopProfitStatus error:%s \r\n", err)
 				continue
 			}
 		}
@@ -631,7 +735,7 @@ func (e *BusPriceTriggerStrategyInstance) CalculateSlippageForPriceTriggerInstan
 	var instances []models.BusPriceTriggerStrategyInstance
 	err = db.Model(&models.BusPriceTriggerStrategyInstance{}).
 		Where("id > ?", 691).
-		Where("status = ?", "started").
+		Where("status = ?", TRIGGER_INSTANCE_STATUS_STARTED).
 		Order("created_at asc").
 		Find(&instances).Error
 	if err != nil {

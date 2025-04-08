@@ -17,6 +17,7 @@ type BusPriceTriggerStrategyInstanceGetPageReq struct {
 	ExchangeUserId string    `form:"exchangeUserId"  search:"type:exact;column:exchange_user_id;table:bus_price_trigger_strategy_instance" comment:"交易所userId"`
 	UserId         string    `form:"createBy"  search:"type:exact;column:create_by;table:bus_price_trigger_strategy_instance" comment:"创建人"`
 	ApiConfig      int       `form:"apiConfig" search:"type:exact;column:api_config;table:bus_price_trigger_strategy_instance" comment:"api配置id"`
+	IsHistory      bool      `form:"isHistory" search:"-" comment:"是否历史数据"`
 	BusPriceTriggerStrategyInstanceOrder
 }
 
@@ -120,6 +121,10 @@ type BusPriceTriggerStrategyInstanceUpdateExecuteNumReq struct {
 }
 
 type StopTriggerInstanceRequest struct {
+	InstanceId string `json:"id" comment:""`
+}
+
+type RestartTriggerInstanceRequest struct {
 	InstanceId string `json:"id" comment:""`
 }
 
