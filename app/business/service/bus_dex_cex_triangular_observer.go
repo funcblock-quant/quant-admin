@@ -2456,7 +2456,7 @@ func (e *BusDexCexTriangularObserver) startGlobalSolanaWaterLevelForAccountPair(
 			oldParams := solanaState.InstanceParams.TokenThresholdConfig
 			if oldParams.AlertThreshold == strconv.FormatFloat(solanaAlertThreshold, 'f', -1, 64) &&
 				oldParams.BuyTriggerThreshold == strconv.FormatFloat(solBuyTriggerThreshold, 'f', -1, 64) &&
-				oldParams.BuyTriggerThreshold == strconv.FormatFloat(solSellTriggerThreshold, 'f', -1, 64) {
+				oldParams.SellTriggerThreshold == strconv.FormatFloat(solSellTriggerThreshold, 'f', -1, 64) {
 				// 参数一致，不需要更新
 				e.Log.Infof("solana 全局水位调节参数一致，不需要更新，跳过")
 			} else {
