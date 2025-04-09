@@ -92,6 +92,15 @@ message GetStateResponse {
   string borrowed_amount = 6; 
   string max_borrowable_amount = 7;
   StartInstanceRequest instance_params = 8;
+  string instance_error = 9; // 实例错误信息
+  optional InstanceTaskState instance_task_state = 10; // 实例任务状态
+}
+
+message InstanceTaskState {
+  string task_type = 1; // 任务类型
+  string task_step = 2; // 任务步骤
+  string task_status = 3; // 任务状态
+  string task_error = 4; // 任务错误信息
 }
 
 message SecretKey {

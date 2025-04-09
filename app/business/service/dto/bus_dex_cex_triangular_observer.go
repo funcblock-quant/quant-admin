@@ -124,9 +124,10 @@ type BusDexCexTriangularObserverBatchInsertReq struct {
 	MaxArraySize       int      `json:"maxArraySize"`
 	ProfitTriggerRate  *float64 `json:"profitTriggerRate"`
 	TriggerHoldingMs   int      `json:"triggerHoldingMs"`
+	BidDepth           string   `json:"bidDepth"`
+	AskDepth           string   `json:"askDepth"`
+	Status             string   `json:"status" comment:"状态"`
 	//SlippageBpsRate    *float64 `json:"slippageBpsRate"`
-	Depth  string `json:"depth"`
-	Status string `json:"status" comment:"状态"`
 
 	common.ControlBy
 }
@@ -151,7 +152,8 @@ func (s *BusDexCexTriangularObserverBatchInsertReq) Generate(model *models.BusDe
 	//model.SlippageBpsRate = s.SlippageBpsRate
 	model.Decimals = s.Decimals
 	model.AmmPoolId = s.AmmPoolId
-	model.Depth = s.Depth
+	model.AskDepth = s.AskDepth
+	model.BidDepth = s.BidDepth
 	model.Status = "0"          //新增的话说明已经启动成功了
 	model.CreateBy = s.CreateBy // 添加这而，需要记录是被谁创建的
 }
@@ -196,13 +198,20 @@ func (s *BusDexCexTriangularObserverBatchInsertReq) GenerateAmberConfig(amberCon
 	amberConfig.BidDepth = proto.Int32(20)
 	amberConfig.AskDepth = proto.Int32(20)
 
-	if s.Depth != "" {
-		depthInt, err := strconv.Atoi(s.Depth)
+	if s.AskDepth != "" {
+		depthInt, err := strconv.Atoi(s.AskDepth)
 		if err != nil {
 			depthInt = 20 //默认20档
 		}
 		amberConfig.BidDepth = proto.Int32(int32(depthInt))
 		amberConfig.AskDepth = proto.Int32(int32(depthInt))
+	}
+	if s.BidDepth != "" {
+		depthInt, err := strconv.Atoi(s.BidDepth)
+		if err != nil {
+			depthInt = 20 //默认20档
+		}
+		amberConfig.BidDepth = proto.Int32(int32(depthInt))
 	}
 	return nil
 }
@@ -414,4 +423,21 @@ type BusGetInterestRateReq struct {
 type BusGetInterestRateResp struct {
 	Currency     string `json:"currency"`
 	InterestRate string `json:"interestRate"`
+}
+
+type BusDexCexTriangularGetWaterLevelDetailReq struct {
+	InstanceId int `json:"id" comment:"策略端实例id"`
+}
+
+type BusDexCexTriangularGetWaterLevelDetailResp struct {
+	InstanceId int    `json:"id" comment:"策略端实例id"`
+	TaskType   string `json:"taskType" comment:"任务类型"`
+	TaskStep   string `json:"taskStep" comment:"任务步骤"`
+	TaskStatus string `json:"taskStatus" comment:"任务状态"`
+	TaskError  string `json:"taskError" comment:"任务错误信息"`
+}
+
+// BusDexCexTriangularObserverGetReq 功能获取请求参数
+type BusDexCexTriangularGetLatestObserverConfigReq struct {
+	Token string `uri:"token"`
 }

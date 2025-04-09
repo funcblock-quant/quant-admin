@@ -21,10 +21,11 @@ type BusDexCexTriangularObserver struct {
 	MaxQuoteAmount     *float64 `gorm:"comment:最大交易量" json:"maxQuoteAmount"` // 使用指针类型允许值为null
 	//TriggerHoldingMs       int      `gorm:"null;default:0" json:"triggerHoldingMs"`
 	TakerFee                   *float64 `gorm:"not null;comment:交易所taker 费率" json:"takerFee"`
-	AmmPoolId                  *string  `gorm:"comment:ammPoolId" json:"ammPoolId"`
+	AmmPoolId                  *string  `gorm:"comment:ammPoolId" json:"ammPool"`
 	TokenMint                  *string  `gorm:"comment:base token合约" json:"tokenMint"` // 使用指针类型允许值为null
 	SlippageBpsRate            *float64 `gorm:"null;default:0;comment:滑点bps" json:"slippageBpsRate"`
-	Depth                      string   `gorm:"not null;default:20;comment:深度" json:"depth"`
+	BidDepth                   string   `gorm:"not null;default:20;comment:深度" json:"bidDepth"`
+	AskDepth                   string   `gorm:"not null;default:20;comment:深度" json:"askDepth"`
 	IsTrading                  bool     `gorm:"default:false;comment:是否启动交易" json:"isTrading"`
 	ProfitTriggerRate          *float64 `gorm:"null;comment:最小利润" json:"profitTriggerRate"`
 	PriorityFee                *float64 `gorm:"null;comment:交易优先费" json:"priorityFee"`
