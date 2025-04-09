@@ -401,8 +401,8 @@ func (t DexCexObserverInspection) Exec(arg interface{}) error {
 				}
 			}
 
-			if !isTrading {
-				// 如果实例水位调节中，按照讨论，不暂停交易的话，恢复现场就需要启动交易，但是服务端没有启动交易功能，则还需要重启交易功能
+			if !isTrading && observer.IsTrading {
+				// 如果实例开启了交易，但是服务端没有开启交易功能，则需要重启交易功能
 				err = businessService.DoStartTrader(db, &observer)
 				if err != nil {
 					//如果重启失败，则下次再重启

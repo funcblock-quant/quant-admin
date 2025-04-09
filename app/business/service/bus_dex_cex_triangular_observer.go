@@ -1039,7 +1039,6 @@ func (e *BusDexCexTriangularObserver) MonitorWaterLevelToStopTrader() error {
 		if waterLevelStatus == 1 {
 			// 水位调节中，需要更新状态
 			//关闭交易功能
-
 			// 暂停交易成功后，更新状态
 			updateData := map[string]interface{}{
 				"status": INSTANCE_STATUS_WATERLEVEL, // 水位调节中
@@ -3574,6 +3573,7 @@ func DoStartTrader(db *gorm.DB, instance *models.BusDexCexTriangularObserver) er
 			log.Errorf("GRPC 启动Trader for instanceId:%d 失败，异常:%s \r\n", instance.Id, err)
 			return err
 		}
+		log.Errorf("GRPC 启动Trader for instanceId:%d 成功", instance.Id)
 	}
 	return nil
 }
