@@ -127,7 +127,7 @@ func (t InstanceInspection) Exec(arg interface{}) error {
 		}
 
 	}
-	fmt.Printf(str)
+	log.Infof(str)
 	return nil
 }
 
@@ -158,11 +158,39 @@ func (t PriceTriggerInspection) Exec(arg interface{}) error {
 
 	for _, instance := range instances {
 		if instance.Status == "started" && !contains(instanceIds, strconv.Itoa(instance.Id)) && instance.CloseTime.After(time.Now()) {
-			//中台状态为started，但是策略端没有，则需要重启
+			// 中台状态为started，但是策略端没有，则需要重启
+			// 但是目前需要做一个校验，重启前需要判断，是不是有止盈单，如果有，就可能是止盈暂停了。这个时候需要暂停中台的任务，而不是去重启
+
 			apiConfig := models.BusPriceTriggerStrategyApikeyConfig{}
 			err := apiConfigService.GetApiConfigById(instance.ApiConfig, &apiConfig)
 			if err != nil {
 				log.Errorf("重启 instance id: %d 失败, 异常信息：%v \r\n", instance.Id, err.Error())
+				continue
+			}
+
+			var results []models.BusPriceMonitorForOptionHedging
+			oneSecondAgo := time.Now().Add(-2 * time.Second)
+
+			timestamp := oneSecondAgo.Unix()
+			log.Infof("oneSecondAgo (Unix Timestamp - Seconds): %d", timestamp)
+
+			err = service.GetStopProfitTradingRecord(instance.Id, oneSecondAgo, &results)
+			if err != nil {
+				log.Errorf("获取止盈记录失败 error:%s \r\n", err)
+				continue
+			}
+
+			log.Infof("example jobs get trading for instance : %d, trading: %+v \n", instance.Id, results)
+
+			if len(results) > 0 {
+				// 如果有止盈单，修改实例状态
+				err = service.UpdateInstancePaused(instance.Id)
+				if err != nil {
+					log.Errorf("update price trigger instance paused error:%s \r\n", err)
+					continue
+				}
+				log.Infof("update price trigger instance,  instanceId: %d, status: %s \n", instance.Id, "paused")
+				// 如果走到了这一步，则就直接跳过本次循环，不去重启
 				continue
 			}
 

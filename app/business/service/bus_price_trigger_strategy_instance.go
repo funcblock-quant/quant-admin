@@ -560,7 +560,7 @@ func (e *BusPriceTriggerStrategyInstance) MonitorStopProfitStatus() error {
 		e.Log.Infof("oneSecondAgo (Unix Timestamp - Seconds): %d", timestamp)
 
 		err := e.Orm.Model(&models.BusPriceMonitorForOptionHedging{}).
-			Where("strategy_instance_id = ? AND extra IS NULL AND updated_at > ? AND pnl > 0", instance.Id, oneSecondAgo).
+			Where("strategy_instance_id = ? AND extra IS NULL AND created_at > ? AND pnl > 0", instance.Id, oneSecondAgo).
 			Find(&results).Error
 		if err != nil {
 			e.Log.Errorf("BusPriceTriggerStrategyInstance MonitorStopProfitStatus error:%s \r\n", err)
