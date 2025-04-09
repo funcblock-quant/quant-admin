@@ -44,8 +44,8 @@ func InitSimpleJob() {
 		}
 	})
 
-	c.AddFunc("@every 5s", func() {
-		// 每5s一次，获查看交易中的实例的水位健康状态
+	c.AddFunc("@every 1s", func() {
+		// 每1s一次，获查看交易中的实例的水位健康状态
 		fmt.Println("MonitorWaterLevelToStopTrader Job running")
 		s := service.BusDexCexTriangularObserver{}
 		s.Orm = orm
