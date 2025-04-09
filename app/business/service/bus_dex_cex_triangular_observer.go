@@ -255,31 +255,31 @@ func (e *BusDexCexTriangularObserver) Get(d *dto.BusDexCexTriangularObserverGetR
 	model.CexSellPrice = cexSellPrice
 	model.DexBuyPrice = dexBuyPrice
 	model.DexBuyDiffPrice = cexSellPrice - dexBuyPrice
-	if cexSellPrice-dexBuyPrice > 0 {
-		//获取最新的价差记录统计信息，设置价差持续时间
-		dexBuyData := models.BusDexCexPriceSpreadStatistics{}
-		err = e.Orm.Model(&dexBuyData).Where("observer_id = ? and spread_type = ? and end_time is null", id, 1).Order("created_at desc").First(&dexBuyData).Limit(1).Error
-		if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
-			model.DexBuyDiffDuration = "0"
-		}
-		if err != nil {
-			e.Log.Errorf("db error:%s", err)
-			return err
-		}
-		model.DexBuyDiffDuration = dexBuyData.Duration
-	}
-	if dexSellPrice-cexBuyPrice > 0 {
-		dexSellData := models.BusDexCexPriceSpreadStatistics{}
-		err = e.Orm.Model(&dexSellData).Where("observer_id = ? and spread_type = ? and end_time is null", id, 2).Order("created_at desc").First(&dexSellData).Limit(1).Error
-		if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
-			model.DexBuyDiffDuration = "0"
-		}
-		if err != nil {
-			e.Log.Errorf("db error:%s", err)
-			return err
-		}
-		model.DexSellDiffDuration = dexSellData.Duration
-	}
+	// if cexSellPrice-dexBuyPrice > 0 {
+	// 	//获取最新的价差记录统计信息，设置价差持续时间
+	// 	dexBuyData := models.BusDexCexPriceSpreadStatistics{}
+	// 	err = e.Orm.Model(&dexBuyData).Where("observer_id = ? and spread_type = ? and end_time is null", id, 1).Order("created_at desc").First(&dexBuyData).Limit(1).Error
+	// 	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+	// 		model.DexBuyDiffDuration = "0"
+	// 	}
+	// 	if err != nil {
+	// 		e.Log.Errorf("db error:%s", err)
+	// 		return err
+	// 	}
+	// 	model.DexBuyDiffDuration = dexBuyData.Duration
+	// }
+	// if dexSellPrice-cexBuyPrice > 0 {
+	// 	dexSellData := models.BusDexCexPriceSpreadStatistics{}
+	// 	err = e.Orm.Model(&dexSellData).Where("observer_id = ? and spread_type = ? and end_time is null", id, 2).Order("created_at desc").First(&dexSellData).Limit(1).Error
+	// 	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+	// 		model.DexBuyDiffDuration = "0"
+	// 	}
+	// 	if err != nil {
+	// 		e.Log.Errorf("db error:%s", err)
+	// 		return err
+	// 	}
+	// 	model.DexSellDiffDuration = dexSellData.Duration
+	// }
 	model.CexBuyPrice = cexBuyPrice
 	model.DexSellPrice = dexSellPrice
 	model.DexSellDiffPrice = dexSellPrice - cexBuyPrice
@@ -305,6 +305,27 @@ func (e *BusDexCexTriangularObserver) GetSymbolList(p *actions.DataPermission, l
 	if err != nil {
 		e.Log.Errorf("BusDexCexTriangularObserverService GetSymbolList error:%s \r\n", err)
 		return err
+	}
+	return nil
+}
+
+// GetLatestObserverConfig 获取币种的最近一次观察配置
+func (e *BusDexCexTriangularObserver) GetLatestObserverConfig(req *dto.BusDexCexTriangularGetLatestObserverConfigReq, p *actions.DataPermission, resp *models.BusDexCexTriangularObserver) error {
+	var err error
+	var data models.BusDexCexTriangularObserver
+
+	err = e.Orm.Model(&data).
+		Unscoped().
+		Scopes(
+			actions.Permission(data.TableName(), p),
+		).
+		Where("target_token = ?", req.Token).
+		Order("created_at desc").
+		Debug().First(resp).Error
+
+	if err != nil {
+		e.Log.Errorf("BusDexCexTriangularObserverService GetLatestObserverConfig error:%s \r\n", err)
+		return nil
 	}
 	return nil
 }
@@ -697,6 +718,33 @@ func (e *BusDexCexTriangularObserver) GetRealtimeInterestRate(req *dto.BusGetInt
 		// 这里我们系统只支持一个币种的实时汇率
 		break
 	}
+
+	return nil
+
+}
+
+// GetWaterLevelDetail 获取水位调节详情
+func (e *BusDexCexTriangularObserver) GetWaterLevelDetail(req *dto.BusDexCexTriangularGetWaterLevelDetailReq, p *actions.DataPermission, resp *dto.BusDexCexTriangularGetWaterLevelDetailResp) error {
+	var err error
+
+	instanceId := req.InstanceId
+	queryReq := &waterLevelPb.InstanceId{
+		InstanceId: strconv.Itoa(instanceId),
+	}
+	waterLevelState, err := client.GetWaterLevelInstanceState(queryReq)
+	if err != nil {
+		e.Log.Errorf("get WaterLevelInstanceState error: instanceId:%d, error msg:%s \r\n", instanceId, err)
+		return err
+	}
+
+	e.Log.Infof("获取到水位调节实例状态: %v", waterLevelState)
+
+	resp.InstanceId = instanceId
+	taskState := waterLevelState.InstanceTaskState
+	resp.TaskType = taskState.TaskType
+	resp.TaskStatus = taskState.TaskStatus
+	resp.TaskStep = taskState.TaskStep
+	resp.TaskError = taskState.TaskError
 
 	return nil
 
@@ -3369,13 +3417,23 @@ func DoStartObserver(observer *models.BusDexCexTriangularObserver) error {
 	amberConfig.TargetToken = &observer.TargetToken
 	amberConfig.QuoteToken = &observer.QuoteToken
 
-	if observer.Depth != "" {
-		depthInt, err := strconv.Atoi(observer.Depth)
+	amberConfig.BidDepth = proto.Int32(int32(20))
+	amberConfig.AskDepth = proto.Int32(int32(20))
+
+	if observer.AskDepth != "" {
+		depthInt, err := strconv.Atoi(observer.AskDepth)
+		if err != nil {
+			depthInt = 20 //默认20档
+		}
+		amberConfig.AskDepth = proto.Int32(int32(depthInt))
+	}
+
+	if observer.BidDepth != "" {
+		depthInt, err := strconv.Atoi(observer.BidDepth)
 		if err != nil {
 			depthInt = 20 //默认20档
 		}
 		amberConfig.BidDepth = proto.Int32(int32(depthInt))
-		amberConfig.AskDepth = proto.Int32(int32(depthInt))
 	}
 
 	instanceId := strconv.Itoa(observer.Id)

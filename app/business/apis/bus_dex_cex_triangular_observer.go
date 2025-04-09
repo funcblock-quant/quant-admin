@@ -79,6 +79,33 @@ func (e BusDexCexTriangularObserver) GetSymbolList(c *gin.Context) {
 	e.OK(list, "查询成功")
 }
 
+// GetLatestObserverConfig 获取某个币种的最新的观察配置
+func (e BusDexCexTriangularObserver) GetLatestObserverConfig(c *gin.Context) {
+	s := service.BusDexCexTriangularObserver{}
+	req := dto.BusDexCexTriangularGetLatestObserverConfigReq{}
+	err := e.MakeContext(c).
+		MakeOrm().
+		Bind(&req).
+		MakeService(&s.Service).
+		Errors
+	if err != nil {
+		e.Logger.Error(err)
+		e.Error(500, err, err.Error())
+		return
+	}
+
+	p := actions.GetPermissionFromContext(c)
+	resp := models.BusDexCexTriangularObserver{}
+
+	err = s.GetLatestObserverConfig(&req, p, &resp)
+	if err != nil {
+		e.Error(500, err, fmt.Sprintf("获取币种最近一次配置失败，\r\n失败信息 %s", err.Error()))
+		return
+	}
+
+	e.OK(resp, "查询成功")
+}
+
 // GetExchangeList 获取观察机器人所有的交易所列表
 func (e BusDexCexTriangularObserver) GetExchangeList(c *gin.Context) {
 	s := service.BusDexCexTriangularObserver{}
@@ -652,6 +679,32 @@ func (e BusDexCexTriangularObserver) GetRealtimeInterestRate(c *gin.Context) {
 	err = s.GetRealtimeInterestRate(&req, p, &resp)
 	if err != nil {
 		e.Error(500, err, fmt.Sprintf("获取实时汇率失败，\r\n失败信息 %s", err.Error()))
+		return
+	}
+
+	e.OK(resp, "查询成功")
+}
+
+func (e BusDexCexTriangularObserver) GetWaterLevelDetail(c *gin.Context) {
+	req := dto.BusDexCexTriangularGetWaterLevelDetailReq{}
+	s := service.BusDexCexTriangularObserver{}
+	err := e.MakeContext(c).
+		MakeOrm().
+		Bind(&req).
+		MakeService(&s.Service).
+		Errors
+	if err != nil {
+		e.Logger.Error(err)
+		e.Error(500, err, err.Error())
+		return
+	}
+
+	p := actions.GetPermissionFromContext(c)
+	resp := dto.BusDexCexTriangularGetWaterLevelDetailResp{}
+
+	err = s.GetWaterLevelDetail(&req, p, &resp)
+	if err != nil {
+		e.Error(500, err, fmt.Sprintf("获取水位调节详情失败，\r\n失败信息 %s", err.Error()))
 		return
 	}
 

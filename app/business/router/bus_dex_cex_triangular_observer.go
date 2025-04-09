@@ -26,6 +26,7 @@ func registerBusDexCexTriangularObserverRouter(v1 *gin.RouterGroup, authMiddlewa
 	}
 	v1.POST("/batchAddBusDexCexTriangularObserver", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.BatchInsert)
 	v1.GET("/busDexCexTriangularSymbolList", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.GetSymbolList)
+	v1.GET("/getLatestObserverConfigByTargetToken/:token", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.GetLatestObserverConfig)
 	v1.GET("/busDexCexTriangularExchangeList", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.GetExchangeList)
 	v1.GET("/busDexCexTriangularDexWalletList", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.GetDexWalletList)
 	v1.GET("/busDexCexTriangularCexAccountList/:exchange", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.GetCexAccountList)
@@ -41,6 +42,7 @@ func registerBusDexCexTriangularObserverRouter(v1 *gin.RouterGroup, authMiddlewa
 	v1.PUT("/busDexCexTriangularStopAllTrades", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.StopAllTrades)
 	v1.POST("/getRelatedAccounts", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.GetBoundAccountList)
 	v1.POST("/getCanBoundAccounts", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.GetCanBoundAccountList)
-	v1.GET("/getActiveAccountPairs", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.GetActiveAccountPairs)      //获取当前交易中的账户对
-	v1.POST("/getRealtimeInterestRate", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.GetRealtimeInterestRate) //获取当前交易中的账户对
+	v1.GET("/getActiveAccountPairs", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.GetActiveAccountPairs)                 //获取当前交易中的账户对
+	v1.POST("/getRealtimeInterestRate", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.GetRealtimeInterestRate)            //获取实时借贷利率
+	v1.POST("/busDexCexTriangularGetWaterLevelDetail", authMiddleware.MiddlewareFunc(), middleware.AuthCheckRole(), actions.PermissionAction(), api.GetWaterLevelDetail) //获取水位调节详情
 }
