@@ -745,6 +745,7 @@ func (e *BusDexCexTriangularObserver) GetWaterLevelDetail(req *dto.BusDexCexTria
 	resp.TaskStatus = taskState.TaskStatus
 	resp.TaskStep = taskState.TaskStep
 	resp.TaskError = taskState.TaskError
+	resp.InstanceError = waterLevelState.InstanceError
 
 	return nil
 
