@@ -745,6 +745,7 @@ func (e *BusDexCexTriangularObserver) GetWaterLevelDetail(req *dto.BusDexCexTria
 	resp.TaskStatus = taskState.TaskStatus
 	resp.TaskStep = taskState.TaskStep
 	resp.TaskError = taskState.TaskError
+	resp.InstanceError = waterLevelState.InstanceError
 
 	return nil
 
@@ -956,8 +957,8 @@ func (e *BusDexCexTriangularObserver) MonitorWaterLevelToStartTrader() error {
 	var data models.BusDexCexTriangularObserver
 	var list []models.BusDexCexTriangularObserver
 	err := e.Orm.Model(&data).
-		//status = 2 表示水位调节中，并且交易功能暂停
-		Where("status = ? and is_trading = ?", INSTANCE_STATUS_WATERLEVEL, false).
+		//status = 2 表示水位调节中
+		Where("status = ?", INSTANCE_STATUS_WATERLEVEL).
 		Find(&list).Error
 	if err != nil {
 		e.Log.Errorf("获取实例失败:%s \r\n", err)
@@ -976,16 +977,19 @@ func (e *BusDexCexTriangularObserver) MonitorWaterLevelToStartTrader() error {
 		}
 
 		traderSwitch := waterLevelState.TraderSwitch
-		if traderSwitch {
+		waterLevelStatus := waterLevelState.WaterLevelStatus
+
+		if waterLevelStatus == 0 && traderSwitch {
 			e.Log.Infof("waterlevel state for instancId: %d is: success", instanceId)
 			e.Log.Infof("currency: %s, cex spot balance:%s, cex margin balance:%s, dex balance: %s", waterLevelState.Currency, waterLevelState.SpotAccountBalance, waterLevelState.MarginAccountBalance, waterLevelState.ChainWalletBalance)
-			//开启交易功能
-
-			// err = DoStartTrader(e.Orm, &instance)
-			// if err != nil {
-			// 	e.Log.Errorf("start trader error:%s \r\n", err)
-			// 	return err
-			// }
+			if !instance.IsTrading {
+				//如果原先交易没开，则开启交易功能
+				err = DoStartTrader(e.Orm, &instance)
+				if err != nil {
+					e.Log.Errorf("start trader error:%s \r\n", err)
+					return err
+				}
+			}
 
 			// 启动成功后，更新状态
 			updateData := map[string]interface{}{
@@ -1010,7 +1014,7 @@ func (e *BusDexCexTriangularObserver) MonitorWaterLevelToStopTrader() error {
 	var list []models.BusDexCexTriangularObserver
 	err := e.Orm.Model(&data).
 		//status = 3 表示已启动交易，并且交易功能开启中
-		Where("status = ? and is_trading = ?", INSTANCE_STATUS_TRADING, true).
+		Where("status = ?", INSTANCE_STATUS_TRADING).
 		Find(&list).Error
 	if err != nil {
 		e.Log.Errorf("获取实例失败:%s \r\n", err)
@@ -1029,23 +1033,28 @@ func (e *BusDexCexTriangularObserver) MonitorWaterLevelToStopTrader() error {
 		}
 
 		traderSwitch := waterLevelState.TraderSwitch
-		e.Log.Infof("currency: %s, cex spot balance:%s, cex margin balance:%s, dex balance: %s", waterLevelState.Currency, waterLevelState.SpotAccountBalance, waterLevelState.MarginAccountBalance, waterLevelState.ChainWalletBalance)
-		if !traderSwitch {
-			e.Log.Infof("waterlevel state for instancId: %d is: failed", instanceId)
-			//关闭交易功能
+		waterLevelStatus := waterLevelState.WaterLevelStatus
 
-			// 经讨论，水位调节中，可能并不影响交易，所以调节的时候，只是改状态，并不真实暂停交易功能
-			// err = client.DisableTrader(instanceId)
-			// if err != nil {
-			// 	e.Log.Errorf("grpc暂停实例：:%s 交易功能失败，异常：%s \r\n", instanceId, err)
-			// 	return err
-			// }
+		e.Log.Infof("currency: %s, cex spot balance:%s, cex margin balance:%s, dex balance: %s", waterLevelState.Currency, waterLevelState.SpotAccountBalance, waterLevelState.MarginAccountBalance, waterLevelState.ChainWalletBalance)
+		if waterLevelStatus == 1 {
+			// 水位调节中，需要更新状态
+			//关闭交易功能
 
 			// 暂停交易成功后，更新状态
 			updateData := map[string]interface{}{
-				"is_trading": false,
-				"status":     INSTANCE_STATUS_WATERLEVEL, // 水位调节中
+				"status": INSTANCE_STATUS_WATERLEVEL, // 水位调节中
 			}
+
+			if !traderSwitch {
+				e.Log.Infof("trader switch is false, stop trader")
+				err = client.DisableTrader(instanceId)
+				if err != nil {
+					e.Log.Errorf("grpc暂停实例：:%s 交易功能失败，异常：%s \r\n", instanceId, err)
+					return err
+				}
+				updateData["is_trading"] = false
+			}
+
 			if err := e.Orm.Model(&models.BusDexCexTriangularObserver{}).
 				Where("id = ?", instance.Id).
 				Updates(updateData).Error; err != nil {
@@ -1053,6 +1062,30 @@ func (e *BusDexCexTriangularObserver) MonitorWaterLevelToStopTrader() error {
 				continue
 			}
 			e.Log.Infof("实例：%s 参数已成功更新", data.InstanceId)
+		} else {
+			// 水位调节状态为非调节中状态，此时如果trader switch 为关，需要暂停交易，并更新状态为水位调节中
+			if !traderSwitch {
+				//如果此时交易开关是关闭的，说明一种情况，sol全局水位调节达到了最低的阈值。此时修改为水位调节中，并且暂停交易
+				e.Log.Infof("trader switch is false, stop trader")
+				err = client.DisableTrader(instanceId)
+				if err != nil {
+					e.Log.Errorf("grpc暂停实例：:%s 交易功能失败，异常：%s \r\n", instanceId, err)
+					return err
+				}
+
+				updateData := map[string]interface{}{
+					"status":     INSTANCE_STATUS_WATERLEVEL, // 水位调节中
+					"is_trading": false,
+				}
+
+				if err := e.Orm.Model(&models.BusDexCexTriangularObserver{}).
+					Where("id = ?", instance.Id).
+					Updates(updateData).Error; err != nil {
+					e.Log.Errorf("更新实例参数失败：%s", err)
+					continue
+				}
+			}
+
 		}
 	}
 	return nil
