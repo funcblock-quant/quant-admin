@@ -529,7 +529,7 @@ func (e *BusDexCexTriangularObserver) GetActiveAccountPairs(p *actions.DataPermi
 	err = e.Orm.Model(&models.BusDexCexTriangularObserver{}).
 		Select("DISTINCT dex_wallet_id, cex_account_id").
 		Where("dex_wallet_id IS NOT NULL AND cex_account_id IS NOT NULL").
-		Where("status > ?", INSTANCE_STATUS_CREATED).
+		Where("status > ?", INSTANCE_STATUS_OBSERVE).
 		Find(&accountPairs).Error
 
 	if err != nil {
