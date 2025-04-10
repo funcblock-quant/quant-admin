@@ -430,12 +430,13 @@ type BusDexCexTriangularGetWaterLevelDetailReq struct {
 }
 
 type BusDexCexTriangularGetWaterLevelDetailResp struct {
-	InstanceId    int    `json:"id" comment:"策略端实例id"`
-	TaskType      string `json:"taskType" comment:"任务类型"`
-	TaskStep      string `json:"taskStep" comment:"任务步骤"`
-	TaskStatus    string `json:"taskStatus" comment:"任务状态"`
-	TaskError     string `json:"taskError" comment:"任务错误信息"`
-	InstanceError string `json:"instanceError" comment:"实例错误信息"`
+	InstanceId       int    `json:"id" comment:"策略端实例id"`
+	TaskType         string `json:"taskType" comment:"任务类型"`
+	TaskStep         string `json:"taskStep" comment:"任务步骤"`
+	TaskStatus       string `json:"taskStatus" comment:"任务状态"`
+	TaskError        string `json:"taskError" comment:"任务错误信息"`
+	InstanceError    string `json:"instanceError" comment:"实例错误信息"`
+	TraderSwitchDesc string `json:"traderSwitchDesc" comment:"交易开关描述"`
 }
 
 // BusDexCexTriangularObserverGetReq 功能获取请求参数
