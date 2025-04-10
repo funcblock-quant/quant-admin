@@ -95,6 +95,7 @@ message GetStateResponse {
   string instance_error = 9; // 实例错误信息
   optional InstanceTaskState instance_task_state = 10; // 实例任务状态
   int32 water_level_status = 11; // 0-初始状态 1-水位调节中
+  string trader_switch_desc = 12; // 交易开关描述
 }
 
 message InstanceTaskState {
