@@ -431,7 +431,7 @@ func (e *StrategyDexCexTriangularArbitrageTrades) DailyTradeSnapshot() error {
 	}
 
 	if allPreviousProfit > 0 {
-		allProfitGrowthRate = (allProfit - allPreviousProfit) / allPreviousProfit
+		allProfitGrowthRate = (allProfit) / allPreviousProfit
 	} else {
 		allProfitGrowthRate = 0
 	}
