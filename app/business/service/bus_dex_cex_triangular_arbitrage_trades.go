@@ -385,7 +385,7 @@ func (e *StrategyDexCexTriangularArbitrageTrades) DailyTradeSnapshot() error {
 		var totalTrade int
 		var totalVolume, totalProfit, previousTotalProfit, profitGrowthRate float64
 
-		e.Orm.Model(&models.StrategyDexCexTriangularArbitrageTrades{}).
+		e.Orm.Debug().Model(&models.StrategyDexCexTriangularArbitrageTrades{}).
 			Select("COUNT(*) AS totalTrade, COALESCE(SUM(cex_sell_quote_amount), 0) AS total_volume, COALESCE(SUM(cex_sell_quote_amount - cex_buy_quote_amount), 0) AS total_profit").
 			Where("instance_id = ?", inst.Id).
 			Where("dex_success = ? AND cex_buy_success = ? AND cex_sell_success =?", 1, 1, 1).
@@ -393,13 +393,15 @@ func (e *StrategyDexCexTriangularArbitrageTrades) DailyTradeSnapshot() error {
 			Row().Scan(&totalTrade, &totalVolume, &totalProfit)
 
 		// 查询今天之前的所有利润
-		e.Orm.Model(&models.StrategyDexCexTriangularArbitrageTrades{}).
+		e.Orm.Debug().Model(&models.StrategyDexCexTriangularArbitrageTrades{}).
 			Select("COALESCE(SUM(cex_sell_quote_amount - cex_buy_quote_amount), 0) AS previous_total_profit").
 			Where("instance_id = ?", inst.Id).
 			Where("dex_success = ? AND cex_buy_success = ? AND cex_sell_success =?", 1, 1, 1).
 			Where("created_at < ?", startOfDay).
 			Row().Scan(&previousTotalProfit)
 
+		e.Log.Infof("for targetToken : %s", inst.TargetToken)
+		e.Log.Infof("totalTrade: %d, totalVolume: %d, totalProfit: %d")
 		e.Log.Infof("previous_total_profit : %d", previousTotalProfit)
 		// 计算当天利润增长百分比
 		if previousTotalProfit > 0 {
