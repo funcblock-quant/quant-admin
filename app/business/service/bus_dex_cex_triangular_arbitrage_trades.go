@@ -401,7 +401,7 @@ func (e *StrategyDexCexTriangularArbitrageTrades) DailyTradeSnapshot() error {
 			Row().Scan(&previousTotalProfit)
 
 		e.Log.Infof("for targetToken : %s", inst.TargetToken)
-		e.Log.Infof("totalTrade: %d, totalVolume: %d, totalProfit: %d")
+		e.Log.Infof("totalTrade: %d, totalVolume: %d, totalProfit: %d", totalTrade, totalVolume, totalProfit)
 		e.Log.Infof("previous_total_profit : %d", previousTotalProfit)
 		// 计算当天利润增长百分比
 		if previousTotalProfit > 0 {
